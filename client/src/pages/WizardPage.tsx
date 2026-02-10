@@ -268,7 +268,7 @@ export default function WizardPage() {
                       <Label>Month</Label>
                       <Select value={month.toString()} onValueChange={(v) => setMonth(parseInt(v))}>
                         <SelectTrigger data-testid="select-month"><SelectValue /></SelectTrigger>
-                        <SelectContent position="popper" sideOffset={4}>
+                        <SelectContent position="popper" sideOffset={4} className="z-[9999]">
                           {MONTHS.map((m, i) => (
                             <SelectItem key={i} value={(i + 1).toString()}>{m}</SelectItem>
                           ))}
@@ -648,7 +648,7 @@ export default function WizardPage() {
                        <SelectTrigger className="w-full" data-testid="select-add-rule">
                          <SelectValue placeholder="Add new rule..." />
                        </SelectTrigger>
-                       <SelectContent position="popper" sideOffset={4}>
+                       <SelectContent position="popper" sideOffset={4} className="z-[9999]">
                          {config.shiftNames.map((name1, i) => (
                            config.shiftNames.map((name2, j) => (
                              <SelectItem key={`${i}-${j}`} value={`${i},${j}`}>
