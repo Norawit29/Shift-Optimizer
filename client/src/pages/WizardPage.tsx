@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useCreateSchedule } from "@/hooks/use-schedules";
 import { type StaffMember, type SchedulerConfig, type OptimizerResult, type DaySchedule } from "@shared/schema";
 import { ShiftOptimizer } from "@/lib/optimizer";
@@ -10,8 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -24,6 +22,7 @@ import {
   Settings2, 
   PlayCircle,
   Plus,
+  Minus,
   X,
   Save,
   Loader2,
@@ -34,6 +33,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { nanoid } from "nanoid";
 import { Link, useLocation } from "wouter";
+import { getDaysInMonth, format, setDate } from "date-fns";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June", 
@@ -44,7 +44,7 @@ const INITIAL_CONFIG: SchedulerConfig = {
   shiftsPerDay: 3,
   shiftNames: ["Morning", "Evening", "Night"],
   staffPerShift: [2, 2, 1],
-  consecutiveRules: [{ from: 2, to: 0 }], // No Night -> Morning
+  consecutiveRules: [{ from: 2, to: 0 }],
 };
 
 const INITIAL_STAFF: StaffMember[] = [
@@ -69,7 +69,7 @@ export default function WizardPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  // --- Handlers ---
+  const daysInMonth = useMemo(() => getDaysInMonth(new Date(year, month - 1)), [month, year]);
 
   const handleNext = () => setStep(s => Math.min(s + 1, 4));
   const handleBack = () => setStep(s => Math.max(s - 1, 1));
@@ -86,10 +86,24 @@ export default function WizardPage() {
     setConfig({ ...config, staffPerShift: newCounts });
   };
 
+  const setShiftsPerDay = (val: number) => {
+    if (val < 1 || val > 5) return;
+    const newNames = [...config.shiftNames];
+    const newCounts = [...config.staffPerShift];
+    if (val > config.shiftsPerDay) {
+      for (let i = config.shiftsPerDay; i < val; i++) {
+        newNames.push(`Shift ${i + 1}`);
+        newCounts.push(1);
+      }
+    } else {
+      newNames.splice(val);
+      newCounts.splice(val);
+    }
+    setConfig({ ...config, shiftsPerDay: val, shiftNames: newNames, staffPerShift: newCounts });
+  };
+
   const addStaff = () => {
     const randomNames = ["Dr. Smith", "Nurse Jackie", "Dr. Strange", "Nurse Joy", "Dr. House", "Nurse Ratched", "Dr. Watson", "Nurse Nightingale", "Dr. Grey", "Nurse Somsri", "Dr. Somchai"];
-    
-    // Filter out names that are already taken
     const existingNames = new Set(staff.map(s => s.name.toLowerCase()));
     const availableNames = randomNames.filter(name => !existingNames.has(name.toLowerCase()));
     
@@ -97,7 +111,6 @@ export default function WizardPage() {
     if (availableNames.length > 0) {
       name = availableNames[Math.floor(Math.random() * availableNames.length)];
     } else {
-      // Fallback to name + number if all names are taken
       name = `Staff Member ${staff.length + 1}`;
     }
     
@@ -112,9 +125,46 @@ export default function WizardPage() {
     setStaff(staff.map(s => s.id === id ? { ...s, [field]: value } : s));
   };
 
+  const toggleBlockedDate = (staffId: string, date: number, shiftIdx: number) => {
+    const member = staff.find(s => s.id === staffId);
+    if (!member) return;
+    const existing = member.blocked.findIndex(b => b.date === date && b.shift === shiftIdx);
+    let newBlocked;
+    if (existing !== -1) {
+      newBlocked = member.blocked.filter((_, i) => i !== existing);
+    } else {
+      newBlocked = [...member.blocked, { date, shift: shiftIdx }];
+    }
+    updateStaff(staffId, "blocked", newBlocked);
+  };
+
+  const isDateBlocked = (staffId: string, date: number, shiftIdx: number) => {
+    const member = staff.find(s => s.id === staffId);
+    if (!member) return false;
+    return member.blocked.some(b => b.date === date && (b.shift === shiftIdx || b.shift === -1));
+  };
+
+  const isFullDayBlocked = (staffId: string, date: number) => {
+    const member = staff.find(s => s.id === staffId);
+    if (!member) return false;
+    return member.blocked.some(b => b.date === date && b.shift === -1);
+  };
+
+  const toggleFullDayBlock = (staffId: string, date: number) => {
+    const member = staff.find(s => s.id === staffId);
+    if (!member) return;
+    const hasFullDay = member.blocked.some(b => b.date === date && b.shift === -1);
+    let newBlocked;
+    if (hasFullDay) {
+      newBlocked = member.blocked.filter(b => !(b.date === date));
+    } else {
+      newBlocked = [...member.blocked.filter(b => b.date !== date), { date, shift: -1 }];
+    }
+    updateStaff(staffId, "blocked", newBlocked);
+  };
+
   const runOptimizer = () => {
     setIsOptimizing(true);
-    // Use setTimeout to allow UI to render loading state
     setTimeout(() => {
       try {
         const optimizer = new ShiftOptimizer(config, staff, month, year);
@@ -148,20 +198,24 @@ export default function WizardPage() {
       });
       setLocation("/history");
     } catch (error) {
-      // handled by mutation hook
     }
   };
 
+  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
+  const selectedStaffMember = staff.find(s => s.id === selectedStaffId) || null;
+  const baseDate = new Date(year, month - 1, 1);
+  const firstDayOfWeek = baseDate.getDay();
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
-      {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-2">
           <div className="flex items-center gap-4">
             <Button 
               variant="ghost" 
               size="icon" 
               className="rounded-full"
+              data-testid="button-wizard-back"
               onClick={() => {
                 if (step > 1) {
                   setStep(s => s - 1);
@@ -180,7 +234,7 @@ export default function WizardPage() {
           
           <div className="flex items-center gap-2">
             {step === 4 && (
-              <Button onClick={saveSchedule} disabled={createMutation.isPending} className="bg-green-600 hover:bg-green-700">
+              <Button onClick={saveSchedule} disabled={createMutation.isPending} className="bg-green-600 hover:bg-green-700" data-testid="button-save-schedule">
                 {createMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin"/> : <Save className="w-4 h-4 mr-2" />}
                 Save Schedule
               </Button>
@@ -188,7 +242,6 @@ export default function WizardPage() {
           </div>
         </div>
         
-        {/* Progress Bar */}
         <div className="h-1 bg-slate-100 dark:bg-slate-800 w-full">
           <div 
             className="h-full bg-primary transition-all duration-500 ease-out" 
@@ -214,8 +267,8 @@ export default function WizardPage() {
                     <div className="space-y-2">
                       <Label>Month</Label>
                       <Select value={month.toString()} onValueChange={(v) => setMonth(parseInt(v))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
+                        <SelectTrigger data-testid="select-month"><SelectValue /></SelectTrigger>
+                        <SelectContent position="popper" sideOffset={4}>
                           {MONTHS.map((m, i) => (
                             <SelectItem key={i} value={(i + 1).toString()}>{m}</SelectItem>
                           ))}
@@ -224,7 +277,7 @@ export default function WizardPage() {
                     </div>
                     <div className="space-y-2">
                       <Label>Year</Label>
-                      <Input type="number" value={year} onChange={e => setYear(parseInt(e.target.value))} />
+                      <Input type="number" value={year} onChange={e => setYear(parseInt(e.target.value))} data-testid="input-year" />
                     </div>
                   </div>
                 </div>
@@ -232,30 +285,31 @@ export default function WizardPage() {
                 <Separator />
 
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <Label className="text-base font-semibold">Shifts per Day</Label>
-                    <Badge variant="secondary">{config.shiftsPerDay}</Badge>
+                  <Label className="text-base font-semibold">Shifts per Day</Label>
+                  <div className="flex items-center gap-3">
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={() => setShiftsPerDay(config.shiftsPerDay - 1)}
+                      disabled={config.shiftsPerDay <= 1}
+                      data-testid="button-shifts-minus"
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <div className="flex-1 text-center">
+                      <span className="text-3xl font-bold text-primary" data-testid="text-shifts-count">{config.shiftsPerDay}</span>
+                      <p className="text-xs text-muted-foreground mt-1">shift{config.shiftsPerDay !== 1 ? 's' : ''} per day</p>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={() => setShiftsPerDay(config.shiftsPerDay + 1)}
+                      disabled={config.shiftsPerDay >= 5}
+                      data-testid="button-shifts-plus"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <Slider 
-                    value={[config.shiftsPerDay]} 
-                    min={1} 
-                    max={5} 
-                    step={1} 
-                    onValueChange={([val]) => {
-                      const newNames = [...config.shiftNames];
-                      const newCounts = [...config.staffPerShift];
-                      if (val > config.shiftsPerDay) {
-                        for(let i=config.shiftsPerDay; i<val; i++) {
-                          newNames.push(`Shift ${i+1}`);
-                          newCounts.push(1);
-                        }
-                      } else {
-                        newNames.splice(val);
-                        newCounts.splice(val);
-                      }
-                      setConfig({ ...config, shiftsPerDay: val, shiftNames: newNames, staffPerShift: newCounts });
-                    }} 
-                  />
                 </div>
               </CardContent>
             </Card>
@@ -268,7 +322,7 @@ export default function WizardPage() {
                     <div key={i} className="flex gap-4 items-end bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg">
                       <div className="flex-1 space-y-2">
                         <Label>Name</Label>
-                        <Input value={name} onChange={e => updateShiftName(i, e.target.value)} />
+                        <Input value={name} onChange={e => updateShiftName(i, e.target.value)} data-testid={`input-shift-name-${i}`} />
                       </div>
                       <div className="w-24 space-y-2">
                         <Label>Staff Req.</Label>
@@ -277,6 +331,7 @@ export default function WizardPage() {
                           min={1} 
                           value={config.staffPerShift[i]} 
                           onChange={e => updateStaffCount(i, parseInt(e.target.value))} 
+                          data-testid={`input-staff-per-shift-${i}`}
                         />
                       </div>
                     </div>
@@ -287,133 +342,263 @@ export default function WizardPage() {
           </div>
         </WizardStep>
 
-        {/* STEP 2: STAFF MANAGEMENT */}
+        {/* STEP 2: STAFF + BLOCKED DATES */}
         <WizardStep 
           isActive={step === 2} 
-          title="Staff Management" 
-          description="Add your team members and set their monthly capacity."
+          title="Staff & Availability" 
+          description="Add your team members and mark their unavailable dates on the calendar."
         >
-          <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800">
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                <div className="flex justify-end">
-                  <Button onClick={addStaff} variant="outline" className="border-dashed">
-                    <Plus className="w-4 h-4 mr-2" /> Add Staff Member
-                  </Button>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {staff.map((s) => (
-                    <div key={s.id} className="relative group bg-white dark:bg-slate-900 border rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 h-6 w-6 text-muted-foreground hover:text-destructive"
-                        onClick={() => removeStaff(s.id)}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                      
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                          {s.name.charAt(0)}
-                        </div>
-                        <Input 
-                          value={s.name} 
-                          onChange={e => updateStaff(s.id, "name", e.target.value)} 
-                          className="font-semibold h-8 border-transparent hover:border-input focus:border-input px-2 -ml-2"
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between text-sm mb-4">
-                        <Label className="text-muted-foreground">Max Shifts</Label>
-                        <Input 
-                          type="number" 
-                          className="w-16 h-8 text-right"
-                          value={s.maxShifts}
-                          onChange={e => updateStaff(s.id, "maxShifts", parseInt(e.target.value))}
-                        />
-                      </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800 lg:col-span-1">
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label className="text-base font-semibold">Staff ({staff.length})</Label>
+                    <Button onClick={addStaff} variant="outline" size="sm" className="border-dashed" data-testid="button-add-staff">
+                      <Plus className="w-4 h-4 mr-1" /> Add
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+                    {staff.map((s) => {
+                      const blockedCount = s.blocked?.length || 0;
+                      const isSelected = selectedStaffId === s.id;
+                      return (
+                        <div 
+                          key={s.id} 
+                          className={`relative group rounded-lg p-3 cursor-pointer transition-colors border ${isSelected ? 'border-primary bg-primary/5 dark:bg-primary/10' : 'border-transparent bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
+                          onClick={() => setSelectedStaffId(isSelected ? null : s.id)}
+                          data-testid={`staff-card-${s.id}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+                              {s.name.charAt(0)}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <Input 
+                                value={s.name} 
+                                onChange={e => { e.stopPropagation(); updateStaff(s.id, "name", e.target.value); }}
+                                onClick={e => { e.stopPropagation(); setSelectedStaffId(s.id); }}
+                                className="font-semibold h-7 text-sm border-transparent hover:border-input focus:border-input px-1"
+                                data-testid={`input-staff-name-${s.id}`}
+                              />
+                              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground px-1">
+                                <span>Max: {s.maxShifts}</span>
+                                {blockedCount > 0 && (
+                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{blockedCount} blocked</Badge>
+                                )}
+                              </div>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              className="opacity-0 group-hover:opacity-100 h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
+                              onClick={(e) => { e.stopPropagation(); removeStaff(s.id); }}
+                              data-testid={`button-remove-staff-${s.id}`}
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
 
-                      <Separator className="my-3" />
-                      
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-xs font-bold uppercase text-muted-foreground">Blocked Shifts</Label>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-6 px-2 text-xs"
-                            onClick={() => {
-                              const newBlocked = [...(s.blocked || []), { date: 1, shift: -1 }];
-                              updateStaff(s.id, "blocked", newBlocked);
-                            }}
-                          >
-                            <Plus className="w-3 h-3 mr-1" /> Add
-                          </Button>
-                        </div>
-                        
-                        <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
-                          {(s.blocked || []).map((b, bIdx) => (
-                            <div key={bIdx} className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 p-1.5 rounded border text-xs">
-                              <div className="flex-1 flex items-center gap-1">
-                                <span className="text-[10px] text-muted-foreground">Day</span>
+                          {isSelected && (
+                            <div className="mt-3 pt-3 border-t space-y-2" onClick={e => e.stopPropagation()}>
+                              <div className="flex items-center justify-between gap-2">
+                                <Label className="text-xs text-muted-foreground">Max Shifts</Label>
                                 <Input 
                                   type="number" 
-                                  min={1} 
-                                  max={31}
-                                  value={b.date} 
-                                  className="h-6 w-10 p-1 text-center"
-                                  onChange={e => {
-                                    const newBlocked = [...s.blocked];
-                                    newBlocked[bIdx] = { ...b, date: parseInt(e.target.value) || 1 };
-                                    updateStaff(s.id, "blocked", newBlocked);
-                                  }}
+                                  className="w-16 h-7 text-right text-sm"
+                                  value={s.maxShifts}
+                                  onChange={e => updateStaff(s.id, "maxShifts", parseInt(e.target.value) || 1)}
+                                  data-testid={`input-max-shifts-${s.id}`}
                                 />
-                                <span className="text-[10px] text-muted-foreground ml-1">Shift</span>
-                                <Select 
-                                  value={b.shift.toString()} 
-                                  onValueChange={v => {
-                                    const newBlocked = [...s.blocked];
-                                    newBlocked[bIdx] = { ...b, shift: parseInt(v) };
-                                    updateStaff(s.id, "blocked", newBlocked);
-                                  }}
-                                >
-                                  <SelectTrigger className="h-6 text-[10px] px-1 bg-white dark:bg-slate-950">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent className="z-[100] bg-white dark:bg-slate-950 border shadow-md" position="popper" sideOffset={4}>
-                                    <SelectItem value="-1">All Day</SelectItem>
-                                    {config.shiftNames.map((name, i) => (
-                                      <SelectItem key={i} value={i.toString()}>{name}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
                               </div>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-5 w-5 text-muted-foreground hover:text-destructive"
-                                onClick={() => {
-                                  const newBlocked = s.blocked.filter((_, i) => i !== bIdx);
-                                  updateStaff(s.id, "blocked", newBlocked);
-                                }}
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
                             </div>
-                          ))}
-                          {(!s.blocked || s.blocked.length === 0) && (
-                            <p className="text-[10px] text-center text-muted-foreground py-2 italic">No blocks set</p>
                           )}
                         </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800 lg:col-span-2">
+              <CardContent className="p-6">
+                {selectedStaffMember ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div>
+                        <h3 className="font-semibold text-lg">{selectedStaffMember.name}'s Availability</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Click dates to block/unblock. Blocked dates appear in red.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="secondary" className="text-xs">
+                          {selectedStaffMember.blocked?.length || 0} blocked
+                        </Badge>
+                        {(selectedStaffMember.blocked?.length || 0) > 0 && (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => updateStaff(selectedStaffId!, "blocked", [])}
+                            data-testid="button-clear-blocks"
+                          >
+                            Clear All
+                          </Button>
+                        )}
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+
+                    <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4">
+                      <div className="grid grid-cols-7 gap-1 mb-2">
+                        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
+                          <div key={d} className="text-center text-xs font-medium text-muted-foreground py-1">{d}</div>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-7 gap-1">
+                        {Array.from({ length: firstDayOfWeek }).map((_, i) => (
+                          <div key={`empty-${i}`} />
+                        ))}
+                        {Array.from({ length: daysInMonth }).map((_, i) => {
+                          const date = i + 1;
+                          const blocked = isFullDayBlocked(selectedStaffId!, date);
+                          const partiallyBlocked = !blocked && selectedStaffMember.blocked?.some(b => b.date === date);
+                          const currentDate = setDate(baseDate, date);
+                          const isWeekend = currentDate.getDay() === 0 || currentDate.getDay() === 6;
+                          
+                          return (
+                            <button
+                              key={date}
+                              onClick={() => toggleFullDayBlock(selectedStaffId!, date)}
+                              className={`
+                                relative p-2 rounded-md text-sm font-medium transition-all text-center
+                                ${blocked 
+                                  ? 'bg-red-500 text-white hover:bg-red-600' 
+                                  : partiallyBlocked
+                                    ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-orange-900/50 ring-1 ring-orange-300 dark:ring-orange-700'
+                                    : isWeekend 
+                                      ? 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700' 
+                                      : 'bg-white dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                }
+                              `}
+                              data-testid={`calendar-day-${date}`}
+                            >
+                              {date}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold">Block specific shifts</Label>
+                      <p className="text-xs text-muted-foreground">Click a shift badge to toggle blocking that specific shift on a date.</p>
+                      <div className="max-h-[200px] overflow-y-auto space-y-1 pr-1">
+                        {selectedStaffMember.blocked?.filter(b => b.shift === -1).map((b) => {
+                          const currentDate = setDate(baseDate, b.date);
+                          return (
+                            <div key={`full-${b.date}`} className="flex items-center justify-between gap-2 p-2 bg-red-50 dark:bg-red-900/20 rounded-md border border-red-200 dark:border-red-800">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium">{format(currentDate, "MMM d")} ({format(currentDate, "EEE")})</span>
+                                <Badge variant="destructive" className="text-[10px]">All Day</Badge>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                {config.shiftNames.map((shiftName, sIdx) => (
+                                  <Badge 
+                                    key={sIdx}
+                                    variant="outline"
+                                    className="text-[10px] cursor-pointer opacity-50 line-through"
+                                    onClick={() => {
+                                      const newBlocked = selectedStaffMember.blocked.filter(bl => !(bl.date === b.date && bl.shift === -1));
+                                      config.shiftNames.forEach((_, si) => {
+                                        if (si !== sIdx) newBlocked.push({ date: b.date, shift: si });
+                                      });
+                                      updateStaff(selectedStaffId!, "blocked", newBlocked);
+                                    }}
+                                    data-testid={`badge-shift-${b.date}-${sIdx}`}
+                                  >
+                                    {shiftName}
+                                  </Badge>
+                                ))}
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  className="h-5 w-5 text-muted-foreground hover:text-destructive ml-1"
+                                  onClick={() => toggleFullDayBlock(selectedStaffId!, b.date)}
+                                >
+                                  <X className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {selectedStaffMember.blocked?.filter(b => b.shift !== -1)
+                          .reduce<{ date: number; shifts: number[] }[]>((acc, b) => {
+                            const existing = acc.find(a => a.date === b.date);
+                            if (existing) { existing.shifts.push(b.shift); }
+                            else { acc.push({ date: b.date, shifts: [b.shift] }); }
+                            return acc;
+                          }, [])
+                          .sort((a, b) => a.date - b.date)
+                          .map((group) => {
+                            const currentDate = setDate(baseDate, group.date);
+                            return (
+                              <div key={`partial-${group.date}`} className="flex items-center justify-between gap-2 p-2 bg-orange-50 dark:bg-orange-900/10 rounded-md border border-orange-200 dark:border-orange-800">
+                                <span className="text-sm font-medium">{format(currentDate, "MMM d")} ({format(currentDate, "EEE")})</span>
+                                <div className="flex items-center gap-1">
+                                  {config.shiftNames.map((shiftName, sIdx) => {
+                                    const isBlocked = group.shifts.includes(sIdx);
+                                    return (
+                                      <Badge 
+                                        key={sIdx}
+                                        variant={isBlocked ? "destructive" : "outline"}
+                                        className="text-[10px] cursor-pointer"
+                                        onClick={() => toggleBlockedDate(selectedStaffId!, group.date, sIdx)}
+                                        data-testid={`badge-shift-${group.date}-${sIdx}`}
+                                      >
+                                        {shiftName}
+                                      </Badge>
+                                    );
+                                  })}
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    className="h-5 w-5 text-muted-foreground hover:text-destructive ml-1"
+                                    onClick={() => {
+                                      const newBlocked = selectedStaffMember.blocked.filter(b => b.date !== group.date);
+                                      updateStaff(selectedStaffId!, "blocked", newBlocked);
+                                    }}
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            );
+                          })
+                        }
+
+                        {(!selectedStaffMember.blocked || selectedStaffMember.blocked.length === 0) && (
+                          <p className="text-sm text-center text-muted-foreground py-4 italic">No blocked dates. Click calendar dates above to add.</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-[400px] text-center">
+                    <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
+                      <CalendarIcon className="h-8 w-8 text-primary" />
+                    </div>
+                    <h3 className="text-lg font-semibold mb-2">Select a Staff Member</h3>
+                    <p className="text-muted-foreground max-w-sm">
+                      Click on a staff member from the list to view and edit their availability calendar.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </WizardStep>
 
         {/* STEP 3: CONSTRAINTS */}
@@ -433,12 +618,12 @@ export default function WizardPage() {
                 </div>
                 
                 <p className="text-sm text-muted-foreground mb-4">
-                  Prevent staff from working specific shift combinations on consecutive days (e.g., Night → Morning).
+                  Prevent staff from working specific shift combinations on consecutive days (e.g., Night followed by Morning).
                 </p>
 
                 <div className="space-y-2">
                   {config.consecutiveRules.map((rule, idx) => (
-                    <div key={idx} className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border">
+                    <div key={idx} className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border flex-wrap">
                       <span className="text-red-500 font-bold">NO</span>
                       <Badge variant="outline">{config.shiftNames[rule.from]}</Badge>
                       <span className="text-muted-foreground text-sm">followed by</span>
@@ -446,7 +631,7 @@ export default function WizardPage() {
                       <Button variant="ghost" size="sm" className="ml-auto h-6 w-6 p-0" onClick={() => {
                          const newRules = config.consecutiveRules.filter((_, i) => i !== idx);
                          setConfig({...config, consecutiveRules: newRules});
-                      }}>
+                      }} data-testid={`button-remove-rule-${idx}`}>
                         <X className="w-3 h-3" />
                       </Button>
                     </div>
@@ -460,14 +645,14 @@ export default function WizardPage() {
                          consecutiveRules: [...config.consecutiveRules, { from, to }]
                        });
                      }}>
-                       <SelectTrigger className="w-full bg-white dark:bg-slate-950">
+                       <SelectTrigger className="w-full" data-testid="select-add-rule">
                          <SelectValue placeholder="Add new rule..." />
                        </SelectTrigger>
-                       <SelectContent className="z-[100] bg-white dark:bg-slate-950 border shadow-md" position="popper" sideOffset={4}>
+                       <SelectContent position="popper" sideOffset={4}>
                          {config.shiftNames.map((name1, i) => (
                            config.shiftNames.map((name2, j) => (
                              <SelectItem key={`${i}-${j}`} value={`${i},${j}`}>
-                               Block {name1} → {name2}
+                               Block {name1} followed by {name2}
                              </SelectItem>
                            ))
                          ))}
@@ -487,7 +672,7 @@ export default function WizardPage() {
                  <p className="text-muted-foreground max-w-xs mx-auto">
                    Our algorithm will attempt to find the fairest distribution of shifts while respecting all your constraints.
                  </p>
-                 <Button size="lg" onClick={runOptimizer} disabled={isOptimizing} className="mt-4 w-full">
+                 <Button size="lg" onClick={runOptimizer} disabled={isOptimizing} className="mt-4 w-full" data-testid="button-generate">
                    {isOptimizing ? (
                      <>
                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Optimizing...
@@ -509,28 +694,29 @@ export default function WizardPage() {
             className="max-w-6xl"
           >
             <div className="space-y-8">
-              <div className="flex items-center gap-4 bg-white dark:bg-zinc-900 p-4 rounded-xl border">
-                <div className="flex-1">
+              <div className="flex items-center gap-4 bg-white dark:bg-zinc-900 p-4 rounded-xl border flex-wrap">
+                <div className="flex-1 min-w-[200px]">
                   <Label>Schedule Name</Label>
                   <Input 
                     value={scheduleName} 
                     onChange={e => setScheduleName(e.target.value)} 
                     className="text-lg font-bold border-none shadow-none focus-visible:ring-0 px-0"
+                    data-testid="input-schedule-name"
                   />
                 </div>
-                <Button variant="outline" onClick={() => setStep(3)}>
+                <Button variant="outline" onClick={() => setStep(3)} data-testid="button-adjust-rules">
                   <Settings2 className="w-4 h-4 mr-2" /> Adjust Rules
                 </Button>
-                <Button variant="outline" onClick={runOptimizer}>
+                <Button variant="outline" onClick={runOptimizer} data-testid="button-regenerate">
                   <History className="w-4 h-4 mr-2" /> Regenerate
                 </Button>
               </div>
 
               <Tabs defaultValue="calendar">
                 <TabsList className="mb-4">
-                  <TabsTrigger value="calendar"><CalendarIcon className="w-4 h-4 mr-2" />Calendar View</TabsTrigger>
-                  <TabsTrigger value="summary"><Check className="w-4 h-4 mr-2" />Summary</TabsTrigger>
-                  <TabsTrigger value="stats"><Activity className="w-4 h-4 mr-2" />Statistics</TabsTrigger>
+                  <TabsTrigger value="calendar" data-testid="tab-calendar"><CalendarIcon className="w-4 h-4 mr-2" />Calendar View</TabsTrigger>
+                  <TabsTrigger value="summary" data-testid="tab-summary"><Check className="w-4 h-4 mr-2" />Summary</TabsTrigger>
+                  <TabsTrigger value="stats" data-testid="tab-stats"><Activity className="w-4 h-4 mr-2" />Statistics</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="calendar" className="mt-0">
@@ -585,26 +771,26 @@ export default function WizardPage() {
         {/* Navigation Footer */}
         {step < 4 && (
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-zinc-950 border-t z-40">
-            <div className="max-w-5xl mx-auto flex justify-between items-center">
+            <div className="max-w-5xl mx-auto flex justify-between items-center gap-2">
               <Button 
                 variant="ghost" 
-                onClick={() => setStep(s => {
-                  const newStep = Math.max(s - 1, 1);
-                  return newStep;
-                })} 
+                onClick={() => setStep(s => Math.max(s - 1, 1))} 
                 disabled={step === 1}
                 className="text-muted-foreground"
+                data-testid="button-back-footer"
               >
                 Back
               </Button>
               
               <div className="flex gap-2">
                 {step < 3 ? (
-                  <Button onClick={handleNext} className="px-8 rounded-full shadow-lg shadow-primary/25">
+                  <Button onClick={handleNext} className="px-8 rounded-full shadow-lg shadow-primary/25" data-testid="button-next-step">
                     Next Step <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 ) : (
-                  <Button disabled variant="outline" className="opacity-0">Placeholder</Button> // Hidden on step 3 to force "Generate" button use
+                  <div className="opacity-0 pointer-events-none">
+                    <Button variant="outline">Placeholder</Button>
+                  </div>
                 )}
               </div>
             </div>
