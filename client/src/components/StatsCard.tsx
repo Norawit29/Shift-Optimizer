@@ -32,8 +32,8 @@ export function StatsCard({ result, config }: StatsCardProps) {
         </CardHeader>
         <CardContent className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-              <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+            <BarChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 60 }}>
+              <XAxis dataKey="name" fontSize={11} tickLine={false} axisLine={false} angle={-35} textAnchor="end" interval={0} />
               <YAxis fontSize={12} tickLine={false} axisLine={false} />
               <Tooltip 
                 cursor={{ fill: 'transparent' }}
