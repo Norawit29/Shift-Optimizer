@@ -146,11 +146,20 @@ export default function WizardPage() {
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/">
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </Link>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="rounded-full"
+              onClick={() => {
+                if (step > 1) {
+                  setStep(s => s - 1);
+                } else {
+                  setLocation("/");
+                }
+              }}
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
             <div className="flex items-center gap-2">
               <span className="font-bold text-xl font-display text-primary">Scheduler Wizard</span>
               <Badge variant="outline" className="ml-2">Step {step}/4</Badge>
@@ -567,7 +576,10 @@ export default function WizardPage() {
             <div className="max-w-5xl mx-auto flex justify-between items-center">
               <Button 
                 variant="ghost" 
-                onClick={() => setStep(s => Math.max(s - 1, 1))} 
+                onClick={() => setStep(s => {
+                  const newStep = Math.max(s - 1, 1);
+                  return newStep;
+                })} 
                 disabled={step === 1}
                 className="text-muted-foreground"
               >
