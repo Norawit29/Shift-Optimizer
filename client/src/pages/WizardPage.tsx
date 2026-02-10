@@ -26,7 +26,10 @@ import {
   Plus,
   X,
   Save,
-  Loader2
+  Loader2,
+  Activity,
+  History,
+  Trash2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { nanoid } from "nanoid";
@@ -295,7 +298,7 @@ export default function WizardPage() {
                         />
                       </div>
                       
-                      <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center justify-between text-sm mb-4">
                         <Label className="text-muted-foreground">Max Shifts</Label>
                         <Input 
                           type="number" 
@@ -303,6 +306,80 @@ export default function WizardPage() {
                           value={s.maxShifts}
                           onChange={e => updateStaff(s.id, "maxShifts", parseInt(e.target.value))}
                         />
+                      </div>
+
+                      <Separator className="my-3" />
+                      
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-xs font-bold uppercase text-muted-foreground">Blocked Shifts</Label>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 px-2 text-xs"
+                            onClick={() => {
+                              const newBlocked = [...(s.blocked || []), { date: 1, shift: -1 }];
+                              updateStaff(s.id, "blocked", newBlocked);
+                            }}
+                          >
+                            <Plus className="w-3 h-3 mr-1" /> Add
+                          </Button>
+                        </div>
+                        
+                        <div className="space-y-2 max-h-32 overflow-y-auto pr-1">
+                          {(s.blocked || []).map((b, bIdx) => (
+                            <div key={bIdx} className="flex items-center gap-1 bg-slate-50 dark:bg-slate-800 p-1.5 rounded border text-xs">
+                              <div className="flex-1 flex items-center gap-1">
+                                <span className="text-[10px] text-muted-foreground">Day</span>
+                                <Input 
+                                  type="number" 
+                                  min={1} 
+                                  max={31}
+                                  value={b.date} 
+                                  className="h-6 w-10 p-1 text-center"
+                                  onChange={e => {
+                                    const newBlocked = [...s.blocked];
+                                    newBlocked[bIdx] = { ...b, date: parseInt(e.target.value) || 1 };
+                                    updateStaff(s.id, "blocked", newBlocked);
+                                  }}
+                                />
+                                <span className="text-[10px] text-muted-foreground ml-1">Shift</span>
+                                <Select 
+                                  value={b.shift.toString()} 
+                                  onValueChange={v => {
+                                    const newBlocked = [...s.blocked];
+                                    newBlocked[bIdx] = { ...b, shift: parseInt(v) };
+                                    updateStaff(s.id, "blocked", newBlocked);
+                                  }}
+                                >
+                                  <SelectTrigger className="h-6 text-[10px] px-1">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="-1">All Day</SelectItem>
+                                    {config.shiftNames.map((name, i) => (
+                                      <SelectItem key={i} value={i.toString()}>{name}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-5 w-5 text-muted-foreground hover:text-destructive"
+                                onClick={() => {
+                                  const newBlocked = s.blocked.filter((_, i) => i !== bIdx);
+                                  updateStaff(s.id, "blocked", newBlocked);
+                                }}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          ))}
+                          {(!s.blocked || s.blocked.length === 0) && (
+                            <p className="text-[10px] text-center text-muted-foreground py-2 italic">No blocks set</p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
