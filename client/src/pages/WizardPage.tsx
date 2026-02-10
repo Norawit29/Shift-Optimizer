@@ -258,62 +258,64 @@ export default function WizardPage() {
           title="Basic Configuration" 
           description="Set up the timeline and shift structure for your roster."
         >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800">
-              <CardContent className="p-6 space-y-4">
-                <Label className="text-base font-semibold">Timeline</Label>
+              <CardContent className="p-6 space-y-6">
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Month</Label>
-                    <Select value={month.toString()} onValueChange={(v) => setMonth(parseInt(v))}>
-                      <SelectTrigger data-testid="select-month"><SelectValue /></SelectTrigger>
-                      <SelectContent position="popper" side="top" sideOffset={4} className="z-[9999]">
-                        {MONTHS.map((m, i) => (
-                          <SelectItem key={i} value={(i + 1).toString()}>{m}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <Label className="text-base font-semibold">Timeline</Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Month</Label>
+                      <Select value={month.toString()} onValueChange={(v) => setMonth(parseInt(v))}>
+                        <SelectTrigger data-testid="select-month"><SelectValue /></SelectTrigger>
+                        <SelectContent position="popper" sideOffset={4}>
+                          {MONTHS.map((m, i) => (
+                            <SelectItem key={i} value={(i + 1).toString()}>{m}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Year</Label>
+                      <Input type="number" value={year} onChange={e => setYear(parseInt(e.target.value))} data-testid="input-year" />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Year</Label>
-                    <Input type="number" value={year} onChange={e => setYear(parseInt(e.target.value))} data-testid="input-year" />
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <Label className="text-base font-semibold">Shifts per Day</Label>
+                  <div className="flex items-center gap-3">
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={() => setShiftsPerDay(config.shiftsPerDay - 1)}
+                      disabled={config.shiftsPerDay <= 1}
+                      data-testid="button-shifts-minus"
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <div className="flex-1 text-center">
+                      <span className="text-3xl font-bold text-primary" data-testid="text-shifts-count">{config.shiftsPerDay}</span>
+                      <p className="text-xs text-muted-foreground mt-1">shift{config.shiftsPerDay !== 1 ? 's' : ''} per day</p>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={() => setShiftsPerDay(config.shiftsPerDay + 1)}
+                      disabled={config.shiftsPerDay >= 5}
+                      data-testid="button-shifts-plus"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800">
-              <CardContent className="p-6 space-y-4">
-                <Label className="text-base font-semibold">Shifts per Day</Label>
-                <div className="flex items-center gap-3">
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    onClick={() => setShiftsPerDay(config.shiftsPerDay - 1)}
-                    disabled={config.shiftsPerDay <= 1}
-                    data-testid="button-shifts-minus"
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <div className="flex-1 text-center">
-                    <span className="text-3xl font-bold text-primary" data-testid="text-shifts-count">{config.shiftsPerDay}</span>
-                    <p className="text-xs text-muted-foreground mt-1">shift{config.shiftsPerDay !== 1 ? 's' : ''} per day</p>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    onClick={() => setShiftsPerDay(config.shiftsPerDay + 1)}
-                    disabled={config.shiftsPerDay >= 5}
-                    data-testid="button-shifts-plus"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800">
-              <CardContent className="p-6 space-y-4">
+              <CardContent className="p-6 space-y-6">
                 <Label className="text-base font-semibold">Shift Details</Label>
                 <div className="space-y-4">
                   {config.shiftNames.map((name, i) => (
@@ -646,7 +648,7 @@ export default function WizardPage() {
                        <SelectTrigger className="w-full" data-testid="select-add-rule">
                          <SelectValue placeholder="Add new rule..." />
                        </SelectTrigger>
-                       <SelectContent position="popper" sideOffset={4} className="z-[9999]">
+                       <SelectContent position="popper" sideOffset={4}>
                          {config.shiftNames.map((name1, i) => (
                            config.shiftNames.map((name2, j) => (
                              <SelectItem key={`${i}-${j}`} value={`${i},${j}`}>
