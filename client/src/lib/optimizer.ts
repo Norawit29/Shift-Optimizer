@@ -23,7 +23,6 @@ export class ShiftOptimizer {
     this.staffWorkLoad = new Map();
     this.staffShiftCounts = new Map();
     
-    // Initialize tracking maps
     staff.forEach(s => {
       this.staffWorkLoad.set(s.id, 0);
       this.staffShiftCounts.set(s.id, new Array(config.shiftNames.length).fill(0));
@@ -44,7 +43,6 @@ export class ShiftOptimizer {
   private initializeSchedule() {
     this.schedule = [];
     for (let day = 1; day <= this.daysInMonth; day++) {
-      // Initialize empty shifts for each day
       const shifts: string[][] = Array(this.config.shiftNames.length).fill([]).map(() => []);
       this.schedule.push({
         date: day,
@@ -54,15 +52,12 @@ export class ShiftOptimizer {
   }
 
   private fillAllShifts() {
-    // Iterate through every day
     for (let dayIdx = 0; dayIdx < this.daysInMonth; dayIdx++) {
       const daySchedule = this.schedule[dayIdx];
       
-      // Iterate through every shift type
       for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
         const requiredStaff = this.config.staffPerShift[shiftIdx];
         
-        // Fill slots for this shift
         for (let k = 0; k < requiredStaff; k++) {
           const bestCandidate = this.selectBestCandidate(dayIdx + 1, shiftIdx, daySchedule.shifts[shiftIdx]);
           
@@ -70,7 +65,6 @@ export class ShiftOptimizer {
             daySchedule.shifts[shiftIdx].push(bestCandidate.id);
             this.updateStats(bestCandidate.id, shiftIdx);
           } else {
-            // Error handling: if no candidate can be found, throw an error to alert the user
             throw new Error(`Insufficient staff to fill Day ${dayIdx + 1}, Shift ${this.config.shiftNames[shiftIdx]}. Please check constraints or add more staff.`);
           }
         }
@@ -82,7 +76,6 @@ export class ShiftOptimizer {
     let bestCandidate: StaffMember | null = null;
     let minScore = Infinity;
 
-    // Shuffle staff to add randomness when scores are tied
     const shuffledStaff = [...this.staff].sort(() => Math.random() - 0.5);
 
     for (const member of shuffledStaff) {
@@ -101,33 +94,25 @@ export class ShiftOptimizer {
   }
 
   private canAssign(member: StaffMember, date: number, shiftIdx: number, currentAssigned: string[]): boolean {
-    // 1. Max shifts constraint
     const currentLoad = this.staffWorkLoad.get(member.id) || 0;
     if (currentLoad >= member.maxShifts) return false;
 
-    // 2. Already assigned in this shift (shouldn't happen with logic but safe check)
     if (currentAssigned.includes(member.id)) return false;
 
-    // 3. Already assigned to ANY shift on this day
     const daySchedule = this.schedule[date - 1];
     for (let s = 0; s < daySchedule.shifts.length; s++) {
       if (daySchedule.shifts[s].includes(member.id)) return false;
     }
 
-    // 4. Blocked dates
-    // Assuming blocked.date is 1-based day number
     if (member.blocked.some(b => b.date === date && (b.shift === -1 || b.shift === shiftIdx))) {
       return false;
     }
 
-    // 5. Consecutive Rules (Previous Day Check)
     if (date > 1) {
       const prevDaySchedule = this.schedule[date - 2];
       
       for (const rule of this.config.consecutiveRules) {
-        // If current shift is the 'to' part of a rule
         if (rule.to === shiftIdx) {
-          // Check if user worked the 'from' shift yesterday
           if (prevDaySchedule.shifts[rule.from].includes(member.id)) {
             return false;
           }
@@ -143,9 +128,9 @@ export class ShiftOptimizer {
     const shiftCounts = this.staffShiftCounts.get(member.id) || [];
     const specificShiftCount = shiftCounts[shiftIdx] || 0;
 
-    // Heavily penalize staff who already have many shifts to force distribution
-    // Exponential penalty for high workload to keep everyone in the same range
-    return (Math.pow(totalCount, 2) * 20) + (specificShiftCount * 5);
+    // Strong penalty for total workload imbalance AND per-shift-type imbalance
+    // The specificShiftCount^2 * 100 ensures each person gets similar counts for each shift type
+    return (Math.pow(totalCount, 2) * 20) + (Math.pow(specificShiftCount, 2) * 100);
   }
 
   private updateStats(memberId: string, shiftIdx: number) {
@@ -158,48 +143,113 @@ export class ShiftOptimizer {
   }
 
   private localRepair() {
-    // Attempt 2000 swaps (increased from 500) to maximize fairness
-    for (let i = 0; i < 2000; i++) {
+    for (let i = 0; i < 3000; i++) {
       const staffIds = Array.from(this.staffWorkLoad.keys());
       if (staffIds.length < 2) break;
 
-      // Sort by workload
       staffIds.sort((a, b) => (this.staffWorkLoad.get(a) || 0) - (this.staffWorkLoad.get(b) || 0));
-      
       const underLoadedId = staffIds[0];
       const overLoadedId = staffIds[staffIds.length - 1];
-
-      if (underLoadedId === overLoadedId) continue;
-
       const loadDiff = (this.staffWorkLoad.get(overLoadedId) || 0) - (this.staffWorkLoad.get(underLoadedId) || 0);
       
-      // Target absolute fairness (range 0-1)
-      if (loadDiff <= 1) break; 
+      if (loadDiff > 1) {
+        if (this.trySwap(overLoadedId, underLoadedId)) continue;
+      }
 
-      if (!this.trySwap(overLoadedId, underLoadedId)) {
-        // If we can't swap from the most overloaded to the most underloaded,
-        // try swapping from overloaded to ANYONE with less load
-        let swapped = false;
-        for (let j = 0; j < staffIds.length - 1; j++) {
-          const targetId = staffIds[j];
-          if ((this.staffWorkLoad.get(overLoadedId) || 0) - (this.staffWorkLoad.get(targetId) || 0) > 1) {
-            if (this.trySwap(overLoadedId, targetId)) {
-              swapped = true;
-              break;
-            }
+      // Balance specific shift types (e.g., Morning/Evening/Night distribution)
+      let foundSwap = false;
+      for (let sIdx = 0; sIdx < this.config.shiftNames.length; sIdx++) {
+        const sortedByShift = [...staffIds].sort((a, b) => 
+          (this.staffShiftCounts.get(a)![sIdx] || 0) - (this.staffShiftCounts.get(b)![sIdx] || 0)
+        );
+        
+        const minShiftId = sortedByShift[0];
+        const maxShiftId = sortedByShift[sortedByShift.length - 1];
+        const maxVal = this.staffShiftCounts.get(maxShiftId)![sIdx] || 0;
+        const minVal = this.staffShiftCounts.get(minShiftId)![sIdx] || 0;
+        const shiftDiff = maxVal - minVal;
+
+        if (shiftDiff > 1) {
+          if (this.trySpecificShiftSwap(maxShiftId, minShiftId, sIdx)) {
+            foundSwap = true;
+            break;
           }
         }
-        if (!swapped) break; // No more possible swaps
       }
+      
+      if (!foundSwap && loadDiff <= 1) break; 
     }
   }
 
-  private trySwap(fromId: string, toId: string) {
+  private trySpecificShiftSwap(fromId: string, toId: string, targetShiftIdx: number): boolean {
     const fromMember = this.staff.find(s => s.id === fromId);
     const toMember = this.staff.find(s => s.id === toId);
-    if (!fromMember || !toMember) return;
+    if (!fromMember || !toMember) return false;
 
-    // Find a shift assigned to 'fromId' that 'toId' can take
+    for (let dayIdx = 0; dayIdx < this.daysInMonth; dayIdx++) {
+      const daySchedule = this.schedule[dayIdx];
+      const assignedStaff = daySchedule.shifts[targetShiftIdx];
+      const assignedIndex = assignedStaff.indexOf(fromId);
+
+      if (assignedIndex !== -1) {
+        let alreadyWorking = false;
+        for (let s = 0; s < daySchedule.shifts.length; s++) {
+          if (daySchedule.shifts[s].includes(toId)) {
+            alreadyWorking = true;
+            break;
+          }
+        }
+        if (alreadyWorking) continue;
+
+        const fromLoad = this.staffWorkLoad.get(fromId) || 0;
+        const toLoad = this.staffWorkLoad.get(toId) || 0;
+
+        // One-way move if total load allows
+        if (toLoad < fromLoad && this.canAssign(toMember, dayIdx + 1, targetShiftIdx, assignedStaff.filter(id => id !== fromId))) {
+          daySchedule.shifts[targetShiftIdx][assignedIndex] = toId;
+          this.staffWorkLoad.set(fromId, fromLoad - 1);
+          this.staffShiftCounts.get(fromId)![targetShiftIdx]--;
+          this.staffWorkLoad.set(toId, toLoad + 1);
+          this.staffShiftCounts.get(toId)![targetShiftIdx]++;
+          return true;
+        }
+
+        // Two-way swap to rebalance shift types while keeping totals equal
+        for (let dayIdx2 = 0; dayIdx2 < this.daysInMonth; dayIdx2++) {
+          const daySchedule2 = this.schedule[dayIdx2];
+          for (let sIdx2 = 0; sIdx2 < this.config.shiftNames.length; sIdx2++) {
+            if (sIdx2 === targetShiftIdx) continue;
+            const assignedStaff2 = daySchedule2.shifts[sIdx2];
+            const idx2 = assignedStaff2.indexOf(toId);
+            if (idx2 !== -1) {
+              const tempAssigned1 = assignedStaff.filter(id => id !== fromId);
+              const tempAssigned2 = assignedStaff2.filter(id => id !== toId);
+              if (this.canAssign(toMember, dayIdx + 1, targetShiftIdx, tempAssigned1) &&
+                  this.canAssign(fromMember, dayIdx2 + 1, sIdx2, tempAssigned2)) {
+                
+                daySchedule.shifts[targetShiftIdx][assignedIndex] = toId;
+                this.staffShiftCounts.get(fromId)![targetShiftIdx]--;
+                this.staffShiftCounts.get(toId)![targetShiftIdx]++;
+                
+                daySchedule2.shifts[sIdx2][idx2] = fromId;
+                this.staffShiftCounts.get(toId)![sIdx2]--;
+                this.staffShiftCounts.get(fromId)![sIdx2]++;
+                
+                return true;
+              }
+            }
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  private trySwap(fromId: string, toId: string): boolean {
+    const fromMember = this.staff.find(s => s.id === fromId);
+    const toMember = this.staff.find(s => s.id === toId);
+    if (!fromMember || !toMember) return false;
+
     for (let dayIdx = 0; dayIdx < this.daysInMonth; dayIdx++) {
       const daySchedule = this.schedule[dayIdx];
       for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
@@ -207,28 +257,24 @@ export class ShiftOptimizer {
         const assignedIndex = assignedStaff.indexOf(fromId);
 
         if (assignedIndex !== -1) {
-          // 'fromId' is working here. Can 'toId' work here?
-          
-          // Temporarily remove 'fromId' to check constraints for 'toId' cleanly
           const tempAssigned = [...assignedStaff];
           tempAssigned.splice(assignedIndex, 1);
 
           if (this.canAssign(toMember, dayIdx + 1, shiftIdx, tempAssigned)) {
-            // Perform swap
             daySchedule.shifts[shiftIdx][assignedIndex] = toId;
             
-            // Update stats
             this.staffWorkLoad.set(fromId, (this.staffWorkLoad.get(fromId) || 0) - 1);
             this.staffShiftCounts.get(fromId)![shiftIdx]--;
             
             this.staffWorkLoad.set(toId, (this.staffWorkLoad.get(toId) || 0) + 1);
             this.staffShiftCounts.get(toId)![shiftIdx]++;
             
-            return; // Swap done, exit for this iteration
+            return true;
           }
         }
       }
     }
+    return false;
   }
 
   private calculateMetrics() {
