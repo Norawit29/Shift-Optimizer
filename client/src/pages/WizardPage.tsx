@@ -502,6 +502,7 @@ export default function WizardPage() {
               <Tabs defaultValue="calendar">
                 <TabsList className="mb-4">
                   <TabsTrigger value="calendar"><CalendarIcon className="w-4 h-4 mr-2" />Calendar View</TabsTrigger>
+                  <TabsTrigger value="summary"><Check className="w-4 h-4 mr-2" />Summary</TabsTrigger>
                   <TabsTrigger value="stats"><Activity className="w-4 h-4 mr-2" />Statistics</TabsTrigger>
                 </TabsList>
                 
@@ -513,6 +514,37 @@ export default function WizardPage() {
                     month={month} 
                     year={year} 
                   />
+                </TabsContent>
+
+                <TabsContent value="summary" className="mt-0">
+                  <Card className="shadow-md">
+                    <CardContent className="p-6">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm border-collapse">
+                          <thead>
+                            <tr className="border-b bg-slate-50 dark:bg-slate-900">
+                              <th className="p-3 text-left font-semibold">Staff Name</th>
+                              {config.shiftNames.map((name, i) => (
+                                <th key={i} className="p-3 text-center font-semibold">{name}</th>
+                              ))}
+                              <th className="p-3 text-center font-semibold text-primary">Total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {result.metrics.perStaff.map((s, i) => (
+                              <tr key={i} className="border-b hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors">
+                                <td className="p-3 font-medium">{s.name}</td>
+                                {s.byShift.map((count, j) => (
+                                  <td key={j} className="p-3 text-center">{count}</td>
+                                ))}
+                                <td className="p-3 text-center font-bold text-primary">{s.total}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </TabsContent>
                 
                 <TabsContent value="stats" className="mt-0">
