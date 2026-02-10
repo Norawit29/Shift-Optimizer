@@ -108,8 +108,12 @@ export default function WizardPage() {
         setResult(res);
         setStep(4);
         toast({ title: "Schedule Generated", description: "Optimization complete!" });
-      } catch (e) {
-        toast({ title: "Error", description: "Failed to generate schedule", variant: "destructive" });
+      } catch (e: any) {
+        toast({ 
+          title: "Optimization Failed", 
+          description: e.message || "Could not satisfy all constraints. Try adding more staff or loosening rules.", 
+          variant: "destructive" 
+        });
       } finally {
         setIsOptimizing(false);
       }

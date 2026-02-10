@@ -70,9 +70,8 @@ export class ShiftOptimizer {
             daySchedule.shifts[shiftIdx].push(bestCandidate.id);
             this.updateStats(bestCandidate.id, shiftIdx);
           } else {
-            // Could not find a candidate - leave slot empty or mark as unassigned
-            // In a real app we might want to flag this
-            console.warn(`Could not fill slot for Day ${dayIdx + 1}, Shift ${shiftIdx}`);
+            // Error handling: if no candidate can be found, throw an error to alert the user
+            throw new Error(`Insufficient staff to fill Day ${dayIdx + 1}, Shift ${this.config.shiftNames[shiftIdx]}. Please check constraints or add more staff.`);
           }
         }
       }
