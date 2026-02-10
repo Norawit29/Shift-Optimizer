@@ -144,24 +144,14 @@ export class ShiftOptimizer {
     const shiftCounts = this.staffShiftCounts.get(member.id) || [];
     const specificShiftCount = shiftCounts[shiftIdx] || 0;
 
-    // Heuristic: Prefer staff with fewer total shifts and fewer of THIS specific shift type
-    // Heavily penalize overloading
-    return (totalCount * 10) + (specificShiftCount * 5);
-  }
-
-  private updateStats(memberId: string, shiftIdx: number) {
-    const currentLoad = this.staffWorkLoad.get(memberId) || 0;
-    this.staffWorkLoad.set(memberId, currentLoad + 1);
-
-    const shiftCounts = this.staffShiftCounts.get(memberId) || [];
-    shiftCounts[shiftIdx] = (shiftCounts[shiftIdx] || 0) + 1;
-    this.staffShiftCounts.set(memberId, shiftCounts);
+    // Heavily penalize staff who already have many shifts to force distribution
+    // Exponential penalty for high workload to keep everyone in the same range
+    return (Math.pow(totalCount, 2) * 20) + (specificShiftCount * 5);
   }
 
   private localRepair() {
-    // Attempt 500 swaps to improve fairness
-    for (let i = 0; i < 500; i++) {
-      // Find overloaded and underloaded staff
+    // Attempt 2000 swaps (increased from 500) to maximize fairness
+    for (let i = 0; i < 2000; i++) {
       const staffIds = Array.from(this.staffWorkLoad.keys());
       if (staffIds.length < 2) break;
 
@@ -174,9 +164,25 @@ export class ShiftOptimizer {
       if (underLoadedId === overLoadedId) continue;
 
       const loadDiff = (this.staffWorkLoad.get(overLoadedId) || 0) - (this.staffWorkLoad.get(underLoadedId) || 0);
-      if (loadDiff <= 1) break; // Balanced enough
+      
+      // Target absolute fairness (range 0-1)
+      if (loadDiff <= 1) break; 
 
-      this.trySwap(overLoadedId, underLoadedId);
+      if (!this.trySwap(overLoadedId, underLoadedId)) {
+        // If we can't swap from the most overloaded to the most underloaded,
+        // try swapping from overloaded to ANYONE with less load
+        let swapped = false;
+        for (let j = 0; j < staffIds.length - 1; j++) {
+          const targetId = staffIds[j];
+          if ((this.staffWorkLoad.get(overLoadedId) || 0) - (this.staffWorkLoad.get(targetId) || 0) > 1) {
+            if (this.trySwap(overLoadedId, targetId)) {
+              swapped = true;
+              break;
+            }
+          }
+        }
+        if (!swapped) break; // No more possible swaps
+      }
     }
   }
 
