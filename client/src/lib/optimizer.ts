@@ -148,6 +148,15 @@ export class ShiftOptimizer {
     return (Math.pow(totalCount, 2) * 20) + (specificShiftCount * 5);
   }
 
+  private updateStats(memberId: string, shiftIdx: number) {
+    const currentLoad = this.staffWorkLoad.get(memberId) || 0;
+    this.staffWorkLoad.set(memberId, currentLoad + 1);
+
+    const shiftCounts = this.staffShiftCounts.get(memberId) || [];
+    shiftCounts[shiftIdx] = (shiftCounts[shiftIdx] || 0) + 1;
+    this.staffShiftCounts.set(memberId, shiftCounts);
+  }
+
   private localRepair() {
     // Attempt 2000 swaps (increased from 500) to maximize fairness
     for (let i = 0; i < 2000; i++) {
