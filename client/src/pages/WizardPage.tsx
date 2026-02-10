@@ -49,9 +49,9 @@ const INITIAL_CONFIG: SchedulerConfig = {
 
 const INITIAL_STAFF: StaffMember[] = [
   { id: "1", name: "Dr. Smith", maxShifts: 20, blocked: [] },
-  { id: "2", name: "Nurse Joy", maxShifts: 22, blocked: [] },
-  { id: "3", name: "Dr. House", maxShifts: 15, blocked: [] },
-  { id: "4", name: "Nurse Jackie", maxShifts: 22, blocked: [] },
+  { id: "2", name: "Nurse Joy", maxShifts: 20, blocked: [] },
+  { id: "3", name: "Dr. House", maxShifts: 20, blocked: [] },
+  { id: "4", name: "Nurse Jackie", maxShifts: 20, blocked: [] },
   { id: "5", name: "Dr. Grey", maxShifts: 20, blocked: [] },
 ];
 
@@ -87,7 +87,9 @@ export default function WizardPage() {
   };
 
   const addStaff = () => {
-    setStaff([...staff, { id: nanoid(), name: "New Staff", maxShifts: 20, blocked: [] }]);
+    const randomNames = ["Dr. Smith", "Nurse Jackie", "Dr. Strange", "Nurse Joy", "Dr. House", "Nurse Ratched", "Dr. Watson", "Nurse Nightingale", "Dr. Grey", "Nurse Somsri", "Dr. Somchai"];
+    const name = randomNames[Math.floor(Math.random() * randomNames.length)];
+    setStaff([...staff, { id: nanoid(), name, maxShifts: 20, blocked: [] }]);
   };
 
   const removeStaff = (id: string) => {
@@ -565,7 +567,7 @@ export default function WizardPage() {
             <div className="max-w-5xl mx-auto flex justify-between items-center">
               <Button 
                 variant="ghost" 
-                onClick={handleBack} 
+                onClick={() => setStep(s => Math.max(s - 1, 1))} 
                 disabled={step === 1}
                 className="text-muted-foreground"
               >
