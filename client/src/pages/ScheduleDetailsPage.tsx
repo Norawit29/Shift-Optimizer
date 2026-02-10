@@ -1,7 +1,7 @@
 import { useSchedule } from "@/hooks/use-schedules";
 import { Link, useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, Printer, FileSpreadsheet } from "lucide-react";
+import { Loader2, ArrowLeft, FileSpreadsheet } from "lucide-react";
 import { ScheduleView } from "@/components/ScheduleView";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -116,9 +116,6 @@ export default function ScheduleDetailsPage() {
               data-testid="button-export-excel"
             >
               <FileSpreadsheet className="mr-2 h-4 w-4" /> Export Excel
-            </Button>
-            <Button onClick={() => window.print()} variant="outline" data-testid="button-print">
-              <Printer className="mr-2 h-4 w-4" /> Print
             </Button>
           </div>
         </div>
