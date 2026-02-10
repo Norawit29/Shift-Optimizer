@@ -298,7 +298,7 @@ export default function WizardPage() {
                       <Label>Month</Label>
                       <Select value={month.toString()} onValueChange={(v) => setMonth(parseInt(v))}>
                         <SelectTrigger data-testid="select-month"><SelectValue /></SelectTrigger>
-                        <SelectContent position="popper" sideOffset={4}>
+                        <SelectContent position="popper" sideOffset={4} className="bg-white dark:bg-slate-900">
                           {MONTHS.map((m, i) => (
                             <SelectItem key={i} value={(i + 1).toString()}>{m}</SelectItem>
                           ))}
