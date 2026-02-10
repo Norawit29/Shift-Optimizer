@@ -29,15 +29,36 @@ export class ShiftOptimizer {
   }
 
   public optimize(): OptimizerResult {
-    this.initializeSchedule();
-    this.fillAllShifts();
-    this.localRepair();
-    this.circadianRepair();
+    const maxAttempts = 10;
+    let lastError: Error | null = null;
 
-    return {
-      schedule: this.schedule,
-      metrics: this.calculateMetrics()
-    };
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        this.resetState();
+        this.initializeSchedule();
+        this.fillAllShifts();
+        this.localRepair();
+        this.circadianRepair();
+
+        return {
+          schedule: this.schedule,
+          metrics: this.calculateMetrics()
+        };
+      } catch (e) {
+        lastError = e as Error;
+      }
+    }
+
+    throw lastError || new Error("Optimization failed after multiple attempts. Please check constraints or add more staff.");
+  }
+
+  private resetState() {
+    this.staffWorkLoad = new Map();
+    this.staffShiftCounts = new Map();
+    this.staff.forEach(s => {
+      this.staffWorkLoad.set(s.id, 0);
+      this.staffShiftCounts.set(s.id, new Array(this.config.shiftNames.length).fill(0));
+    });
   }
 
   private initializeSchedule() {
