@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>ระบบจัดตารางเวรโรงพยาบาล</title>
+
+<script src="shift-optimizer.js"></script>
+<script src="storage-manager.js"></script>
+
+<style>
+/* ===== ใช้ CSS เดิมทั้งหมด ===== */
+/* (ตัดออกเพื่อไม่ให้ตอบยาวเกิน — ใช้ CSS จากไฟล์เดิมของคุณได้ 그대로) */
+</style>
+</head>
+
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🏥 ระบบจัดตารางเวรโรงพยาบาล</h1>
+        <p>จัดการตารางเวรอย่างมีประสิทธิภาพ</p>
+    </div>
+
+    <div class="content">
+
+<!-- ================= SECTION 1 ================= -->
+<div class="section" id="section1">
+    <div class="section-title">📅 ตั้งค่าตารางเวร</div>
+
+    <div class="form-grid">
+        <div class="form-group">
+            <label>เดือน</label>
+            <select id="month">
+                <option value="1">มกราคม</option>
+                <option value="2">กุมภาพันธ์</option>
+                <option value="3">มีนาคม</option>
+                <option value="4">เมษายน</option>
+                <option value="5">พฤษภาคม</option>
+                <option value="6">มิถุนายน</option>
+                <option value="7">กรกฎาคม</option>
+                <option value="8">สิงหาคม</option>
+                <option value="9">กันยายน</option>
+                <option value="10">ตุลาคม</option>
+                <option value="11">พฤศจิกายน</option>
+                <option value="12">ธันวาคม</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>ปี พ.ศ.</label>
+            <input type="number" id="year" value="2568">
+        </div>
+
+        <div class="form-group">
+            <label>จำนวนกะต่อวัน</label>
+            <input type="number" id="shiftsPerDay" value="3" min="1" max="5">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label>ชื่อกะ</label>
+        <div id="shiftNames"></div>
+    </div>
+
+    <div class="form-group">
+        <label>จำนวนคนต่อกะ</label>
+        <div id="shiftStaffCounts"></div>
+    </div>
+
+    <div class="form-group">
+        <label>เงื่อนไขกะติดกัน</label>
+        <div id="consecutiveRules"></div>
+    </div>
+
+    <div class="button-group">
+        <button class="btn btn-primary" onclick="setupStaff()">ถัดไป →</button>
+    </div>
+</div>
+
+<!-- ================= SECTION 2 ================= -->
+<div class="section hidden" id="section2">
+    <div class="section-title">👥 ตั้งค่าบุคลากร</div>
+
+    <div class="form-group">
+        <label>จำนวนบุคลากร</label>
+        <input type="number" id="staffCount" value="10">
+    </div>
+
+    <div class="button-group">
+        <button class="btn btn-primary" onclick="generateStaffList()">สร้างรายชื่อ</button>
+    </div>
+
+    <div id="staffList" class="staff-list"></div>
+
+    <div class="button-group" style="margin-top:30px;">
+        <button class="btn btn-secondary" onclick="showSection(1)">← กลับ</button>
+        <button class="btn btn-success" onclick="generateSchedule()">🚀 สร้างตารางเวร</button>
+    </div>
+</div>
+
+<!-- ================= SECTION 3 ================= -->
+<div class="section hidden" id="section3">
+    <div class="section-title">📊 ตารางเวร</div>
+
+    <div id="metricsPanel"></div>
+
+    <div class="schedule-table">
+        <table id="scheduleTable"></table>
+    </div>
+
+    <div class="button-group">
+        <button class="btn btn-secondary" onclick="showSection(2)">← แก้ไข</button>
+        <button class="btn btn-primary" onclick="generateSchedule()">🔄 สร้างใหม่</button>
+        <button class="btn btn-primary" onclick="exportSchedule()">📤 ส่งออก</button>
+    </div>
+</div>
+
+</div>
+</div>
+
+<script>
+/* ================= DATA ================= */
+
+let config = {
+    month: 2,
+    year: 2568,
+    shiftsPerDay: 3,
+    shiftNames: [],
+    staffPerShift: [],
+    daysInMonth: 28,
+    consecutiveRules: []
+};
+
+let staff = [];
+let schedule = [];
+let storage = new StorageManager();
+
+/* ================= INIT ================= */
+
+document.getElementById("shiftsPerDay").addEventListener("change", updateShiftInputs);
+updateShiftInputs();
+
+/* ================= CONFIG ================= */
+
+function updateShiftInputs() {
+    const n = +document.getElementById("shiftsPerDay").value;
+    const names = document.getElementById("shiftNames");
+    const counts = document.getElementById("shiftStaffCounts");
+    const rules = document.getElementById("consecutiveRules");
+
+    names.innerHTML = counts.innerHTML = rules.innerHTML = "";
+
+    for (let i = 0; i < n; i++) {
+        names.innerHTML += `<input id="shiftName${i}" value="กะ ${i+1}">`;
+        counts.innerHTML += `<input id="staffCount${i}" type="number" value="1">`;
+    }
+
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+            if (i !== j) {
+                rules.innerHTML += `
+                <label>
+                    <input type="checkbox" id="rule_${i}_${j}">
+                    ห้าม ${i+1} → ${j+1}
+                </label><br>`;
+            }
+        }
+    }
+}
+
+function setupStaff() {
+    config.month = +month.value;
+    config.year = +year.value;
+    config.shiftsPerDay = +shiftsPerDay.value;
+
+    config.shiftNames = [];
+    config.staffPerShift = [];
+    config.consecutiveRules = [];
+
+    for (let i = 0; i < config.shiftsPerDay; i++) {
+        config.shiftNames.push(document.getElementById(`shiftName${i}`).value);
+        config.staffPerShift.push(+document.getElementById(`staffCount${i}`).value);
+    }
+
+    for (let i = 0; i < config.shiftsPerDay; i++) {
+        for (let j = 0; j < config.shiftsPerDay; j++) {
+            if (i !== j && document.getElementById(`rule_${i}_${j}`).checked) {
+                config.consecutiveRules.push({ from: i, to: j });
+            }
+        }
+    }
+
+    const y = config.year - 543;
+    config.daysInMonth = new Date(y, config.month, 0).getDate();
+
+    showSection(2);
+}
+
+/* ================= STAFF ================= */
+
+function generateStaffList() {
+    staff = [];
+    const n = +staffCount.value;
+    staffList.innerHTML = "";
+
+    for (let i = 0; i < n; i++) {
+        staff.push({ name: `บุคลากร ${i+1}`, maxShifts: 10, blocked: [] });
+        staffList.innerHTML += `<div>${staff[i].name}</div>`;
+    }
+}
+
+/* ================= OPTIMIZE ================= */
+
+function generateSchedule() {
+    const optimizer = new ShiftOptimizer(config, staff);
+    const result = optimizer.optimize();
+
+    schedule = result.schedule;
+
+    displaySchedule();
+    displayMetrics(result.metrics);
+
+    showSection(3);
+}
+
+/* ================= DISPLAY ================= */
+
+function displaySchedule() {
+    let html = "<tr><th>วัน</th>";
+    config.shiftNames.forEach(s => html += `<th>${s}</th>`);
+    html += "</tr>";
+
+    schedule.forEach(d => {
+        html += `<tr><td>${d.date}</td>`;
+        d.shifts.forEach(shift => {
+            html += `<td>${shift.map(i => staff[i].name).join("<br>")}</td>`;
+        });
+        html += "</tr>";
+    });
+
+    scheduleTable.innerHTML = html;
+}
+
+function displayMetrics(m) {
+    metricsPanel.innerHTML = `
+        <div>ช่วงเวร (max-min): ${m.range}</div>
+    `;
+}
+
+/* ================= UTILS ================= */
+
+function showSection(n) {
+    document.querySelectorAll(".section").forEach(s => s.classList.add("hidden"));
+    document.getElementById(`section${n}`).classList.remove("hidden");
+}
+
+function exportSchedule() {
+    let csv = "วัน," + config.shiftNames.join(",") + "\n";
+    schedule.forEach(d => {
+        csv += d.date + "," +
+            d.shifts.map(s => s.map(i => staff[i].name).join("+")).join(",") +
+            "\n";
+    });
+    const blob = new Blob(["\ufeff"+csv], {type:"text/csv"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "schedule.csv";
+    a.click();
+}
+</script>
+</body>
+</html>
