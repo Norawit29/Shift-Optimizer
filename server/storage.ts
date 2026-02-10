@@ -4,10 +4,10 @@ import {
   type Schedule,
   type InsertSchedule,
 } from "@shared/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
-  getSchedules(userId: string): Promise<Schedule[]>;
+  getSchedules(): Promise<Schedule[]>;
   getSchedule(id: number): Promise<Schedule | undefined>;
   createSchedule(schedule: InsertSchedule): Promise<Schedule>;
   updateSchedule(id: number, schedule: Partial<InsertSchedule>): Promise<Schedule>;
@@ -15,8 +15,8 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  async getSchedules(userId: string): Promise<Schedule[]> {
-    return await db.select().from(schedules).where(eq(schedules.userId, userId)).orderBy(desc(schedules.createdAt));
+  async getSchedules(): Promise<Schedule[]> {
+    return await db.select().from(schedules).orderBy(desc(schedules.createdAt));
   }
 
   async getSchedule(id: number): Promise<Schedule | undefined> {

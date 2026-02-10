@@ -2,9 +2,8 @@ import { useSchedules, useDeleteSchedule } from "@/hooks/use-schedules";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Trash2, Calendar, ArrowLeft, Loader2, Eye, LogIn } from "lucide-react";
+import { Trash2, Calendar, ArrowLeft, Loader2, Eye } from "lucide-react";
 import { format } from "date-fns";
-import { useAuth } from "@/hooks/use-auth";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,29 +17,8 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function HistoryPage() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { data: schedules, isLoading } = useSchedules(isAuthenticated);
+  const { data: schedules, isLoading } = useSchedules();
   const deleteMutation = useDeleteSchedule();
-
-  if (!authLoading && !isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-6">
-        <div className="text-center space-y-4 max-w-md">
-          <LogIn className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
-          <h2 className="text-2xl font-bold">Sign in Required</h2>
-          <p className="text-muted-foreground">Please sign in to view your saved schedules.</p>
-          <Button onClick={() => window.location.href = "/api/login"} data-testid="button-login-history">
-            <LogIn className="mr-2 h-4 w-4" /> Sign in with Google
-          </Button>
-          <div>
-            <Link href="/">
-              <Button variant="ghost">Back to Home</Button>
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (isLoading) {
     return (

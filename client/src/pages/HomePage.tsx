@@ -1,41 +1,16 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Calendar, Plus, History, Activity, LogOut, User } from "lucide-react";
+import { Calendar, Plus, History, Activity } from "lucide-react";
 import { motion } from "framer-motion";
-import { useAuth } from "@/hooks/use-auth";
 
 export default function HomePage() {
-  const { user, isAuthenticated, isLoading } = useAuth();
-
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4 overflow-hidden relative">
+      {/* Background decoration */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
         <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-blue-100/50 dark:bg-blue-900/20 rounded-full blur-3xl" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-teal-100/50 dark:bg-teal-900/20 rounded-full blur-3xl" />
       </div>
-
-      {isAuthenticated && user && (
-        <div className="fixed top-4 right-4 z-20 flex items-center gap-3 bg-white dark:bg-zinc-900 rounded-full px-4 py-2 border shadow-sm">
-          {user.profileImageUrl ? (
-            <img src={user.profileImageUrl} alt="" className="w-8 h-8 rounded-full" />
-          ) : (
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <User className="w-4 h-4 text-primary" />
-            </div>
-          )}
-          <span className="text-sm font-medium hidden sm:inline" data-testid="text-user-name">
-            {user.firstName || user.email || "User"}
-          </span>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => window.location.href = "/api/logout"}
-            data-testid="button-logout"
-          >
-            <LogOut className="w-4 h-4" />
-          </Button>
-        </div>
-      )}
 
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
@@ -57,45 +32,33 @@ export default function HomePage() {
           </h1>
           
           <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-            Automate your duty roster creation with our constraint-based optimizer. 
+            Automate your duty roster creation with our AI-powered constraint solver. 
             Ensure fairness, handle requests, and save hours of manual work.
           </p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8">
           <Link href="/create" className="w-full sm:w-auto">
-            <Button size="lg" className="w-full sm:w-auto h-14 px-8 text-lg rounded-2xl shadow-xl shadow-primary/20 transition-all" data-testid="button-create-schedule">
+            <Button size="lg" className="w-full sm:w-auto h-14 px-8 text-lg rounded-2xl shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all hover:-translate-y-1">
               <Plus className="mr-2 h-5 w-5" />
               Create New Schedule
             </Button>
           </Link>
           
-          {isAuthenticated ? (
-            <Link href="/history" className="w-full sm:w-auto">
-              <Button variant="outline" size="lg" className="w-full sm:w-auto h-14 px-8 text-lg rounded-2xl border-2 transition-all" data-testid="button-view-history">
-                <History className="mr-2 h-5 w-5" />
-                View History
-              </Button>
-            </Link>
-          ) : (
-            <Button 
-              variant="outline" 
-              size="lg" 
-              className="w-full sm:w-auto h-14 px-8 text-lg rounded-2xl border-2 transition-all" 
-              onClick={() => window.location.href = "/api/login"}
-              data-testid="button-sign-in"
-            >
-              <User className="mr-2 h-5 w-5" />
-              Sign In
+          <Link href="/history" className="w-full sm:w-auto">
+            <Button variant="outline" size="lg" className="w-full sm:w-auto h-14 px-8 text-lg rounded-2xl border-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+              <History className="mr-2 h-5 w-5" />
+              View History
             </Button>
-          )}
+          </Link>
         </div>
 
+        {/* Feature grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-16 text-left">
           {[
             { title: "Fair Distribution", desc: "Automatically balances shifts across all available staff members." },
             { title: "Smart Constraints", desc: "Respects rest periods, consecutive shift rules, and blocked dates." },
-            { title: "Instant Export", desc: "Generate Excel exports of the monthly roster in seconds." }
+            { title: "Instant Export", desc: "Generate a clean, printable view of the monthly roster in seconds." }
           ].map((feature, i) => (
             <motion.div 
               key={i}

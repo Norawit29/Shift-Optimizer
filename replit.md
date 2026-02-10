@@ -4,13 +4,6 @@
 
 This is a **Hospital Shift Scheduler** web application that automates duty roster creation for hospital staff. It uses a constraint-based optimization algorithm to generate fair shift schedules, handling staff availability, consecutive shift rules, and workload balancing. The app follows a wizard-based workflow where users configure schedule parameters, add staff, set blocked dates, run the optimizer, and save/review results.
 
-Key features:
-- **Schedule Comparison**: The optimizer generates 3 variations per run, sorted by fairness. Users compare them side-by-side and pick the best one to save.
-- **Duplicate from Previous Schedule**: In Step 1, users can load staff list and shift configuration from a previously saved schedule (blocked dates are cleared).
-- **Circadian Rhythm Optimization**: Soft preferences for consecutive same-shift grouping and forward rotation (Morning→Evening→Night).
-- **Auto-retry**: 30 attempts before reporting failure, handles edge cases from random ordering.
-- **Excel Export**: Two-sheet export with schedule and summary data.
-
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.

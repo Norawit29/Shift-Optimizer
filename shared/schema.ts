@@ -1,15 +1,12 @@
-import { pgTable, text, serial, integer, jsonb, timestamp, boolean, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, jsonb, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-
-export * from "./models/auth";
 
 // === TABLE DEFINITIONS ===
 
 // We use a document-store approach for flexibility with the complex nested config
 export const schedules = pgTable("schedules", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id"),
   name: text("name").notNull().default("Untitled Schedule"),
   month: integer("month").notNull(),
   year: integer("year").notNull(),
@@ -45,7 +42,6 @@ export const schedules = pgTable("schedules", {
 
 export const insertScheduleSchema = createInsertSchema(schedules).omit({ 
   id: true, 
-  userId: true,
   createdAt: true, 
   updatedAt: true 
 });
