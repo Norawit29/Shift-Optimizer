@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useCreateSchedule } from "@/hooks/use-schedules";
+import { useCreateSchedule, useSchedules } from "@/hooks/use-schedules";
 import { type StaffMember, type SchedulerConfig, type OptimizerResult, type DaySchedule } from "@shared/schema";
 import { ShiftOptimizer } from "@/lib/optimizer";
 import { WizardStep } from "@/components/WizardStep";
@@ -28,7 +28,10 @@ import {
   Loader2,
   Activity,
   History,
-  Trash2
+  Trash2,
+  Copy,
+  GitCompare,
+  Star
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { nanoid } from "nanoid";
@@ -61,11 +64,15 @@ export default function WizardPage() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [config, setConfig] = useState<SchedulerConfig>(INITIAL_CONFIG);
   const [staff, setStaff] = useState<StaffMember[]>(INITIAL_STAFF);
-  const [result, setResult] = useState<OptimizerResult | null>(null);
+  const [results, setResults] = useState<OptimizerResult[]>([]);
+  const [selectedVariation, setSelectedVariation] = useState(0);
   const [scheduleName, setScheduleName] = useState("My Schedule");
   const [isOptimizing, setIsOptimizing] = useState(false);
   
+  const result = results[selectedVariation] || null;
+  
   const createMutation = useCreateSchedule();
+  const { data: savedSchedules } = useSchedules();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
@@ -163,25 +170,65 @@ export default function WizardPage() {
     updateStaff(staffId, "blocked", newBlocked);
   };
 
+  const NUM_VARIATIONS = 3;
+
   const runOptimizer = () => {
     setIsOptimizing(true);
     setTimeout(() => {
-      try {
-        const optimizer = new ShiftOptimizer(config, staff, month, year);
-        const res = optimizer.optimize();
-        setResult(res);
-        setStep(4);
-        toast({ title: "Schedule Generated", description: "Optimization complete!" });
-      } catch (e: any) {
+      const generated: OptimizerResult[] = [];
+      let lastError: any = null;
+
+      for (let v = 0; v < NUM_VARIATIONS; v++) {
+        try {
+          const optimizer = new ShiftOptimizer(config, staff, month, year);
+          const res = optimizer.optimize();
+          generated.push(res);
+        } catch (e: any) {
+          lastError = e;
+        }
+      }
+
+      if (generated.length === 0) {
         toast({ 
           title: "Optimization Failed", 
-          description: e.message || "Could not satisfy all constraints. Try adding more staff or loosening rules.", 
+          description: lastError?.message || "Could not satisfy all constraints. Try adding more staff or loosening rules.", 
           variant: "destructive" 
         });
-      } finally {
-        setIsOptimizing(false);
+      } else {
+        generated.sort((a, b) => a.metrics.range - b.metrics.range);
+        setResults(generated);
+        setSelectedVariation(0);
+        setStep(4);
+        toast({ 
+          title: "Schedules Generated", 
+          description: `${generated.length} variation${generated.length > 1 ? 's' : ''} created. Compare and pick the best one!` 
+        });
       }
+
+      setIsOptimizing(false);
     }, 500);
+  };
+
+  const loadFromSchedule = (scheduleId: number) => {
+    const schedule = savedSchedules?.find(s => s.id === scheduleId);
+    if (!schedule) return;
+    
+    const savedConfig = schedule.config as SchedulerConfig;
+    setConfig(savedConfig);
+    
+    const savedStaff = (schedule.staff as StaffMember[]).map(s => ({
+      ...s,
+      id: s.id || nanoid(),
+      blocked: [],
+    }));
+    setStaff(savedStaff);
+    setResults([]);
+    setSelectedVariation(0);
+    
+    toast({
+      title: "Configuration Loaded",
+      description: `Staff list and shift setup loaded from "${schedule.name}". Blocked dates were cleared.`,
+    });
   };
 
   const saveSchedule = async () => {
@@ -258,6 +305,36 @@ export default function WizardPage() {
           title="Basic Configuration" 
           description="Set up the timeline and shift structure for your roster."
         >
+          {savedSchedules && savedSchedules.length > 0 && (
+            <Card className="shadow-md border-0 ring-1 ring-blue-200 dark:ring-blue-800 bg-blue-50/50 dark:bg-blue-950/30 mb-6">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3 flex-wrap">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-lg shrink-0">
+                    <Copy className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="flex-1 min-w-[200px]">
+                    <h4 className="font-semibold text-sm mb-1">Load from Previous Schedule</h4>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Copy the staff list and shift setup from a saved schedule. Blocked dates will be cleared.
+                    </p>
+                    <Select onValueChange={(val) => loadFromSchedule(parseInt(val))}>
+                      <SelectTrigger className="w-full bg-white dark:bg-slate-900" data-testid="select-load-schedule">
+                        <SelectValue placeholder="Select a schedule to copy from..." />
+                      </SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4} className="bg-white dark:bg-slate-900">
+                        {savedSchedules.map((s) => (
+                          <SelectItem key={s.id} value={s.id.toString()}>
+                            {s.name} — {MONTHS[s.month - 1]} {s.year}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800">
               <CardContent className="p-6 space-y-6">
@@ -687,7 +764,7 @@ export default function WizardPage() {
         </WizardStep>
 
         {/* STEP 4: RESULTS */}
-        {step === 4 && result && (
+        {step === 4 && results.length > 0 && (
           <WizardStep 
             isActive={true} 
             title="Generated Schedule"
@@ -712,6 +789,68 @@ export default function WizardPage() {
                 </Button>
               </div>
 
+              {results.length > 1 && (
+                <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-3 flex-wrap">
+                      <GitCompare className="w-4 h-4 text-primary" />
+                      <span className="font-semibold text-sm">Compare Variations</span>
+                      <span className="text-xs text-muted-foreground">— pick the best schedule</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {results.map((res, idx) => {
+                        const fairnessScore = Math.max(0, 100 - (res.metrics.range * 10));
+                        const isSelected = selectedVariation === idx;
+                        const totals = res.metrics.perStaff.map(s => s.total);
+                        const minShifts = Math.min(...totals);
+                        const maxShifts = Math.max(...totals);
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => setSelectedVariation(idx)}
+                            className={`
+                              relative p-4 rounded-lg text-left transition-all border-2
+                              ${isSelected 
+                                ? 'border-primary bg-primary/5 dark:bg-primary/10 ring-1 ring-primary/20' 
+                                : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-600'}
+                            `}
+                            data-testid={`button-variation-${idx}`}
+                          >
+                            {idx === 0 && (
+                              <div className="absolute -top-2 -right-2">
+                                <Badge className="bg-amber-500 text-white text-[10px] px-1.5 py-0.5">
+                                  <Star className="w-3 h-3 mr-0.5" /> Best
+                                </Badge>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="font-bold text-sm">Variation {idx + 1}</span>
+                              {isSelected && <Check className="w-4 h-4 text-primary ml-auto" />}
+                            </div>
+                            <div className="space-y-1 text-xs text-muted-foreground">
+                              <div className="flex justify-between gap-2">
+                                <span>Fairness</span>
+                                <span className={`font-semibold ${fairnessScore >= 70 ? 'text-green-600 dark:text-green-400' : fairnessScore >= 50 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'}`}>
+                                  {fairnessScore}%
+                                </span>
+                              </div>
+                              <div className="flex justify-between gap-2">
+                                <span>Range</span>
+                                <span className="font-medium">{res.metrics.range}</span>
+                              </div>
+                              <div className="flex justify-between gap-2">
+                                <span>Shifts</span>
+                                <span className="font-medium">{minShifts}–{maxShifts}</span>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               <Tabs defaultValue="calendar">
                 <TabsList className="mb-4">
                   <TabsTrigger value="calendar" data-testid="tab-calendar"><CalendarIcon className="w-4 h-4 mr-2" />Calendar View</TabsTrigger>
@@ -719,50 +858,54 @@ export default function WizardPage() {
                   <TabsTrigger value="stats" data-testid="tab-stats"><Activity className="w-4 h-4 mr-2" />Statistics</TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="calendar" className="mt-0">
-                  <ScheduleView 
-                    schedule={result.schedule} 
-                    config={config} 
-                    staff={staff} 
-                    month={month} 
-                    year={year} 
-                  />
-                </TabsContent>
+                {result && (
+                  <>
+                    <TabsContent value="calendar" className="mt-0">
+                      <ScheduleView 
+                        schedule={result.schedule} 
+                        config={config} 
+                        staff={staff} 
+                        month={month} 
+                        year={year} 
+                      />
+                    </TabsContent>
 
-                <TabsContent value="summary" className="mt-0">
-                  <Card className="shadow-md">
-                    <CardContent className="p-6">
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm border-collapse">
-                          <thead>
-                            <tr className="border-b bg-slate-50 dark:bg-slate-900">
-                              <th className="p-3 text-left font-semibold">Staff Name</th>
-                              {config.shiftNames.map((name, i) => (
-                                <th key={i} className="p-3 text-center font-semibold">{name}</th>
-                              ))}
-                              <th className="p-3 text-center font-semibold text-primary">Total</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {result.metrics.perStaff.map((s, i) => (
-                              <tr key={i} className="border-b hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors">
-                                <td className="p-3 font-medium">{s.name}</td>
-                                {s.byShift.map((count, j) => (
-                                  <td key={j} className="p-3 text-center">{count}</td>
+                    <TabsContent value="summary" className="mt-0">
+                      <Card className="shadow-md">
+                        <CardContent className="p-6">
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm border-collapse">
+                              <thead>
+                                <tr className="border-b bg-slate-50 dark:bg-slate-900">
+                                  <th className="p-3 text-left font-semibold">Staff Name</th>
+                                  {config.shiftNames.map((name, i) => (
+                                    <th key={i} className="p-3 text-center font-semibold">{name}</th>
+                                  ))}
+                                  <th className="p-3 text-center font-semibold text-primary">Total</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {result.metrics.perStaff.map((s, i) => (
+                                  <tr key={i} className="border-b hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors">
+                                    <td className="p-3 font-medium">{s.name}</td>
+                                    {s.byShift.map((count, j) => (
+                                      <td key={j} className="p-3 text-center">{count}</td>
+                                    ))}
+                                    <td className="p-3 text-center font-bold text-primary">{s.total}</td>
+                                  </tr>
                                 ))}
-                                <td className="p-3 text-center font-bold text-primary">{s.total}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-                
-                <TabsContent value="stats" className="mt-0">
-                  <StatsCard result={result} config={config} />
-                </TabsContent>
+                              </tbody>
+                            </table>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+                    
+                    <TabsContent value="stats" className="mt-0">
+                      <StatsCard result={result} config={config} />
+                    </TabsContent>
+                  </>
+                )}
               </Tabs>
             </div>
           </WizardStep>
