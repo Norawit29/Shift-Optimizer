@@ -1,11 +1,72 @@
 import { useSchedule } from "@/hooks/use-schedules";
 import { Link, useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, Printer } from "lucide-react";
+import { Loader2, ArrowLeft, Printer, FileSpreadsheet } from "lucide-react";
 import { ScheduleView } from "@/components/ScheduleView";
-import { StatsCard } from "@/components/StatsCard";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { format, setDate } from "date-fns";
+import * as XLSX from "xlsx";
+import type { DaySchedule, SchedulerConfig, StaffMember } from "@shared/schema";
+
+function exportToExcel(
+  name: string,
+  month: number,
+  year: number,
+  result: DaySchedule[],
+  config: SchedulerConfig,
+  staff: StaffMember[]
+) {
+  const baseDate = new Date(year, month - 1, 1);
+  const getStaffName = (id: string) => staff.find(s => s.id === id)?.name || "Unknown";
+
+  const rows = result.map((day) => {
+    const currentDate = setDate(baseDate, day.date);
+    const row: Record<string, string> = {
+      "Date": format(currentDate, "MMM d"),
+      "Day": format(currentDate, "EEEE"),
+    };
+    config.shiftNames.forEach((shiftName, shiftIdx) => {
+      const names = day.shifts[shiftIdx]?.map(id => getStaffName(String(id))) || [];
+      row[shiftName] = names.join(", ");
+    });
+    return row;
+  });
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws["!cols"] = [
+    { wch: 8 },
+    { wch: 12 },
+    ...config.shiftNames.map(() => ({ wch: 35 })),
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Schedule");
+
+  const summaryRows = staff.map(s => {
+    const row: Record<string, string | number> = { "Staff": s.name };
+    let total = 0;
+    config.shiftNames.forEach((shiftName, shiftIdx) => {
+      const count = result.reduce((acc, day) =>
+        acc + (day.shifts[shiftIdx]?.map(String).includes(s.id) ? 1 : 0), 0);
+      row[shiftName] = count;
+      total += count;
+    });
+    row["Total"] = total;
+    return row;
+  });
+
+  const ws2 = XLSX.utils.json_to_sheet(summaryRows);
+  ws2["!cols"] = [
+    { wch: 20 },
+    ...config.shiftNames.map(() => ({ wch: 12 })),
+    { wch: 8 },
+  ];
+  XLSX.utils.book_append_sheet(wb, ws2, "Summary");
+
+  const filename = `${name.replace(/[^a-zA-Z0-9]/g, "_")}_${month}_${year}.xlsx`;
+  XLSX.writeFile(wb, filename);
+}
 
 export default function ScheduleDetailsPage() {
   const [, params] = useRoute("/schedule/:id");
@@ -20,33 +81,27 @@ export default function ScheduleDetailsPage() {
     );
   }
 
-  if (!schedule) {
+  if (!schedule || !schedule.result) {
     return <div>Schedule not found</div>;
   }
 
-  // Reconstruct result object for StatsCard
-  // In a real app, backend might store metrics separately or we re-calculate
-  const mockResult = {
-    schedule: schedule.result,
-    metrics: { 
-      range: 0, 
-      perStaff: schedule.staff.map(s => ({ name: s.name, total: 0, byShift: [] })) 
-    } 
-  };
-  // (Note: In production, we'd want to store metrics in the DB or re-calculate them here)
+  const resultAsDaySchedule: DaySchedule[] = schedule.result.map(day => ({
+    date: day.date,
+    shifts: day.shifts.map(shift => shift.map(String))
+  }));
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-6">
       <div className="max-w-6xl mx-auto space-y-8">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-4">
             <Link href="/history">
-              <Button variant="outline" size="icon" className="rounded-full">
+              <Button variant="outline" size="icon" className="rounded-full" data-testid="button-back">
                 <ArrowLeft className="h-5 w-5" />
               </Button>
             </Link>
             <div>
-              <h1 className="text-3xl font-display font-bold">{schedule.name}</h1>
+              <h1 className="text-3xl font-display font-bold" data-testid="text-schedule-name">{schedule.name}</h1>
               <div className="flex items-center gap-2 text-muted-foreground">
                 <span>{schedule.month}/{schedule.year}</span>
                 <Badge variant="secondary">Saved</Badge>
@@ -54,21 +109,28 @@ export default function ScheduleDetailsPage() {
             </div>
           </div>
           
-          <Button onClick={() => window.print()} variant="outline">
-            <Printer className="mr-2 h-4 w-4" /> Print
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => exportToExcel(schedule.name, schedule.month, schedule.year, resultAsDaySchedule, schedule.config, schedule.staff)}
+              variant="default"
+              data-testid="button-export-excel"
+            >
+              <FileSpreadsheet className="mr-2 h-4 w-4" /> Export Excel
+            </Button>
+            <Button onClick={() => window.print()} variant="outline" data-testid="button-print">
+              <Printer className="mr-2 h-4 w-4" /> Print
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="view" className="w-full">
           <TabsList>
-            <TabsTrigger value="view">Schedule View</TabsTrigger>
-            {/* Disabled stats for now as we need to re-calc metrics */}
-            {/* <TabsTrigger value="stats">Stats</TabsTrigger> */}
+            <TabsTrigger value="view" data-testid="tab-schedule-view">Schedule View</TabsTrigger>
           </TabsList>
           
           <TabsContent value="view" className="mt-6">
             <ScheduleView 
-              schedule={schedule.result} 
+              schedule={resultAsDaySchedule}
               config={schedule.config} 
               staff={schedule.staff} 
               month={schedule.month} 
