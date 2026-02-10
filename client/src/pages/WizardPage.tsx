@@ -379,10 +379,10 @@ export default function WizardPage() {
                                     updateStaff(s.id, "blocked", newBlocked);
                                   }}
                                 >
-                                  <SelectTrigger className="h-6 text-[10px] px-1">
+                                  <SelectTrigger className="h-6 text-[10px] px-1 bg-white dark:bg-slate-950">
                                     <SelectValue />
                                   </SelectTrigger>
-                                  <SelectContent>
+                                  <SelectContent className="z-[100] bg-white dark:bg-slate-950 border shadow-md" position="popper" sideOffset={4}>
                                     <SelectItem value="-1">All Day</SelectItem>
                                     {config.shiftNames.map((name, i) => (
                                       <SelectItem key={i} value={i.toString()}>{name}</SelectItem>
@@ -460,10 +460,10 @@ export default function WizardPage() {
                          consecutiveRules: [...config.consecutiveRules, { from, to }]
                        });
                      }}>
-                       <SelectTrigger className="w-full">
+                       <SelectTrigger className="w-full bg-white dark:bg-slate-950">
                          <SelectValue placeholder="Add new rule..." />
                        </SelectTrigger>
-                       <SelectContent>
+                       <SelectContent className="z-[100] bg-white dark:bg-slate-950 border shadow-md" position="popper" sideOffset={4}>
                          {config.shiftNames.map((name1, i) => (
                            config.shiftNames.map((name2, j) => (
                              <SelectItem key={`${i}-${j}`} value={`${i},${j}`}>
