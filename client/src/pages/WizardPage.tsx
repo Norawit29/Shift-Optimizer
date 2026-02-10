@@ -31,9 +31,11 @@ import {
   Trash2,
   Copy,
   GitCompare,
-  Star
+  Star,
+  LogIn
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { nanoid } from "nanoid";
 import { Link, useLocation } from "wouter";
 import { getDaysInMonth, format, setDate } from "date-fns";
@@ -72,7 +74,8 @@ export default function WizardPage() {
   const result = results[selectedVariation] || null;
   
   const createMutation = useCreateSchedule();
-  const { data: savedSchedules } = useSchedules();
+  const { user, isAuthenticated: isLoggedIn } = useAuth();
+  const { data: savedSchedules } = useSchedules(isLoggedIn);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
@@ -749,15 +752,24 @@ export default function WizardPage() {
                  <p className="text-muted-foreground max-w-xs mx-auto">
                    Our algorithm will attempt to find the fairest distribution of shifts while respecting all your constraints.
                  </p>
-                 <Button size="lg" onClick={runOptimizer} disabled={isOptimizing} className="mt-4 w-full" data-testid="button-generate">
-                   {isOptimizing ? (
-                     <>
-                       <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Optimizing...
-                     </>
-                   ) : (
-                     <>Generate Schedule</>
-                   )}
-                 </Button>
+                 {isLoggedIn ? (
+                   <Button size="lg" onClick={runOptimizer} disabled={isOptimizing} className="mt-4 w-full" data-testid="button-generate">
+                     {isOptimizing ? (
+                       <>
+                         <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Optimizing...
+                       </>
+                     ) : (
+                       <>Generate Schedule</>
+                     )}
+                   </Button>
+                 ) : (
+                   <div className="mt-4 space-y-3">
+                     <p className="text-sm text-muted-foreground text-center">Sign in to generate and save schedules</p>
+                     <Button size="lg" className="w-full" onClick={() => window.location.href = "/api/login"} data-testid="button-login-to-generate">
+                       <LogIn className="mr-2 h-4 w-4" /> Sign in with Google
+                     </Button>
+                   </div>
+                 )}
                </div>
             </div>
           </div>

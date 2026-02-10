@@ -3,7 +3,7 @@ import { api, buildUrl } from "@shared/routes";
 import { type InsertSchedule, type Schedule } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
-export function useSchedules() {
+export function useSchedules(enabled = true) {
   return useQuery({
     queryKey: [api.schedules.list.path],
     queryFn: async () => {
@@ -11,6 +11,7 @@ export function useSchedules() {
       if (!res.ok) throw new Error("Failed to fetch schedules");
       return api.schedules.list.responses[200].parse(await res.json());
     },
+    enabled,
   });
 }
 
