@@ -29,7 +29,7 @@ export class ShiftOptimizer {
   }
 
   public optimize(): OptimizerResult {
-    const maxAttempts = 10;
+    const maxAttempts = 30;
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
