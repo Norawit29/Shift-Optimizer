@@ -13,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -28,7 +29,8 @@ import {
   Loader2,
   Activity,
   History,
-  Trash2
+  Trash2,
+  CalendarDays
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { nanoid } from "nanoid";
@@ -608,60 +610,179 @@ export default function WizardPage() {
           description="Define fairness rules and consecutive shift patterns."
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="shadow-md">
-              <CardContent className="p-6 space-y-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-orange-100 dark:bg-orange-900/20 rounded-lg">
-                    <Settings2 className="w-6 h-6 text-orange-600 dark:text-orange-400" />
-                  </div>
-                  <h3 className="font-semibold text-lg">Consecutive Shift Rules</h3>
-                </div>
-                
-                <p className="text-sm text-muted-foreground mb-4">
-                  Prevent staff from working specific shift combinations on consecutive days (e.g., Night followed by Morning).
-                </p>
-
-                <div className="space-y-2">
-                  {config.consecutiveRules.map((rule, idx) => (
-                    <div key={idx} className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border flex-wrap">
-                      <span className="text-red-500 font-bold">NO</span>
-                      <Badge variant="outline">{config.shiftNames[rule.from]}</Badge>
-                      <span className="text-muted-foreground text-sm">followed by</span>
-                      <Badge variant="outline">{config.shiftNames[rule.to]}</Badge>
-                      <Button variant="ghost" size="sm" className="ml-auto h-6 w-6 p-0" onClick={() => {
-                         const newRules = config.consecutiveRules.filter((_, i) => i !== idx);
-                         setConfig({...config, consecutiveRules: newRules});
-                      }} data-testid={`button-remove-rule-${idx}`}>
-                        <X className="w-3 h-3" />
-                      </Button>
+            <div className="space-y-6">
+              <Card className="shadow-md">
+                <CardContent className="p-6 space-y-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-orange-100 dark:bg-orange-900/20 rounded-lg">
+                      <Settings2 className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                     </div>
-                  ))}
-                  
-                  <div className="flex items-center gap-2 pt-2">
-                     <Select onValueChange={(val) => {
-                       const [from, to] = val.split(',').map(Number);
-                       setConfig({
-                         ...config,
-                         consecutiveRules: [...config.consecutiveRules, { from, to }]
-                       });
-                     }}>
-                       <SelectTrigger className="w-full" data-testid="select-add-rule">
-                         <SelectValue placeholder="Add new rule..." />
-                       </SelectTrigger>
-                       <SelectContent position="popper" sideOffset={4} className="bg-white dark:bg-slate-900">
-                         {config.shiftNames.map((name1, i) => (
-                           config.shiftNames.map((name2, j) => (
-                             <SelectItem key={`${i}-${j}`} value={`${i},${j}`}>
-                               Block {name1} followed by {name2}
-                             </SelectItem>
-                           ))
-                         ))}
-                       </SelectContent>
-                     </Select>
+                    <h3 className="font-semibold text-lg">Consecutive Shift Rules</h3>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                  
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Prevent staff from working specific shift combinations on consecutive days (e.g., Night followed by Morning).
+                  </p>
+
+                  <div className="space-y-2">
+                    {config.consecutiveRules.map((rule, idx) => (
+                      <div key={idx} className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border flex-wrap">
+                        <span className="text-red-500 font-bold">NO</span>
+                        <Badge variant="outline">{config.shiftNames[rule.from]}</Badge>
+                        <span className="text-muted-foreground text-sm">followed by</span>
+                        <Badge variant="outline">{config.shiftNames[rule.to]}</Badge>
+                        <Button variant="ghost" size="sm" className="ml-auto h-6 w-6 p-0" onClick={() => {
+                           const newRules = config.consecutiveRules.filter((_, i) => i !== idx);
+                           setConfig({...config, consecutiveRules: newRules});
+                        }} data-testid={`button-remove-rule-${idx}`}>
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ))}
+                    
+                    <div className="flex items-center gap-2 pt-2">
+                       <Select onValueChange={(val) => {
+                         const [from, to] = val.split(',').map(Number);
+                         setConfig({
+                           ...config,
+                           consecutiveRules: [...config.consecutiveRules, { from, to }]
+                         });
+                       }}>
+                         <SelectTrigger className="w-full" data-testid="select-add-rule">
+                           <SelectValue placeholder="Add new rule..." />
+                         </SelectTrigger>
+                         <SelectContent position="popper" sideOffset={4} className="bg-white dark:bg-slate-900">
+                           {config.shiftNames.map((name1, i) => (
+                             config.shiftNames.map((name2, j) => (
+                               <SelectItem key={`${i}-${j}`} value={`${i},${j}`}>
+                                 Block {name1} followed by {name2}
+                               </SelectItem>
+                             ))
+                           ))}
+                         </SelectContent>
+                       </Select>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-md">
+                <CardContent className="p-6 space-y-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
+                      <CalendarDays className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <h3 className="font-semibold text-lg">Holiday / Weekend Balancing</h3>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <Checkbox 
+                      id="balance-holidays"
+                      checked={config.balanceHolidays || false}
+                      onCheckedChange={(checked) => setConfig({...config, balanceHolidays: checked === true})}
+                      data-testid="checkbox-balance-holidays"
+                    />
+                    <div>
+                      <label htmlFor="balance-holidays" className="text-sm font-medium cursor-pointer leading-none">
+                        Balance weekend/holiday shifts separately
+                      </label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Distribute holiday and weekend shifts fairly across all staff, tracked separately from weekday shifts.
+                      </p>
+                    </div>
+                  </div>
+
+                  {config.balanceHolidays && (
+                    <div className="space-y-3 pt-2">
+                      <Separator />
+                      <Label className="text-sm font-semibold">Custom Holidays</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Click dates to mark as holidays. Saturdays and Sundays are automatically included.
+                      </p>
+                      <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4">
+                        <div className="grid grid-cols-7 gap-1 mb-2">
+                          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
+                            <div key={d} className="text-center text-xs font-medium text-muted-foreground py-1">{d}</div>
+                          ))}
+                        </div>
+                        <div className="grid grid-cols-7 gap-1">
+                          {Array.from({ length: firstDayOfWeek }).map((_, i) => (
+                            <div key={`empty-hol-${i}`} />
+                          ))}
+                          {Array.from({ length: daysInMonth }).map((_, i) => {
+                            const date = i + 1;
+                            const currentDate = setDate(baseDate, date);
+                            const isWeekend = currentDate.getDay() === 0 || currentDate.getDay() === 6;
+                            const isHoliday = (config.holidays || []).includes(date);
+                            
+                            return (
+                              <button
+                                key={date}
+                                onClick={() => {
+                                  if (isWeekend) return;
+                                  const currentHolidays = config.holidays || [];
+                                  const newHolidays = isHoliday 
+                                    ? currentHolidays.filter(d => d !== date)
+                                    : [...currentHolidays, date];
+                                  setConfig({...config, holidays: newHolidays});
+                                }}
+                                className={`
+                                  relative p-2 rounded-md text-sm font-medium transition-all text-center
+                                  ${isWeekend
+                                    ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 cursor-default ring-1 ring-purple-200 dark:ring-purple-800'
+                                    : isHoliday
+                                      ? 'bg-purple-500 text-white hover:bg-purple-600 ring-1 ring-purple-400'
+                                      : 'bg-white dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                  }
+                                `}
+                                disabled={isWeekend}
+                                data-testid={`holiday-day-${date}`}
+                              >
+                                {date}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      {(config.holidays || []).length > 0 && (
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs text-muted-foreground">Custom holidays:</span>
+                            {(config.holidays || []).sort((a, b) => a - b).map(d => (
+                              <Badge key={d} variant="secondary" className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+                                {format(setDate(baseDate, d), "MMM d")}
+                                <button
+                                  className="ml-1 hover:text-destructive"
+                                  onClick={() => setConfig({...config, holidays: (config.holidays || []).filter(h => h !== d)})}
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </Badge>
+                            ))}
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setConfig({...config, holidays: []})}
+                            data-testid="button-clear-holidays"
+                          >
+                            Clear All
+                          </Button>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="outline" className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border-purple-200 dark:border-purple-800">
+                          Sat/Sun = auto holiday
+                        </Badge>
+                        <Badge variant="outline" className="text-xs bg-purple-500 text-white border-purple-400">
+                          Custom holiday
+                        </Badge>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
 
             <div className="flex items-center justify-center p-6">
                <div className="text-center space-y-4">
@@ -731,9 +852,10 @@ export default function WizardPage() {
 
                 <TabsContent value="summary" className="mt-0">
                   <Card className="shadow-md">
-                    <CardContent className="p-6">
+                    <CardContent className="p-6 space-y-6">
                       <div className="overflow-x-auto">
-                        <table className="w-full text-sm border-collapse">
+                        <h3 className="font-semibold text-base mb-3">Overall Summary</h3>
+                        <table className="w-full text-sm border-collapse" data-testid="table-summary-overall">
                           <thead>
                             <tr className="border-b bg-slate-50 dark:bg-slate-900">
                               <th className="p-3 text-left font-semibold">Staff Name</th>
@@ -756,6 +878,72 @@ export default function WizardPage() {
                           </tbody>
                         </table>
                       </div>
+
+                      {config.balanceHolidays && result.metrics.perStaff[0]?.holidayByShift && (
+                        <>
+                          <Separator />
+                          <div className="overflow-x-auto">
+                            <h3 className="font-semibold text-base mb-1">
+                              <Badge variant="secondary" className="mr-2 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">Holiday/Weekend</Badge>
+                              Shift Breakdown
+                            </h3>
+                            <p className="text-xs text-muted-foreground mb-3">Includes Saturdays, Sundays, and custom holidays</p>
+                            <table className="w-full text-sm border-collapse" data-testid="table-summary-holiday">
+                              <thead>
+                                <tr className="border-b bg-purple-50 dark:bg-purple-900/10">
+                                  <th className="p-3 text-left font-semibold">Staff Name</th>
+                                  {config.shiftNames.map((name, i) => (
+                                    <th key={i} className="p-3 text-center font-semibold">{name}</th>
+                                  ))}
+                                  <th className="p-3 text-center font-semibold text-purple-600 dark:text-purple-400">Total</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {result.metrics.perStaff.map((s, i) => (
+                                  <tr key={i} className="border-b hover:bg-purple-50/50 dark:hover:bg-purple-900/10 transition-colors">
+                                    <td className="p-3 font-medium">{s.name}</td>
+                                    {(s.holidayByShift || []).map((count, j) => (
+                                      <td key={j} className="p-3 text-center">{count}</td>
+                                    ))}
+                                    <td className="p-3 text-center font-bold text-purple-600 dark:text-purple-400">{s.holidayTotal || 0}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          <Separator />
+                          <div className="overflow-x-auto">
+                            <h3 className="font-semibold text-base mb-1">
+                              <Badge variant="secondary" className="mr-2">Weekday</Badge>
+                              Shift Breakdown
+                            </h3>
+                            <p className="text-xs text-muted-foreground mb-3">Monday to Friday (excluding custom holidays)</p>
+                            <table className="w-full text-sm border-collapse" data-testid="table-summary-weekday">
+                              <thead>
+                                <tr className="border-b bg-slate-50 dark:bg-slate-900">
+                                  <th className="p-3 text-left font-semibold">Staff Name</th>
+                                  {config.shiftNames.map((name, i) => (
+                                    <th key={i} className="p-3 text-center font-semibold">{name}</th>
+                                  ))}
+                                  <th className="p-3 text-center font-semibold text-primary">Total</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {result.metrics.perStaff.map((s, i) => (
+                                  <tr key={i} className="border-b hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors">
+                                    <td className="p-3 font-medium">{s.name}</td>
+                                    {(s.weekdayByShift || []).map((count, j) => (
+                                      <td key={j} className="p-3 text-center">{count}</td>
+                                    ))}
+                                    <td className="p-3 text-center font-bold text-primary">{s.weekdayTotal || 0}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </>
+                      )}
                     </CardContent>
                   </Card>
                 </TabsContent>

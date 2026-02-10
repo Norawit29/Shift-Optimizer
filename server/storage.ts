@@ -27,7 +27,7 @@ export class DatabaseStorage implements IStorage {
   async createSchedule(insertSchedule: InsertSchedule): Promise<Schedule> {
     const [schedule] = await db
       .insert(schedules)
-      .values(insertSchedule)
+      .values(insertSchedule as any)
       .returning();
     return schedule;
   }
@@ -38,7 +38,7 @@ export class DatabaseStorage implements IStorage {
   ): Promise<Schedule> {
     const [schedule] = await db
       .update(schedules)
-      .set({ ...updateData, updatedAt: new Date() })
+      .set({ ...updateData, updatedAt: new Date() } as any)
       .where(eq(schedules.id, id))
       .returning();
     return schedule;

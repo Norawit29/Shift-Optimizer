@@ -22,10 +22,10 @@ interface ScheduleViewProps {
 }
 
 export function ScheduleView({ schedule, config, staff, month, year }: ScheduleViewProps) {
-  // Helper to get staff name by ID
   const getStaffName = (id: string) => staff.find(s => s.id === id)?.name || "Unknown";
 
   const baseDate = new Date(year, month - 1, 1);
+  const holidays = new Set(config.holidays || []);
 
   return (
     <div className="space-y-6">
@@ -48,10 +48,20 @@ export function ScheduleView({ schedule, config, staff, month, year }: ScheduleV
                 {schedule.map((day, idx) => {
                   const currentDate = setDate(baseDate, day.date);
                   const isWeekend = currentDate.getDay() === 0 || currentDate.getDay() === 6;
+                  const isHoliday = holidays.has(day.date);
 
                   return (
-                    <TableRow key={idx} className={cn("hover:bg-muted/30 transition-colors", isWeekend && "bg-slate-50 dark:bg-slate-900/30")}>
-                      <TableCell className="font-medium">{format(currentDate, "MMM d")}</TableCell>
+                    <TableRow key={idx} className={cn(
+                      "hover:bg-muted/30 transition-colors", 
+                      (isWeekend || isHoliday) && "bg-purple-50/50 dark:bg-purple-900/10",
+                      isWeekend && !isHoliday && "bg-slate-50 dark:bg-slate-900/30"
+                    )}>
+                      <TableCell className="font-medium">
+                        {format(currentDate, "MMM d")}
+                        {isHoliday && (
+                          <Badge variant="secondary" className="ml-1 text-[9px] px-1 py-0 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">H</Badge>
+                        )}
+                      </TableCell>
                       <TableCell className="text-muted-foreground">{format(currentDate, "EEEE")}</TableCell>
                       {day.shifts.map((assignedStaffIds, shiftIdx) => (
                         <TableCell key={shiftIdx} className="text-center p-2">

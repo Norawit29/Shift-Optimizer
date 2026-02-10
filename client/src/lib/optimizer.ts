@@ -12,6 +12,12 @@ export class ShiftOptimizer {
   private staffWorkLoad: Map<string, number>;
   private staffShiftCounts: Map<string, number[]>;
 
+  private holidayDays: Set<number>;
+  private staffHolidayLoad: Map<string, number>;
+  private staffHolidayShiftCounts: Map<string, number[]>;
+  private staffWeekdayLoad: Map<string, number>;
+  private staffWeekdayShiftCounts: Map<string, number[]>;
+
   constructor(config: SchedulerConfig, staff: StaffMember[], month: number, year: number) {
     this.config = config;
     this.staff = staff;
@@ -19,13 +25,41 @@ export class ShiftOptimizer {
     this.year = year;
     this.daysInMonth = getDaysInMonth(new Date(year, month - 1));
     
+    this.holidayDays = new Set<number>();
+    if (config.balanceHolidays) {
+      for (let d = 1; d <= this.daysInMonth; d++) {
+        const date = new Date(year, month - 1, d);
+        const dayOfWeek = date.getDay();
+        if (dayOfWeek === 0 || dayOfWeek === 6) {
+          this.holidayDays.add(d);
+        }
+      }
+      if (config.holidays) {
+        for (const h of config.holidays) {
+          this.holidayDays.add(h);
+        }
+      }
+    }
+
     this.staffWorkLoad = new Map();
     this.staffShiftCounts = new Map();
+    this.staffHolidayLoad = new Map();
+    this.staffHolidayShiftCounts = new Map();
+    this.staffWeekdayLoad = new Map();
+    this.staffWeekdayShiftCounts = new Map();
     
     staff.forEach(s => {
       this.staffWorkLoad.set(s.id, 0);
       this.staffShiftCounts.set(s.id, new Array(config.shiftNames.length).fill(0));
+      this.staffHolidayLoad.set(s.id, 0);
+      this.staffHolidayShiftCounts.set(s.id, new Array(config.shiftNames.length).fill(0));
+      this.staffWeekdayLoad.set(s.id, 0);
+      this.staffWeekdayShiftCounts.set(s.id, new Array(config.shiftNames.length).fill(0));
     });
+  }
+
+  private isHoliday(date: number): boolean {
+    return this.holidayDays.has(date);
   }
 
   public optimize(): OptimizerResult {
@@ -55,9 +89,17 @@ export class ShiftOptimizer {
   private resetState() {
     this.staffWorkLoad = new Map();
     this.staffShiftCounts = new Map();
+    this.staffHolidayLoad = new Map();
+    this.staffHolidayShiftCounts = new Map();
+    this.staffWeekdayLoad = new Map();
+    this.staffWeekdayShiftCounts = new Map();
     this.staff.forEach(s => {
       this.staffWorkLoad.set(s.id, 0);
       this.staffShiftCounts.set(s.id, new Array(this.config.shiftNames.length).fill(0));
+      this.staffHolidayLoad.set(s.id, 0);
+      this.staffHolidayShiftCounts.set(s.id, new Array(this.config.shiftNames.length).fill(0));
+      this.staffWeekdayLoad.set(s.id, 0);
+      this.staffWeekdayShiftCounts.set(s.id, new Array(this.config.shiftNames.length).fill(0));
     });
   }
 
@@ -84,7 +126,7 @@ export class ShiftOptimizer {
           
           if (bestCandidate) {
             daySchedule.shifts[shiftIdx].push(bestCandidate.id);
-            this.updateStats(bestCandidate.id, shiftIdx);
+            this.updateStats(bestCandidate.id, shiftIdx, dayIdx + 1);
           } else {
             throw new Error(`Insufficient staff to fill Day ${dayIdx + 1}, Shift ${this.config.shiftNames[shiftIdx]}. Please check constraints or add more staff.`);
           }
@@ -160,6 +202,21 @@ export class ShiftOptimizer {
 
     let score = (Math.pow(totalCount, 2) * 20) + (Math.pow(specificShiftCount, 2) * 100);
 
+    if (this.config.balanceHolidays && this.holidayDays.size > 0) {
+      const holiday = this.isHoliday(date);
+      if (holiday) {
+        const holLoad = this.staffHolidayLoad.get(member.id) || 0;
+        const holShiftCounts = this.staffHolidayShiftCounts.get(member.id) || [];
+        const holSpecific = holShiftCounts[shiftIdx] || 0;
+        score += (Math.pow(holLoad, 2) * 30) + (Math.pow(holSpecific, 2) * 80);
+      } else {
+        const wdLoad = this.staffWeekdayLoad.get(member.id) || 0;
+        const wdShiftCounts = this.staffWeekdayShiftCounts.get(member.id) || [];
+        const wdSpecific = wdShiftCounts[shiftIdx] || 0;
+        score += (Math.pow(wdLoad, 2) * 30) + (Math.pow(wdSpecific, 2) * 80);
+      }
+    }
+
     const dayIdx = date - 1;
     const numShiftTypes = this.config.shiftNames.length;
 
@@ -193,13 +250,54 @@ export class ShiftOptimizer {
     return score;
   }
 
-  private updateStats(memberId: string, shiftIdx: number) {
+  private updateStats(memberId: string, shiftIdx: number, date: number) {
     const currentLoad = this.staffWorkLoad.get(memberId) || 0;
     this.staffWorkLoad.set(memberId, currentLoad + 1);
 
     const shiftCounts = this.staffShiftCounts.get(memberId) || [];
     shiftCounts[shiftIdx] = (shiftCounts[shiftIdx] || 0) + 1;
     this.staffShiftCounts.set(memberId, shiftCounts);
+
+    if (this.config.balanceHolidays) {
+      if (this.isHoliday(date)) {
+        const holLoad = this.staffHolidayLoad.get(memberId) || 0;
+        this.staffHolidayLoad.set(memberId, holLoad + 1);
+        const holCounts = this.staffHolidayShiftCounts.get(memberId) || [];
+        holCounts[shiftIdx] = (holCounts[shiftIdx] || 0) + 1;
+        this.staffHolidayShiftCounts.set(memberId, holCounts);
+      } else {
+        const wdLoad = this.staffWeekdayLoad.get(memberId) || 0;
+        this.staffWeekdayLoad.set(memberId, wdLoad + 1);
+        const wdCounts = this.staffWeekdayShiftCounts.get(memberId) || [];
+        wdCounts[shiftIdx] = (wdCounts[shiftIdx] || 0) + 1;
+        this.staffWeekdayShiftCounts.set(memberId, wdCounts);
+      }
+    }
+  }
+
+  private removeStats(memberId: string, shiftIdx: number, date: number) {
+    const currentLoad = this.staffWorkLoad.get(memberId) || 0;
+    this.staffWorkLoad.set(memberId, currentLoad - 1);
+
+    const shiftCounts = this.staffShiftCounts.get(memberId) || [];
+    shiftCounts[shiftIdx] = (shiftCounts[shiftIdx] || 0) - 1;
+    this.staffShiftCounts.set(memberId, shiftCounts);
+
+    if (this.config.balanceHolidays) {
+      if (this.isHoliday(date)) {
+        const holLoad = this.staffHolidayLoad.get(memberId) || 0;
+        this.staffHolidayLoad.set(memberId, holLoad - 1);
+        const holCounts = this.staffHolidayShiftCounts.get(memberId) || [];
+        holCounts[shiftIdx] = (holCounts[shiftIdx] || 0) - 1;
+        this.staffHolidayShiftCounts.set(memberId, holCounts);
+      } else {
+        const wdLoad = this.staffWeekdayLoad.get(memberId) || 0;
+        this.staffWeekdayLoad.set(memberId, wdLoad - 1);
+        const wdCounts = this.staffWeekdayShiftCounts.get(memberId) || [];
+        wdCounts[shiftIdx] = (wdCounts[shiftIdx] || 0) - 1;
+        this.staffWeekdayShiftCounts.set(memberId, wdCounts);
+      }
+    }
   }
 
   private circadianRepair() {
@@ -291,10 +389,10 @@ export class ShiftOptimizer {
         this.schedule[dayIdx].shifts[shiftIdx][posA] = staffB;
         this.schedule[dayIdx2].shifts[shiftIdx2][posB] = staffA;
 
-        this.staffShiftCounts.get(staffA)![shiftIdx]--;
-        this.staffShiftCounts.get(staffA)![shiftIdx2] = (this.staffShiftCounts.get(staffA)![shiftIdx2] || 0) + 1;
-        this.staffShiftCounts.get(staffB)![shiftIdx2]--;
-        this.staffShiftCounts.get(staffB)![shiftIdx] = (this.staffShiftCounts.get(staffB)![shiftIdx] || 0) + 1;
+        this.removeStats(staffA, shiftIdx, dayIdx + 1);
+        this.updateStats(staffA, shiftIdx2, dayIdx2 + 1);
+        this.removeStats(staffB, shiftIdx2, dayIdx2 + 1);
+        this.updateStats(staffB, shiftIdx, dayIdx + 1);
       } else {
         break;
       }
@@ -394,9 +492,69 @@ export class ShiftOptimizer {
           }
         }
       }
+
+      if (this.config.balanceHolidays && this.holidayDays.size > 0) {
+        const holSorted = [...staffIds].sort((a, b) => (this.staffHolidayLoad.get(a) || 0) - (this.staffHolidayLoad.get(b) || 0));
+        const holMin = holSorted[0];
+        const holMax = holSorted[holSorted.length - 1];
+        const holDiff = (this.staffHolidayLoad.get(holMax) || 0) - (this.staffHolidayLoad.get(holMin) || 0);
+        if (holDiff > 1) {
+          if (this.tryHolidaySwap(holMax, holMin)) {
+            foundSwap = true;
+          }
+        }
+      }
       
       if (!foundSwap && loadDiff <= 1) break; 
     }
+  }
+
+  private tryHolidaySwap(fromId: string, toId: string): boolean {
+    const fromMember = this.staff.find(s => s.id === fromId);
+    const toMember = this.staff.find(s => s.id === toId);
+    if (!fromMember || !toMember) return false;
+
+    for (let dayIdx = 0; dayIdx < this.daysInMonth; dayIdx++) {
+      const date = dayIdx + 1;
+      if (!this.isHoliday(date)) continue;
+
+      const daySchedule = this.schedule[dayIdx];
+      for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
+        const assignedStaff = daySchedule.shifts[shiftIdx];
+        const assignedIndex = assignedStaff.indexOf(fromId);
+        if (assignedIndex === -1) continue;
+
+        for (let dayIdx2 = 0; dayIdx2 < this.daysInMonth; dayIdx2++) {
+          const date2 = dayIdx2 + 1;
+          if (this.isHoliday(date2)) continue;
+
+          const daySchedule2 = this.schedule[dayIdx2];
+          for (let sIdx2 = 0; sIdx2 < this.config.shiftNames.length; sIdx2++) {
+            const assignedStaff2 = daySchedule2.shifts[sIdx2];
+            const idx2 = assignedStaff2.indexOf(toId);
+            if (idx2 === -1) continue;
+
+            const tempAssigned1 = assignedStaff.filter(id => id !== fromId);
+            const tempAssigned2 = assignedStaff2.filter(id => id !== toId);
+
+            if (this.canAssign(toMember, date, shiftIdx, tempAssigned1) &&
+                this.canAssign(fromMember, date2, sIdx2, tempAssigned2)) {
+              
+              daySchedule.shifts[shiftIdx][assignedIndex] = toId;
+              daySchedule2.shifts[sIdx2][idx2] = fromId;
+
+              this.removeStats(fromId, shiftIdx, date);
+              this.updateStats(toId, shiftIdx, date);
+              this.removeStats(toId, sIdx2, date2);
+              this.updateStats(fromId, sIdx2, date2);
+              
+              return true;
+            }
+          }
+        }
+      }
+    }
+    return false;
   }
 
   private trySpecificShiftSwap(fromId: string, toId: string, targetShiftIdx: number): boolean {
@@ -424,10 +582,8 @@ export class ShiftOptimizer {
 
         if (toLoad < fromLoad && this.canAssign(toMember, dayIdx + 1, targetShiftIdx, assignedStaff.filter(id => id !== fromId))) {
           daySchedule.shifts[targetShiftIdx][assignedIndex] = toId;
-          this.staffWorkLoad.set(fromId, fromLoad - 1);
-          this.staffShiftCounts.get(fromId)![targetShiftIdx]--;
-          this.staffWorkLoad.set(toId, toLoad + 1);
-          this.staffShiftCounts.get(toId)![targetShiftIdx]++;
+          this.removeStats(fromId, targetShiftIdx, dayIdx + 1);
+          this.updateStats(toId, targetShiftIdx, dayIdx + 1);
           return true;
         }
 
@@ -444,12 +600,12 @@ export class ShiftOptimizer {
                   this.canAssign(fromMember, dayIdx2 + 1, sIdx2, tempAssigned2)) {
                 
                 daySchedule.shifts[targetShiftIdx][assignedIndex] = toId;
-                this.staffShiftCounts.get(fromId)![targetShiftIdx]--;
-                this.staffShiftCounts.get(toId)![targetShiftIdx]++;
-                
                 daySchedule2.shifts[sIdx2][idx2] = fromId;
-                this.staffShiftCounts.get(toId)![sIdx2]--;
-                this.staffShiftCounts.get(fromId)![sIdx2]++;
+
+                this.removeStats(fromId, targetShiftIdx, dayIdx + 1);
+                this.updateStats(toId, targetShiftIdx, dayIdx + 1);
+                this.removeStats(toId, sIdx2, dayIdx2 + 1);
+                this.updateStats(fromId, sIdx2, dayIdx2 + 1);
                 
                 return true;
               }
@@ -479,11 +635,8 @@ export class ShiftOptimizer {
           if (this.canAssign(toMember, dayIdx + 1, shiftIdx, tempAssigned)) {
             daySchedule.shifts[shiftIdx][assignedIndex] = toId;
             
-            this.staffWorkLoad.set(fromId, (this.staffWorkLoad.get(fromId) || 0) - 1);
-            this.staffShiftCounts.get(fromId)![shiftIdx]--;
-            
-            this.staffWorkLoad.set(toId, (this.staffWorkLoad.get(toId) || 0) + 1);
-            this.staffShiftCounts.get(toId)![shiftIdx]++;
+            this.removeStats(fromId, shiftIdx, dayIdx + 1);
+            this.updateStats(toId, shiftIdx, dayIdx + 1);
             
             return true;
           }
@@ -496,15 +649,26 @@ export class ShiftOptimizer {
   private calculateMetrics() {
     let minLoad = Infinity;
     let maxLoad = -Infinity;
+
     const perStaff = this.staff.map(s => {
       const total = this.staffWorkLoad.get(s.id) || 0;
       minLoad = Math.min(minLoad, total);
       maxLoad = Math.max(maxLoad, total);
-      return {
+
+      const result: any = {
         name: s.name,
         total,
         byShift: this.staffShiftCounts.get(s.id) || []
       };
+
+      if (this.config.balanceHolidays && this.holidayDays.size > 0) {
+        result.holidayTotal = this.staffHolidayLoad.get(s.id) || 0;
+        result.holidayByShift = this.staffHolidayShiftCounts.get(s.id) || [];
+        result.weekdayTotal = this.staffWeekdayLoad.get(s.id) || 0;
+        result.weekdayByShift = this.staffWeekdayShiftCounts.get(s.id) || [];
+      }
+
+      return result;
     });
 
     return {
