@@ -88,7 +88,19 @@ export default function WizardPage() {
 
   const addStaff = () => {
     const randomNames = ["Dr. Smith", "Nurse Jackie", "Dr. Strange", "Nurse Joy", "Dr. House", "Nurse Ratched", "Dr. Watson", "Nurse Nightingale", "Dr. Grey", "Nurse Somsri", "Dr. Somchai"];
-    const name = randomNames[Math.floor(Math.random() * randomNames.length)];
+    
+    // Filter out names that are already taken
+    const existingNames = new Set(staff.map(s => s.name.toLowerCase()));
+    const availableNames = randomNames.filter(name => !existingNames.has(name.toLowerCase()));
+    
+    let name = "";
+    if (availableNames.length > 0) {
+      name = availableNames[Math.floor(Math.random() * availableNames.length)];
+    } else {
+      // Fallback to name + number if all names are taken
+      name = `Staff Member ${staff.length + 1}`;
+    }
+    
     setStaff([...staff, { id: nanoid(), name, maxShifts: 20, blocked: [] }]);
   };
 
