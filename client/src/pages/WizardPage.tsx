@@ -262,29 +262,6 @@ export default function WizardPage() {
             <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800">
               <CardContent className="p-6 space-y-6">
                 <div className="space-y-4">
-                  <Label className="text-base font-semibold">Timeline</Label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Month</Label>
-                      <Select value={month.toString()} onValueChange={(v) => setMonth(parseInt(v))}>
-                        <SelectTrigger data-testid="select-month"><SelectValue /></SelectTrigger>
-                        <SelectContent position="popper" sideOffset={4}>
-                          {MONTHS.map((m, i) => (
-                            <SelectItem key={i} value={(i + 1).toString()}>{m}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Year</Label>
-                      <Input type="number" value={year} onChange={e => setYear(parseInt(e.target.value))} data-testid="input-year" />
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-4">
                   <Label className="text-base font-semibold">Shifts per Day</Label>
                   <div className="flex items-center gap-3">
                     <Button 
@@ -309,6 +286,29 @@ export default function WizardPage() {
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <Label className="text-base font-semibold">Timeline</Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Month</Label>
+                      <Select value={month.toString()} onValueChange={(v) => setMonth(parseInt(v))}>
+                        <SelectTrigger data-testid="select-month"><SelectValue /></SelectTrigger>
+                        <SelectContent position="popper" sideOffset={4}>
+                          {MONTHS.map((m, i) => (
+                            <SelectItem key={i} value={(i + 1).toString()}>{m}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Year</Label>
+                      <Input type="number" value={year} onChange={e => setYear(parseInt(e.target.value))} data-testid="input-year" />
+                    </div>
                   </div>
                 </div>
               </CardContent>
