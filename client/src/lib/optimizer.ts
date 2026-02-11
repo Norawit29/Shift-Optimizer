@@ -165,7 +165,8 @@ export class ShiftOptimizer {
   private writeCommonConstraints(
     lines: string[],
     varMap: Map<string, { staff: number; day: number; shift: number }>,
-    cIdx: { val: number }
+    cIdx: { val: number },
+    options?: { skipStaffingCap?: boolean }
   ): void {
     const N = this.staff.length;
     const D = this.daysInMonth;
@@ -187,20 +188,22 @@ export class ShiftOptimizer {
       }
     }
 
-    for (let d = 0; d < D; d++) {
-      const required = this.getStaffPerShiftForDay(d + 1);
-      for (let s = 0; s < S; s++) {
-        if (required[s] === 0) continue;
-        const shiftVars: string[] = [];
-        for (let i = 0; i < N; i++) {
-          const v = this.vn(i, d, s);
-          if (varMap.has(v)) shiftVars.push(v);
-        }
-        if (shiftVars.length > 0) {
-          const terms = shiftVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
-          lines.push(`  c${cIdx.val++}:`);
-          lines.push(writeTerms(terms, 10));
-          lines.push(`  <= ${required[s]}`);
+    if (!options?.skipStaffingCap) {
+      for (let d = 0; d < D; d++) {
+        const required = this.getStaffPerShiftForDay(d + 1);
+        for (let s = 0; s < S; s++) {
+          if (required[s] === 0) continue;
+          const shiftVars: string[] = [];
+          for (let i = 0; i < N; i++) {
+            const v = this.vn(i, d, s);
+            if (varMap.has(v)) shiftVars.push(v);
+          }
+          if (shiftVars.length > 0) {
+            const terms = shiftVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+            lines.push(`  c${cIdx.val++}:`);
+            lines.push(writeTerms(terms, 10));
+            lines.push(`  <= ${required[s]}`);
+          }
         }
       }
     }
@@ -238,19 +241,56 @@ export class ShiftOptimizer {
   private buildPhase1Model(
     varMap: Map<string, { staff: number; day: number; shift: number }>,
     binaryVars: string[]
-  ): string {
+  ): { model: string; slackVars: string[] } {
+    const N = this.staff.length;
+    const D = this.daysInMonth;
+    const S = this.config.shiftNames.length;
     const lines: string[] = [];
+    const slackVars: string[] = [];
 
-    lines.push("Maximize");
+    for (let d = 0; d < D; d++) {
+      const required = this.getStaffPerShiftForDay(d + 1);
+      for (let s = 0; s < S; s++) {
+        if (required[s] === 0) continue;
+        slackVars.push(`u_${d}_${s}`);
+      }
+    }
+
+    lines.push("Minimize");
     lines.push("  obj:");
-    const objParts = binaryVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+    const objParts = slackVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
     lines.push(writeTerms(objParts, 10));
 
     lines.push("Subject To");
     const cIdx = { val: 0 };
-    this.writeCommonConstraints(lines, varMap, cIdx);
+    this.writeCommonConstraints(lines, varMap, cIdx, { skipStaffingCap: true });
+
+    for (let d = 0; d < D; d++) {
+      const required = this.getStaffPerShiftForDay(d + 1);
+      for (let s = 0; s < S; s++) {
+        if (required[s] === 0) continue;
+        const uVar = `u_${d}_${s}`;
+        const shiftVars: string[] = [];
+        for (let i = 0; i < N; i++) {
+          const v = this.vn(i, d, s);
+          if (varMap.has(v)) shiftVars.push(v);
+        }
+        if (shiftVars.length > 0) {
+          const terms = shiftVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+          terms.push(`+ ${uVar}`);
+          lines.push(`  c${cIdx.val++}:`);
+          lines.push(writeTerms(terms, 10));
+          lines.push(`  = ${required[s]}`);
+        } else {
+          lines.push(`  c${cIdx.val++}: ${uVar} = ${required[s]}`);
+        }
+      }
+    }
 
     lines.push("Bounds");
+    for (const uVar of slackVars) {
+      lines.push(`  ${uVar} >= 0`);
+    }
 
     lines.push("Binary");
     for (let i = 0; i < binaryVars.length; i += 20) {
@@ -258,36 +298,47 @@ export class ShiftOptimizer {
     }
 
     lines.push("End");
-    return lines.join("\n");
+    return { model: lines.join("\n"), slackVars };
   }
 
   private extractPhase1Targets(
     phase1Solution: any,
     varMap: Map<string, { staff: number; day: number; shift: number }>
-  ): { perShift: number[]; holidayTotal: number } {
+  ): { perShift: number[]; holidayTotal: number; totalCoverage: number; slotCoverage: Map<string, number> } {
     const S = this.config.shiftNames.length;
+    const D = this.daysInMonth;
     const perShift = new Array(S).fill(0);
     let holidayTotal = 0;
-    const columns = phase1Solution.Columns || {};
+    let totalCoverage = 0;
+    const slotCoverage = new Map<string, number>();
 
+    for (let d = 0; d < D; d++) {
+      for (let s = 0; s < S; s++) {
+        slotCoverage.set(`${d}_${s}`, 0);
+      }
+    }
+
+    const columns = phase1Solution.Columns || {};
     varMap.forEach((info, varName) => {
       const col = columns[varName];
       if (col && Math.round(col.Primal) === 1) {
         perShift[info.shift]++;
+        totalCoverage++;
+        const key = `${info.day}_${info.shift}`;
+        slotCoverage.set(key, (slotCoverage.get(key) || 0) + 1);
         if (this.isHoliday(info.day + 1)) {
           holidayTotal++;
         }
       }
     });
 
-    return { perShift, holidayTotal };
+    return { perShift, holidayTotal, totalCoverage, slotCoverage };
   }
 
   private buildPhase2Model(
     varMap: Map<string, { staff: number; day: number; shift: number }>,
     binaryVars: string[],
-    optimalCoverage: number,
-    phase1Targets: { perShift: number[]; holidayTotal: number }
+    phase1Targets: { perShift: number[]; holidayTotal: number; totalCoverage: number; slotCoverage: Map<string, number> }
   ): string {
     const N = this.staff.length;
     const D = this.daysInMonth;
@@ -298,7 +349,7 @@ export class ShiftOptimizer {
     const SHIFT_W = 0.4;
     const HOLIDAY_W = enableHolidayBalance ? 0.6 : 0;
 
-    const avgWorkload = optimalCoverage / N;
+    const avgWorkload = phase1Targets.totalCoverage / N;
     const shiftTargets = phase1Targets.perShift.map(total => total / N);
     const avgHoliday = enableHolidayBalance ? phase1Targets.holidayTotal / N : 0;
 
@@ -328,10 +379,23 @@ export class ShiftOptimizer {
     const cIdx = { val: 0 };
     this.writeCommonConstraints(lines, varMap, cIdx);
 
-    const allVarTerms = binaryVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
-    lines.push(`  c${cIdx.val++}:`);
-    lines.push(writeTerms(allVarTerms, 10));
-    lines.push(`  >= ${optimalCoverage}`);
+    for (let d = 0; d < D; d++) {
+      for (let s = 0; s < S; s++) {
+        const coverage = phase1Targets.slotCoverage.get(`${d}_${s}`) || 0;
+        if (coverage === 0) continue;
+        const slotVars: string[] = [];
+        for (let i = 0; i < N; i++) {
+          const v = this.vn(i, d, s);
+          if (varMap.has(v)) slotVars.push(v);
+        }
+        if (slotVars.length > 0) {
+          const terms = slotVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+          lines.push(`  c${cIdx.val++}:`);
+          lines.push(writeTerms(terms, 10));
+          lines.push(`  >= ${coverage}`);
+        }
+      }
+    }
 
     for (let i = 0; i < N; i++) {
       const staffVars: string[] = [];
@@ -623,7 +687,7 @@ export class ShiftOptimizer {
       "Solve error", "Empty", "Not Set", "Primal infeasible or unbounded", "Unbounded"
     ];
 
-    const phase1Model = this.buildPhase1Model(varMap, binaryVars);
+    const { model: phase1Model } = this.buildPhase1Model(varMap, binaryVars);
     let phase1Solution: any;
     try {
       phase1Solution = solver.solve(phase1Model, {
@@ -640,14 +704,13 @@ export class ShiftOptimizer {
       return this.makeEmptyResult(feasibilityMsg || `Phase 1 solver status: ${phase1Solution.Status}.`);
     }
 
-    const optimalCoverage = Math.round(phase1Solution.ObjectiveValue);
+    const phase1Targets = this.extractPhase1Targets(phase1Solution, varMap);
 
-    if (optimalCoverage === 0) {
+    if (phase1Targets.totalCoverage === 0) {
       return this.makeEmptyResult("No assignments possible with current constraints.");
     }
 
-    const phase1Targets = this.extractPhase1Targets(phase1Solution, varMap);
-    const phase2Model = this.buildPhase2Model(varMap, binaryVars, optimalCoverage, phase1Targets);
+    const phase2Model = this.buildPhase2Model(varMap, binaryVars, phase1Targets);
     let finalSolution: any;
     try {
       const phase2Solution = solver.solve(phase2Model, {
