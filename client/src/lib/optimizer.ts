@@ -70,6 +70,8 @@ export class ShiftOptimizer {
   }
 
   public optimize(): OptimizerResult {
+    this.optimizeStartTime = Date.now();
+
     const infeasible = this.checkFeasibility();
     if (infeasible) {
       throw new Error(infeasible);
@@ -81,6 +83,8 @@ export class ShiftOptimizer {
     const maxAttempts = 200;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      if (this.isTimedOut()) break;
+
       try {
         this.resetState();
         this.initializeSchedule();
@@ -109,6 +113,13 @@ export class ShiftOptimizer {
 
     if (bestResult) {
       return bestResult;
+    }
+
+    if (this.isTimedOut()) {
+      throw new Error(
+        "Timed out after 5 minutes without finding a valid schedule. " +
+        "Try adding more staff, increasing max shifts per person, or reducing blocked dates."
+      );
     }
 
     const relaxedResult = this.tryWithRelaxedConstraints();
@@ -152,6 +163,8 @@ export class ShiftOptimizer {
 
   private tryWithRelaxedConstraints(): OptimizerResult | null {
     for (let relaxLevel = 1; relaxLevel <= 3; relaxLevel++) {
+      if (this.isTimedOut()) return null;
+
       const originalMaxShifts = this.staff.map(s => s.maxShifts);
 
       this.staff.forEach(s => {
@@ -159,6 +172,13 @@ export class ShiftOptimizer {
       });
 
       for (let attempt = 0; attempt < 100; attempt++) {
+        if (this.isTimedOut()) {
+          this.staff.forEach((s, i) => {
+            s.maxShifts = originalMaxShifts[i];
+          });
+          return null;
+        }
+
         try {
           this.resetState();
           this.initializeSchedule();
@@ -191,18 +211,35 @@ export class ShiftOptimizer {
   }
 
   private cspNodeCount = 0;
-  private readonly CSP_NODE_LIMIT = 2000000;
+  private readonly CSP_NODE_LIMIT = 100000;
+  private optimizeStartTime = 0;
+  private readonly TIMEOUT_MS = 5 * 60 * 1000;
+
+  private isTimedOut(): boolean {
+    return Date.now() - this.optimizeStartTime > this.TIMEOUT_MS;
+  }
 
   private cspSolve(randomize: boolean) {
+    if (this.isTimedOut()) {
+      throw new Error("Timeout reached.");
+    }
+
     const slots = this.buildSlots();
     const domains = this.buildDomains(slots);
+
+    const slotsByDay = new Map<number, Slot[]>();
+    for (const slot of slots) {
+      const arr = slotsByDay.get(slot.dayIdx) || [];
+      arr.push(slot);
+      slotsByDay.set(slot.dayIdx, arr);
+    }
 
     this.propagateForced(slots, domains);
 
     const unassigned = slots.filter(s => this.getSlotValue(s) === null);
     this.cspNodeCount = 0;
 
-    const success = this.backtrackSolve(unassigned, domains, randomize);
+    const success = this.backtrackSolve(unassigned, domains, randomize, slotsByDay);
     if (!success) {
       throw new Error("CSP solver could not find a valid assignment.");
     }
@@ -302,9 +339,10 @@ export class ShiftOptimizer {
     }
   }
 
-  private backtrackSolve(unassigned: Slot[], domains: Map<string, string[]>, randomize: boolean): boolean {
+  private backtrackSolve(unassigned: Slot[], domains: Map<string, string[]>, randomize: boolean, slotsByDay: Map<number, Slot[]>): boolean {
     this.cspNodeCount++;
     if (this.cspNodeCount > this.CSP_NODE_LIMIT) return false;
+    if ((this.cspNodeCount & 0xFFF) === 0 && this.isTimedOut()) return false;
 
     let bestSlot: Slot | null = null;
     let bestDomainSize = Infinity;
@@ -328,7 +366,6 @@ export class ShiftOptimizer {
       if (validCount < bestDomainSize) {
         bestDomainSize = validCount;
         bestSlot = slot;
-
       }
     }
 
@@ -353,8 +390,8 @@ export class ShiftOptimizer {
     for (const staffId of candidates) {
       this.assignSlot(bestSlot, staffId);
 
-      if (this.forwardCheck(unassigned, domains)) {
-        if (this.backtrackSolve(unassigned, domains, randomize)) {
+      if (this.forwardCheckScoped(bestSlot.dayIdx, domains, slotsByDay)) {
+        if (this.backtrackSolve(unassigned, domains, randomize, slotsByDay)) {
           return true;
         }
       }
@@ -365,23 +402,28 @@ export class ShiftOptimizer {
     return false;
   }
 
-  private forwardCheck(unassigned: Slot[], domains: Map<string, string[]>): boolean {
-    for (const slot of unassigned) {
-      if (this.getSlotValue(slot) !== null) continue;
+  private forwardCheckScoped(assignedDayIdx: number, domains: Map<string, string[]>, slotsByDay: Map<number, Slot[]>): boolean {
+    for (let d = assignedDayIdx - 1; d <= assignedDayIdx + 1; d++) {
+      const daySlots = slotsByDay.get(d);
+      if (!daySlots) continue;
 
-      const key = this.slotKey(slot);
-      const domain = domains.get(key)!;
+      for (const slot of daySlots) {
+        if (this.getSlotValue(slot) !== null) continue;
 
-      let hasValid = false;
-      for (const staffId of domain) {
-        const member = this.staffLookup.get(staffId)!;
-        if (this.canAssignCSP(member, slot.dayIdx, slot.shiftIdx)) {
-          hasValid = true;
-          break;
+        const key = this.slotKey(slot);
+        const domain = domains.get(key)!;
+
+        let hasValid = false;
+        for (const staffId of domain) {
+          const member = this.staffLookup.get(staffId)!;
+          if (this.canAssignCSP(member, slot.dayIdx, slot.shiftIdx)) {
+            hasValid = true;
+            break;
+          }
         }
-      }
 
-      if (!hasValid) return false;
+        if (!hasValid) return false;
+      }
     }
     return true;
   }
