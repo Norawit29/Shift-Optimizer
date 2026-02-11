@@ -20,6 +20,14 @@ async function getSolver(): Promise<any> {
   return solverLoading;
 }
 
+function writeTerms(terms: string[], perLine: number = 10): string {
+  const chunks: string[] = [];
+  for (let i = 0; i < terms.length; i += perLine) {
+    chunks.push("  " + terms.slice(i, i + perLine).join(" "));
+  }
+  return chunks.join("\n");
+}
+
 export class ShiftOptimizer {
   private config: SchedulerConfig;
   private staff: StaffMember[];
@@ -117,8 +125,8 @@ export class ShiftOptimizer {
     return member.blocked.some(b => b.date === date && (b.shift === -1 || b.shift === shiftIdx));
   }
 
-  private varName(staffIdx: number, dayIdx: number, shiftIdx: number): string {
-    return `x${staffIdx}d${dayIdx}s${shiftIdx}`;
+  private vn(staffIdx: number, dayIdx: number, shiftIdx: number): string {
+    return `x_${staffIdx}_${dayIdx}_${shiftIdx}`;
   }
 
   private buildLPModel(): { model: string; varMap: Map<string, { staff: number; day: number; shift: number }> } {
@@ -137,60 +145,62 @@ export class ShiftOptimizer {
           if (this.isBlocked(i, d, s)) continue;
           const required = this.getStaffPerShiftForDay(d + 1)[s];
           if (required === 0) continue;
-          const v = this.varName(i, d, s);
+          const v = this.vn(i, d, s);
           eligibleVars[i][d].push(v);
           varMap.set(v, { staff: i, day: d, shift: s });
         }
       }
     }
 
-    const totalSlots = Array.from(varMap.keys()).length;
-    if (totalSlots === 0) {
+    if (varMap.size === 0) {
       return { model: "", varMap };
     }
 
     const lines: string[] = [];
-    const constraints: string[] = [];
-    const binaryVars: string[] = Array.from(varMap.keys());
+    const binaryVars: string[] = [];
+    varMap.forEach((_info, vName) => {
+      binaryVars.push(vName);
+    });
 
     const COVERAGE_W = 1000;
     const FAIRNESS_W = 5;
     const SHIFT_BALANCE_W = 2;
     const HOLIDAY_BALANCE_W = this.config.balanceHolidays ? 3 : 0;
 
-    const objTerms: string[] = [];
-    for (const v of binaryVars) {
-      objTerms.push(`${COVERAGE_W} ${v}`);
-    }
-    objTerms.push(`${FAIRNESS_W} wmin`);
-    objTerms.push(`- ${FAIRNESS_W} wmax`);
-
-    for (let s = 0; s < S; s++) {
-      objTerms.push(`${SHIFT_BALANCE_W} smin${s}`);
-      objTerms.push(`- ${SHIFT_BALANCE_W} smax${s}`);
-    }
-
-    if (HOLIDAY_BALANCE_W > 0) {
-      objTerms.push(`${HOLIDAY_BALANCE_W} hmin`);
-      objTerms.push(`- ${HOLIDAY_BALANCE_W} hmax`);
-    }
-
     lines.push("Maximize");
-    lines.push("  obj: " + objTerms.join(" + ").replace(/\+ -/g, "- "));
+    lines.push("  obj:");
+
+    const objParts: string[] = [];
+    for (const v of binaryVars) {
+      objParts.push(`+ ${COVERAGE_W} ${v}`);
+    }
+    objParts.push(`+ ${FAIRNESS_W} wmin`);
+    objParts.push(`- ${FAIRNESS_W} wmax`);
+    for (let s = 0; s < S; s++) {
+      objParts.push(`+ ${SHIFT_BALANCE_W} smin_${s}`);
+      objParts.push(`- ${SHIFT_BALANCE_W} smax_${s}`);
+    }
+    if (HOLIDAY_BALANCE_W > 0) {
+      objParts.push(`+ ${HOLIDAY_BALANCE_W} hmin`);
+      objParts.push(`- ${HOLIDAY_BALANCE_W} hmax`);
+    }
+    lines.push(writeTerms(objParts, 8));
 
     lines.push("Subject To");
-
     let cIdx = 0;
 
     for (let i = 0; i < N; i++) {
       for (let d = 0; d < D; d++) {
         const dayVars: string[] = [];
         for (let s = 0; s < S; s++) {
-          const v = this.varName(i, d, s);
+          const v = this.vn(i, d, s);
           if (varMap.has(v)) dayVars.push(v);
         }
         if (dayVars.length > 1) {
-          constraints.push(`  c${cIdx++}: ${dayVars.join(" + ")} <= 1`);
+          const terms = dayVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+          lines.push(`  c${cIdx++}:`);
+          lines.push(writeTerms(terms, 10));
+          lines.push(`  <= 1`);
         }
       }
     }
@@ -201,11 +211,14 @@ export class ShiftOptimizer {
         if (required[s] === 0) continue;
         const shiftVars: string[] = [];
         for (let i = 0; i < N; i++) {
-          const v = this.varName(i, d, s);
+          const v = this.vn(i, d, s);
           if (varMap.has(v)) shiftVars.push(v);
         }
         if (shiftVars.length > 0) {
-          constraints.push(`  c${cIdx++}: ${shiftVars.join(" + ")} <= ${required[s]}`);
+          const terms = shiftVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+          lines.push(`  c${cIdx++}:`);
+          lines.push(writeTerms(terms, 10));
+          lines.push(`  <= ${required[s]}`);
         }
       }
     }
@@ -213,10 +226,10 @@ export class ShiftOptimizer {
     for (const rule of this.config.consecutiveRules) {
       for (let i = 0; i < N; i++) {
         for (let d = 0; d < D - 1; d++) {
-          const v1 = this.varName(i, d, rule.from);
-          const v2 = this.varName(i, d + 1, rule.to);
+          const v1 = this.vn(i, d, rule.from);
+          const v2 = this.vn(i, d + 1, rule.to);
           if (varMap.has(v1) && varMap.has(v2)) {
-            constraints.push(`  c${cIdx++}: ${v1} + ${v2} <= 1`);
+            lines.push(`  c${cIdx++}: ${v1} + ${v2} <= 1`);
           }
         }
       }
@@ -227,12 +240,15 @@ export class ShiftOptimizer {
       const staffVars: string[] = [];
       for (let d = 0; d < D; d++) {
         for (let s = 0; s < S; s++) {
-          const v = this.varName(i, d, s);
+          const v = this.vn(i, d, s);
           if (varMap.has(v)) staffVars.push(v);
         }
       }
       if (staffVars.length > 0) {
-        constraints.push(`  c${cIdx++}: ${staffVars.join(" + ")} <= ${maxShifts}`);
+        const terms = staffVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+        lines.push(`  c${cIdx++}:`);
+        lines.push(writeTerms(terms, 10));
+        lines.push(`  <= ${maxShifts}`);
       }
     }
 
@@ -240,14 +256,19 @@ export class ShiftOptimizer {
       const staffVars: string[] = [];
       for (let d = 0; d < D; d++) {
         for (let s = 0; s < S; s++) {
-          const v = this.varName(i, d, s);
+          const v = this.vn(i, d, s);
           if (varMap.has(v)) staffVars.push(v);
         }
       }
       if (staffVars.length > 0) {
-        const neg = staffVars.join(" - ");
-        constraints.push(`  c${cIdx++}: wmax - ${neg} >= 0`);
-        constraints.push(`  c${cIdx++}: wmin - ${neg} <= 0`);
+        const negTerms = staffVars.map(v => `- ${v}`);
+        lines.push(`  c${cIdx++}: wmax`);
+        lines.push(writeTerms(negTerms, 10));
+        lines.push(`  >= 0`);
+
+        lines.push(`  c${cIdx++}: wmin`);
+        lines.push(writeTerms(negTerms, 10));
+        lines.push(`  <= 0`);
       }
     }
 
@@ -255,13 +276,18 @@ export class ShiftOptimizer {
       for (let i = 0; i < N; i++) {
         const shiftVars: string[] = [];
         for (let d = 0; d < D; d++) {
-          const v = this.varName(i, d, s);
+          const v = this.vn(i, d, s);
           if (varMap.has(v)) shiftVars.push(v);
         }
         if (shiftVars.length > 0) {
-          const neg = shiftVars.join(" - ");
-          constraints.push(`  c${cIdx++}: smax${s} - ${neg} >= 0`);
-          constraints.push(`  c${cIdx++}: smin${s} - ${neg} <= 0`);
+          const negTerms = shiftVars.map(v => `- ${v}`);
+          lines.push(`  c${cIdx++}: smax_${s}`);
+          lines.push(writeTerms(negTerms, 10));
+          lines.push(`  >= 0`);
+
+          lines.push(`  c${cIdx++}: smin_${s}`);
+          lines.push(writeTerms(negTerms, 10));
+          lines.push(`  <= 0`);
         }
       }
     }
@@ -272,20 +298,21 @@ export class ShiftOptimizer {
         for (let d = 0; d < D; d++) {
           if (!this.isHoliday(d + 1)) continue;
           for (let s = 0; s < S; s++) {
-            const v = this.varName(i, d, s);
+            const v = this.vn(i, d, s);
             if (varMap.has(v)) holVars.push(v);
           }
         }
         if (holVars.length > 0) {
-          const neg = holVars.join(" - ");
-          constraints.push(`  c${cIdx++}: hmax - ${neg} >= 0`);
-          constraints.push(`  c${cIdx++}: hmin - ${neg} <= 0`);
+          const negTerms = holVars.map(v => `- ${v}`);
+          lines.push(`  c${cIdx++}: hmax`);
+          lines.push(writeTerms(negTerms, 10));
+          lines.push(`  >= 0`);
+
+          lines.push(`  c${cIdx++}: hmin`);
+          lines.push(writeTerms(negTerms, 10));
+          lines.push(`  <= 0`);
         }
       }
-    }
-
-    for (const c of constraints) {
-      lines.push(c);
     }
 
     lines.push("Bounds");
@@ -301,8 +328,8 @@ export class ShiftOptimizer {
     lines.push(`  0 <= wmax <= ${totalRequired}`);
     lines.push(`  0 <= wmin <= ${totalRequired}`);
     for (let s = 0; s < S; s++) {
-      lines.push(`  0 <= smax${s} <= ${totalRequired}`);
-      lines.push(`  0 <= smin${s} <= ${totalRequired}`);
+      lines.push(`  0 <= smax_${s} <= ${totalRequired}`);
+      lines.push(`  0 <= smin_${s} <= ${totalRequired}`);
     }
     if (HOLIDAY_BALANCE_W > 0) {
       lines.push(`  0 <= hmax <= ${totalRequired}`);
@@ -310,9 +337,8 @@ export class ShiftOptimizer {
     }
 
     lines.push("Binary");
-    const chunkSize = 50;
-    for (let i = 0; i < binaryVars.length; i += chunkSize) {
-      lines.push("  " + binaryVars.slice(i, i + chunkSize).join(" "));
+    for (let i = 0; i < binaryVars.length; i += 20) {
+      lines.push("  " + binaryVars.slice(i, i + 20).join(" "));
     }
 
     lines.push("End");
@@ -349,14 +375,15 @@ export class ShiftOptimizer {
       const col = columns[varName];
       if (col && Math.round(col.Primal) === 1) {
         const key = `${info.day}_${info.shift}`;
-        assignedPerDayShift.get(key)!.push(this.staff[info.staff].id);
+        const arr = assignedPerDayShift.get(key);
+        if (arr) arr.push(this.staff[info.staff].id);
       }
     });
 
     for (let d = 0; d < D; d++) {
       const required = this.getStaffPerShiftForDay(d + 1);
       for (let s = 0; s < S; s++) {
-        const assigned = assignedPerDayShift.get(`${d}_${s}`)!;
+        const assigned = assignedPerDayShift.get(`${d}_${s}`) || [];
         const arr = schedule[d].shifts[s];
         for (let pos = 0; pos < arr.length && pos < assigned.length; pos++) {
           arr[pos] = assigned[pos];
@@ -368,7 +395,6 @@ export class ShiftOptimizer {
   }
 
   private calculateMetricsFromSchedule(schedule: DaySchedule[]) {
-    const N = this.staff.length;
     const S = this.config.shiftNames.length;
 
     const workLoad = new Map<string, number>();
@@ -494,16 +520,31 @@ export class ShiftOptimizer {
       };
     }
 
-    const solver = await getSolver();
-
-    const solution = solver.solve(model, {
-      time_limit: 30.0,
-      presolve: "on",
-      mip_rel_gap: 0.01,
-    });
+    let solution: any;
+    try {
+      const solver = await getSolver();
+      solution = solver.solve(model, {
+        time_limit: 30.0,
+        presolve: "on",
+        mip_rel_gap: 0.01,
+      });
+    } catch (err: any) {
+      console.error("HiGHS solver error:", err);
+      const emptySchedule = this.buildEmptySchedule();
+      return {
+        schedule: emptySchedule,
+        metrics: { range: 0, perStaff: this.staff.map(s => ({ name: s.name, total: 0, byShift: new Array(this.config.shiftNames.length).fill(0) })) },
+        isPartial: true,
+        unfilledSlots: this.findUnfilledSlots(emptySchedule),
+        feasibilityWarning: `Solver crashed: ${err?.message || "Unknown error"}. Try reducing the number of staff or days.`
+      };
+    }
 
     const status = solution.Status;
-    const failStatuses = ["Infeasible", "Model error", "Load error", "Presolve error", "Solve error", "Empty"];
+    const failStatuses = [
+      "Infeasible", "Model error", "Load error", "Presolve error",
+      "Solve error", "Empty", "Not Set", "Primal infeasible or unbounded", "Unbounded"
+    ];
 
     if (failStatuses.includes(status) || !solution.Columns) {
       const emptySchedule = this.buildEmptySchedule();
