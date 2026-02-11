@@ -345,7 +345,6 @@ export class ShiftOptimizer {
     const S = this.config.shiftNames.length;
     const enableHolidayBalance = this.config.balanceHolidays && this.holidayDays.size > 0;
 
-    const COVERAGE_W = 1000;
     const WORKLOAD_W = 1.0;
     const SHIFT_W = 0.4;
     const HOLIDAY_W = enableHolidayBalance ? 0.6 : 0;
@@ -355,24 +354,12 @@ export class ShiftOptimizer {
     const avgHoliday = enableHolidayBalance ? phase1Targets.holidayTotal / N : 0;
 
     const lines: string[] = [];
-    const slackVars: string[] = [];
-
-    for (let d = 0; d < D; d++) {
-      const required = this.getStaffPerShiftForDay(d + 1);
-      for (let s = 0; s < S; s++) {
-        if (required[s] === 0) continue;
-        slackVars.push(`u2_${d}_${s}`);
-      }
-    }
 
     lines.push("Minimize");
     lines.push("  obj:");
     const objParts: string[] = [];
-    for (const uVar of slackVars) {
-      objParts.push(`+ ${COVERAGE_W} ${uVar}`);
-    }
     for (let i = 0; i < N; i++) {
-      objParts.push(`+ ${WORKLOAD_W} dw_${i}`);
+      objParts.push(i === 0 ? `${WORKLOAD_W} dw_${i}` : `+ ${WORKLOAD_W} dw_${i}`);
     }
     for (let i = 0; i < N; i++) {
       for (let s = 0; s < S; s++) {
@@ -390,46 +377,15 @@ export class ShiftOptimizer {
 
     lines.push("Subject To");
     const cIdx = { val: 0 };
-    this.writeCommonConstraints(lines, varMap, cIdx, { skipStaffingCap: true });
+    this.writeCommonConstraints(lines, varMap, cIdx);
 
-    for (let d = 0; d < D; d++) {
-      const required = this.getStaffPerShiftForDay(d + 1);
-      for (let s = 0; s < S; s++) {
-        if (required[s] === 0) continue;
-        const uVar = `u2_${d}_${s}`;
-        const shiftVars: string[] = [];
-        for (let i = 0; i < N; i++) {
-          const v = this.vn(i, d, s);
-          if (varMap.has(v)) shiftVars.push(v);
-        }
-        if (shiftVars.length > 0) {
-          const terms = shiftVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
-          terms.push(`+ ${uVar}`);
-          lines.push(`  c${cIdx.val++}:`);
-          lines.push(writeTerms(terms, 10));
-          lines.push(`  = ${required[s]}`);
-        } else {
-          lines.push(`  c${cIdx.val++}: ${uVar} = ${required[s]}`);
-        }
-      }
-    }
-
-    for (let d = 0; d < D; d++) {
-      for (let s = 0; s < S; s++) {
-        const coverage = phase1Targets.slotCoverage.get(`${d}_${s}`) || 0;
-        if (coverage === 0) continue;
-        const slotVars: string[] = [];
-        for (let i = 0; i < N; i++) {
-          const v = this.vn(i, d, s);
-          if (varMap.has(v)) slotVars.push(v);
-        }
-        if (slotVars.length > 0) {
-          const terms = slotVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
-          lines.push(`  c${cIdx.val++}:`);
-          lines.push(writeTerms(terms, 10));
-          lines.push(`  >= ${coverage}`);
-        }
-      }
+    const allXVars: string[] = [];
+    varMap.forEach((_info, vName) => allXVars.push(vName));
+    if (allXVars.length > 0) {
+      const floorTerms = allXVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+      lines.push(`  c${cIdx.val++}:`);
+      lines.push(writeTerms(floorTerms, 10));
+      lines.push(`  >= ${phase1Targets.totalCoverage}`);
     }
 
     for (let i = 0; i < N; i++) {
@@ -508,9 +464,6 @@ export class ShiftOptimizer {
     }
 
     lines.push("Bounds");
-    for (const uVar of slackVars) {
-      lines.push(`  ${uVar} >= 0`);
-    }
     for (let i = 0; i < N; i++) {
       lines.push(`  dw_${i} >= 0`);
     }
@@ -776,6 +729,7 @@ export class ShiftOptimizer {
     }
 
     const phase2Model = this.buildPhase2Model(varMap, binaryVars, phase1Targets);
+    console.log(`[OPT] Phase 2 model size: ${phase2Model.length} chars, ${phase2Model.split('\n').length} lines`);
     let finalSolution: any;
     let usedPhase = 2;
     try {
@@ -795,7 +749,7 @@ export class ShiftOptimizer {
         finalSolution = phase2Solution;
       }
     } catch (err: any) {
-      console.error("[OPT] Phase 2 solver CRASH, falling back to Phase 1:", err);
+      console.error("[OPT] Phase 2 solver CRASH, falling back to Phase 1:", String(err), err?.message, err?.stack);
       finalSolution = phase1Solution;
       usedPhase = 1;
     }
