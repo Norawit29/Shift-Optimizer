@@ -50,6 +50,11 @@ The shift optimization algorithm runs **client-side** in `client/src/lib/optimiz
 
 This 2-phase design ensures coverage is never sacrificed for fairness. The WASM file is served from `client/public/highs.wasm`. Time limit: 15 seconds per phase, MIP gap: 1%.
 
+After the MIP solver, a **3-step greedy post-processing** fills any remaining unfilled slots:
+1. **Coverage floor**: Phase 2 has per-slot and global coverage floor constraints matching Phase 1's optimal
+2. **Greedy fill** (up to 3 passes): Assigns available staff (lowest workload first) respecting all constraints
+3. **Force-fill** (up to 3 passes): If slots remain, relaxes consecutive shift rules to ensure maximum coverage. This trades the consecutive rule for full staffing.
+
 ### Backend (`server/`)
 
 - **Framework**: Express.js v5 on Node.js
