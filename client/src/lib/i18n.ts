@@ -38,6 +38,12 @@ const translations = {
     nameLabel: "Name",
     staffReq: "Staff Req.",
     nextStep: "Next Step",
+    separateHolidayConfig: "Different staffing for weekends/holidays",
+    separateHolidayConfigDesc: "Set different staff requirements for each shift on weekend and holiday days. Set to 0 to disable a shift on those days.",
+    weekdayStaffing: "Weekday Staffing",
+    holidayStaffing: "Weekend / Holiday Staffing",
+    sameAsWeekday: "Same as weekday",
+    staffReqHoliday: "Holiday Staff",
 
     // Step 2
     staffAvailability: "Staff & Availability",
@@ -187,6 +193,12 @@ const translations = {
     nameLabel: "ชื่อเวร",
     staffReq: "จำนวนคน",
     nextStep: "ขั้นตอนถัดไป",
+    separateHolidayConfig: "จำนวนคนวันหยุด/สุดสัปดาห์ต่างจากวันธรรมดา",
+    separateHolidayConfigDesc: "กำหนดจำนวนคนแต่ละเวรสำหรับวันหยุดและสุดสัปดาห์แยกต่างหาก ตั้งเป็น 0 เพื่อปิดเวรนั้นในวันหยุด",
+    weekdayStaffing: "จำนวนคนวันธรรมดา",
+    holidayStaffing: "จำนวนคนวันหยุด / สุดสัปดาห์",
+    sameAsWeekday: "เท่ากับวันธรรมดา",
+    staffReqHoliday: "คนวันหยุด",
 
     // Step 2
     staffAvailability: "บุคลากรและวันว่าง",

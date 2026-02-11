@@ -8,6 +8,12 @@ The scheduler supports two timeline modes:
 - **Full Month**: Traditional month/year selection for a complete calendar month
 - **Custom Range**: Arbitrary start and end dates (e.g., March 8 - April 4, 2026) for scheduling across month boundaries. Custom range info is stored in the `SchedulerConfig` JSONB (`useCustomRange`, `customStartDate`, `customEndDate`) to avoid DB schema changes. Day indices are 1-based sequential and mapped to actual dates via `addDays(startDate, index - 1)`. Switching modes clears blocked dates and holidays to prevent misapplication.
 
+The scheduler supports **separate weekend/holiday staffing**:
+- Toggle `separateHolidayConfig` to set different staff-per-shift for weekends/holidays vs weekdays
+- `holidayStaffPerShift` array parallels `staffPerShift` — same shift names, different counts
+- Setting a shift's holiday staff to 0 effectively disables that shift on weekends/holidays
+- The optimizer, schedule view, and Excel export all respect per-day staffing requirements
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.

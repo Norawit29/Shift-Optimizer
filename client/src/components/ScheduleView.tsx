@@ -100,6 +100,10 @@ export function ScheduleView({ schedule, config, staff, month, year, unfilledSlo
                   const currentDate = getDateForIndex(day.date);
                   const isWeekend = currentDate.getDay() === 0 || currentDate.getDay() === 6;
                   const isHoliday = holidays.has(day.date);
+                  const isDayHoliday = isWeekend || isHoliday;
+                  const dayStaffPerShift = (config.separateHolidayConfig && config.holidayStaffPerShift && isDayHoliday)
+                    ? config.holidayStaffPerShift
+                    : config.staffPerShift;
 
                   return (
                     <TableRow key={idx} className={cn(
@@ -115,35 +119,44 @@ export function ScheduleView({ schedule, config, staff, month, year, unfilledSlo
                       </TableCell>
                       <TableCell className="text-muted-foreground">{format(currentDate, "EEEE")}</TableCell>
                       {day.shifts.map((assignedStaffIds, shiftIdx) => {
+                        const requiredForDay = dayStaffPerShift[shiftIdx] ?? 0;
+                        const isShiftDisabled = requiredForDay === 0;
                         const isUnfilled = unfilledSet.has(`${day.date}-${shiftIdx}`);
                         const filledIds = assignedStaffIds.map(String).filter(id => id !== "");
 
                         return (
                           <TableCell key={shiftIdx} className={cn(
                             "text-center p-2",
-                            isUnfilled && "bg-red-50 dark:bg-red-950/30"
+                            isShiftDisabled && "bg-slate-100/50 dark:bg-slate-800/30",
+                            isUnfilled && !isShiftDisabled && "bg-red-50 dark:bg-red-950/30"
                           )}>
                             <div className="flex flex-wrap gap-1 justify-center">
-                              {filledIds.length > 0 && filledIds.map(id => (
-                                <Badge 
-                                  key={id} 
-                                  variant="secondary"
-                                  className="font-normal bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 border border-blue-100 dark:border-blue-800"
-                                >
-                                  {getStaffName(id)}
-                                </Badge>
-                              ))}
-                              {isUnfilled && (
-                                <Badge
-                                  variant="secondary"
-                                  className="font-bold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border border-red-300 dark:border-red-700 animate-pulse"
-                                  data-testid={`badge-vacancy-${day.date}-${shiftIdx}`}
-                                >
-                                  {t.vacancy}
-                                </Badge>
-                              )}
-                              {!isUnfilled && filledIds.length === 0 && (
+                              {isShiftDisabled ? (
                                 <span className="text-xs text-muted-foreground italic">-</span>
+                              ) : (
+                                <>
+                                  {filledIds.length > 0 && filledIds.map(id => (
+                                    <Badge 
+                                      key={id} 
+                                      variant="secondary"
+                                      className="font-normal bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 border border-blue-100 dark:border-blue-800"
+                                    >
+                                      {getStaffName(id)}
+                                    </Badge>
+                                  ))}
+                                  {isUnfilled && (
+                                    <Badge
+                                      variant="secondary"
+                                      className="font-bold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 border border-red-300 dark:border-red-700 animate-pulse"
+                                      data-testid={`badge-vacancy-${day.date}-${shiftIdx}`}
+                                    >
+                                      {t.vacancy}
+                                    </Badge>
+                                  )}
+                                  {!isUnfilled && filledIds.length === 0 && (
+                                    <span className="text-xs text-muted-foreground italic">-</span>
+                                  )}
+                                </>
                               )}
                             </div>
                           </TableCell>

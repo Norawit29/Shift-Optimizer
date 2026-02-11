@@ -49,7 +49,7 @@ export class ShiftOptimizer {
     staff.forEach(s => this.staffLookup.set(s.id, s));
 
     this.holidayDays = new Set<number>();
-    if (config.balanceHolidays) {
+    if (config.balanceHolidays || config.separateHolidayConfig) {
       for (let d = 1; d <= this.daysInMonth; d++) {
         const date = this.getActualDate(d);
         const dayOfWeek = date.getDay();
@@ -83,6 +83,13 @@ export class ShiftOptimizer {
 
   private isHoliday(date: number): boolean {
     return this.holidayDays.has(date);
+  }
+
+  private getStaffPerShiftForDay(date: number): number[] {
+    if (this.config.separateHolidayConfig && this.config.holidayStaffPerShift && this.isHoliday(date)) {
+      return this.config.holidayStaffPerShift;
+    }
+    return this.config.staffPerShift;
   }
 
   private feasibilityMsg: string | null = null;
@@ -151,8 +158,9 @@ export class ShiftOptimizer {
 
   private checkFeasibility(): string | null {
     for (let day = 1; day <= this.daysInMonth; day++) {
+      const dayStaffPerShift = this.getStaffPerShiftForDay(day);
       for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
-        const required = this.config.staffPerShift[shiftIdx];
+        const required = dayStaffPerShift[shiftIdx];
         let available = 0;
 
         for (const member of this.staff) {
@@ -168,7 +176,11 @@ export class ShiftOptimizer {
       }
     }
 
-    const totalSlotsPerDay = this.config.staffPerShift.reduce((a, b) => a + b, 0);
+    const weekdaySlots = this.config.staffPerShift.reduce((a, b) => a + b, 0);
+    const holidaySlots = this.config.separateHolidayConfig && this.config.holidayStaffPerShift
+      ? this.config.holidayStaffPerShift.reduce((a, b) => a + b, 0)
+      : weekdaySlots;
+    const totalSlotsPerDay = Math.max(weekdaySlots, holidaySlots);
     if (totalSlotsPerDay > this.staff.length) {
       return `Each day requires ${totalSlotsPerDay} staff slots but only ${this.staff.length} staff members exist. ` +
         `Please add more staff or reduce staff per shift.`;
@@ -182,8 +194,9 @@ export class ShiftOptimizer {
 
     for (let dayIdx = 0; dayIdx < this.daysInMonth; dayIdx++) {
       const date = dayIdx + 1;
+      const dayStaffPerShift = this.getStaffPerShiftForDay(date);
       for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
-        const required = this.config.staffPerShift[shiftIdx];
+        const required = dayStaffPerShift[shiftIdx];
         for (let pos = 0; pos < required; pos++) {
           const key = `${dayIdx}-${shiftIdx}-${pos}`;
           const eligible = new Set<string>();
@@ -213,9 +226,10 @@ export class ShiftOptimizer {
       iterations++;
 
       for (let dayIdx = 0; dayIdx < this.daysInMonth; dayIdx++) {
+        const dayStaffPerShift = this.getStaffPerShiftForDay(dayIdx + 1);
         const allDayKeys: string[] = [];
         for (let shiftIdx = 0; shiftIdx < numShifts; shiftIdx++) {
-          const required = this.config.staffPerShift[shiftIdx];
+          const required = dayStaffPerShift[shiftIdx];
           for (let pos = 0; pos < required; pos++) {
             allDayKeys.push(`${dayIdx}-${shiftIdx}-${pos}`);
           }
@@ -237,7 +251,7 @@ export class ShiftOptimizer {
         }
 
         for (let shiftIdx = 0; shiftIdx < numShifts; shiftIdx++) {
-          const required = this.config.staffPerShift[shiftIdx];
+          const required = dayStaffPerShift[shiftIdx];
           const shiftUnion = new Set<string>();
           for (let pos = 0; pos < required; pos++) {
             const key = `${dayIdx}-${shiftIdx}-${pos}`;
@@ -247,7 +261,7 @@ export class ShiftOptimizer {
           if (shiftUnion.size === required) {
             for (let otherShift = 0; otherShift < numShifts; otherShift++) {
               if (otherShift === shiftIdx) continue;
-              const otherRequired = this.config.staffPerShift[otherShift];
+              const otherRequired = dayStaffPerShift[otherShift];
               for (let otherPos = 0; otherPos < otherRequired; otherPos++) {
                 const otherKey = `${dayIdx}-${otherShift}-${otherPos}`;
                 const otherDomain = domains.get(otherKey)!;
@@ -263,13 +277,14 @@ export class ShiftOptimizer {
         }
 
         for (let shiftIdx = 0; shiftIdx < numShifts; shiftIdx++) {
-          const required = this.config.staffPerShift[shiftIdx];
+          const required = dayStaffPerShift[shiftIdx];
 
           for (const rule of this.config.consecutiveRules) {
             if (rule.from === shiftIdx && dayIdx + 1 < this.daysInMonth) {
               const nextDay = dayIdx + 1;
               const toShift = rule.to;
-              const toRequired = this.config.staffPerShift[toShift];
+              const nextDayStaffPerShift = this.getStaffPerShiftForDay(nextDay + 1);
+              const toRequired = nextDayStaffPerShift[toShift];
 
               for (let pos = 0; pos < required; pos++) {
                 const fromDomain = domains.get(`${dayIdx}-${shiftIdx}-${pos}`)!;
@@ -289,7 +304,8 @@ export class ShiftOptimizer {
             if (rule.to === shiftIdx && dayIdx > 0) {
               const prevDay = dayIdx - 1;
               const fromShift = rule.from;
-              const fromRequired = this.config.staffPerShift[fromShift];
+              const prevDayStaffPerShift = this.getStaffPerShiftForDay(prevDay + 1);
+              const fromRequired = prevDayStaffPerShift[fromShift];
 
               for (let pos = 0; pos < required; pos++) {
                 const toDomain = domains.get(`${dayIdx}-${shiftIdx}-${pos}`)!;
@@ -467,8 +483,9 @@ export class ShiftOptimizer {
     const numShifts = this.config.shiftNames.length;
     const dayIdx = slot.dayIdx;
 
+    const currentDayStaffPerShift = this.getStaffPerShiftForDay(dayIdx + 1);
     for (let s = 0; s < numShifts; s++) {
-      const required = this.config.staffPerShift[s];
+      const required = currentDayStaffPerShift[s];
       for (let p = 0; p < required; p++) {
         const key = `${dayIdx}-${s}-${p}`;
         const domain = domains.get(key);
@@ -479,7 +496,8 @@ export class ShiftOptimizer {
     for (const rule of this.config.consecutiveRules) {
       if (rule.from === slot.shiftIdx && dayIdx + 1 < this.daysInMonth) {
         const nextDay = dayIdx + 1;
-        const toRequired = this.config.staffPerShift[rule.to];
+        const nextDayStaffPerShift = this.getStaffPerShiftForDay(nextDay + 1);
+        const toRequired = nextDayStaffPerShift[rule.to];
         for (let p = 0; p < toRequired; p++) {
           const key = `${nextDay}-${rule.to}-${p}`;
           const domain = domains.get(key);
@@ -488,7 +506,8 @@ export class ShiftOptimizer {
       }
       if (rule.to === slot.shiftIdx && dayIdx > 0) {
         const prevDay = dayIdx - 1;
-        const fromRequired = this.config.staffPerShift[rule.from];
+        const prevDayStaffPerShift = this.getStaffPerShiftForDay(prevDay + 1);
+        const fromRequired = prevDayStaffPerShift[rule.from];
         for (let p = 0; p < fromRequired; p++) {
           const key = `${prevDay}-${rule.from}-${p}`;
           const domain = domains.get(key);
@@ -679,7 +698,7 @@ export class ShiftOptimizer {
   private greedyFill() {
     for (let dayIdx = 0; dayIdx < this.daysInMonth; dayIdx++) {
       for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
-        const required = this.config.staffPerShift[shiftIdx];
+        const required = this.getStaffPerShiftForDay(dayIdx + 1)[shiftIdx];
         const assigned = this.schedule[dayIdx].shifts[shiftIdx];
 
         while (assigned.length < required) {
@@ -730,7 +749,7 @@ export class ShiftOptimizer {
     const unfilled: UnfilledSlot[] = [];
     for (let dayIdx = 0; dayIdx < this.daysInMonth; dayIdx++) {
       for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
-        const required = this.config.staffPerShift[shiftIdx];
+        const required = this.getStaffPerShiftForDay(dayIdx + 1)[shiftIdx];
         const shiftArray = sched[dayIdx]?.shifts?.[shiftIdx];
         const filledCount = shiftArray ? shiftArray.filter(id => id !== "").length : 0;
         if (filledCount < required) {
@@ -751,7 +770,7 @@ export class ShiftOptimizer {
     const slots: Slot[] = [];
     for (let dayIdx = 0; dayIdx < this.daysInMonth; dayIdx++) {
       for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
-        const required = this.config.staffPerShift[shiftIdx];
+        const required = this.getStaffPerShiftForDay(dayIdx + 1)[shiftIdx];
         for (let pos = 0; pos < required; pos++) {
           slots.push({ dayIdx, shiftIdx, position: pos });
         }

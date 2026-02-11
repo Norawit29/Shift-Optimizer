@@ -14,6 +14,8 @@ export interface SchedulerConfig {
   useCustomRange?: boolean;
   customStartDate?: string;
   customEndDate?: string;
+  separateHolidayConfig?: boolean;
+  holidayStaffPerShift?: number[];
 }
 
 export interface StaffMember {

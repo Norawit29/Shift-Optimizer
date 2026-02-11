@@ -116,20 +116,45 @@ export default function WizardPage() {
     setConfig({ ...config, staffPerShift: newCounts });
   };
 
+  const updateHolidayStaffCount = (idx: number, count: number) => {
+    const newCounts = [...(config.holidayStaffPerShift || config.staffPerShift)];
+    newCounts[idx] = Math.max(0, count);
+    setConfig({ ...config, holidayStaffPerShift: newCounts });
+  };
+
+  const toggleSeparateHolidayConfig = (checked: boolean) => {
+    if (checked) {
+      setConfig({
+        ...config,
+        separateHolidayConfig: true,
+        holidayStaffPerShift: [...config.staffPerShift],
+      });
+    } else {
+      setConfig({
+        ...config,
+        separateHolidayConfig: false,
+        holidayStaffPerShift: undefined,
+      });
+    }
+  };
+
   const setShiftsPerDay = (val: number) => {
     if (val < 1 || val > 5) return;
     const newNames = [...config.shiftNames];
     const newCounts = [...config.staffPerShift];
+    const newHolCounts = config.holidayStaffPerShift ? [...config.holidayStaffPerShift] : undefined;
     if (val > config.shiftsPerDay) {
       for (let i = config.shiftsPerDay; i < val; i++) {
         newNames.push(`Shift ${i + 1}`);
         newCounts.push(1);
+        if (newHolCounts) newHolCounts.push(1);
       }
     } else {
       newNames.splice(val);
       newCounts.splice(val);
+      if (newHolCounts) newHolCounts.splice(val);
     }
-    setConfig({ ...config, shiftsPerDay: val, shiftNames: newNames, staffPerShift: newCounts });
+    setConfig({ ...config, shiftsPerDay: val, shiftNames: newNames, staffPerShift: newCounts, holidayStaffPerShift: newHolCounts });
   };
 
   const addStaff = () => {
@@ -197,11 +222,17 @@ export default function WizardPage() {
     setIsOptimizing(true);
     setTimeout(() => {
       try {
+        let holStaff = config.holidayStaffPerShift;
+        if (config.separateHolidayConfig && holStaff) {
+          while (holStaff.length < config.shiftNames.length) holStaff = [...holStaff, config.staffPerShift[holStaff.length] ?? 1];
+          if (holStaff.length > config.shiftNames.length) holStaff = holStaff.slice(0, config.shiftNames.length);
+        }
         const optimizerConfig = {
           ...config,
           useCustomRange,
           customStartDate: useCustomRange ? customStartDate : undefined,
           customEndDate: useCustomRange ? customEndDate : undefined,
+          holidayStaffPerShift: config.separateHolidayConfig ? holStaff : undefined,
         };
         const optimizer = new ShiftOptimizer(optimizerConfig, staff, month, year);
         const res = optimizer.optimize();
@@ -423,7 +454,12 @@ export default function WizardPage() {
 
             <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800">
               <CardContent className="p-6 space-y-6">
-                <Label className="text-base font-semibold">{t.shiftDetails}</Label>
+                <div className="space-y-1">
+                  <Label className="text-base font-semibold">{t.shiftDetails}</Label>
+                  {config.separateHolidayConfig && (
+                    <p className="text-xs text-muted-foreground">{t.weekdayStaffing}</p>
+                  )}
+                </div>
                 <div className="space-y-4">
                   {config.shiftNames.map((name, i) => (
                     <div key={i} className="flex gap-4 items-end bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg">
@@ -443,6 +479,51 @@ export default function WizardPage() {
                       </div>
                     </div>
                   ))}
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="separateHolidayConfig"
+                      checked={config.separateHolidayConfig || false}
+                      onCheckedChange={(checked) => toggleSeparateHolidayConfig(!!checked)}
+                      data-testid="checkbox-separate-holiday-config"
+                    />
+                    <div className="space-y-1">
+                      <Label htmlFor="separateHolidayConfig" className="text-sm font-medium cursor-pointer">
+                        {t.separateHolidayConfig}
+                      </Label>
+                      <p className="text-xs text-muted-foreground">{t.separateHolidayConfigDesc}</p>
+                    </div>
+                  </div>
+
+                  {config.separateHolidayConfig && (
+                    <div className="space-y-3 pl-1 border-l-2 border-purple-300 dark:border-purple-700 ml-1">
+                      <Label className="text-sm font-semibold text-purple-700 dark:text-purple-300 pl-3">{t.holidayStaffing}</Label>
+                      {config.shiftNames.map((name, i) => {
+                        const holCount = config.holidayStaffPerShift?.[i] ?? config.staffPerShift[i];
+                        return (
+                          <div key={i} className="flex gap-4 items-center bg-purple-50/50 dark:bg-purple-900/10 p-3 rounded-lg ml-3">
+                            <div className="flex-1">
+                              <span className="text-sm font-medium">{name}</span>
+                            </div>
+                            <div className="w-24 space-y-1">
+                              <Label className="text-xs">{t.staffReqHoliday}</Label>
+                              <Input
+                                type="number"
+                                min={0}
+                                value={holCount}
+                                onChange={e => updateHolidayStaffCount(i, parseInt(e.target.value) || 0)}
+                                data-testid={`input-holiday-staff-per-shift-${i}`}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
