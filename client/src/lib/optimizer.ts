@@ -1,5 +1,11 @@
-import type { Schedule, StaffMember, SchedulerConfig, DaySchedule, OptimizerResult } from "@shared/schema";
+import type { StaffMember, SchedulerConfig, DaySchedule, OptimizerResult } from "@shared/schema";
 import { getDaysInMonth } from "date-fns";
+
+interface FillStrategy {
+  order: "forward" | "reverse" | "random" | "hardest-first" | "weekday-first" | "holiday-first";
+  scoring: "balanced" | "greedy-load" | "random-biased" | "minimal";
+  staffShuffle: boolean;
+}
 
 export class ShiftOptimizer {
   private config: SchedulerConfig;
@@ -8,7 +14,7 @@ export class ShiftOptimizer {
   private year: number;
   private daysInMonth: number;
   private schedule: DaySchedule[] = [];
-  
+
   private staffWorkLoad: Map<string, number>;
   private staffShiftCounts: Map<string, number[]>;
 
@@ -26,7 +32,7 @@ export class ShiftOptimizer {
     this.month = month;
     this.year = year;
     this.daysInMonth = getDaysInMonth(new Date(year, month - 1));
-    
+
     this.staffLookup = new Map();
     staff.forEach(s => this.staffLookup.set(s.id, s));
 
@@ -52,7 +58,7 @@ export class ShiftOptimizer {
     this.staffHolidayShiftCounts = new Map();
     this.staffWeekdayLoad = new Map();
     this.staffWeekdayShiftCounts = new Map();
-    
+
     staff.forEach(s => {
       this.staffWorkLoad.set(s.id, 0);
       this.staffShiftCounts.set(s.id, new Array(config.shiftNames.length).fill(0));
@@ -68,12 +74,16 @@ export class ShiftOptimizer {
   }
 
   public optimize(): OptimizerResult {
-    const maxAttempts = 100;
+    const infeasible = this.checkFeasibility();
+    if (infeasible) {
+      throw new Error(infeasible);
+    }
+
     let bestResult: OptimizerResult | null = null;
     let bestScore = Infinity;
-    let lastError: Error | null = null;
 
-    const strategies = this.generateStrategies();
+    const maxAttempts = 500;
+    const strategies = this.generateStrategies(maxAttempts);
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
@@ -98,8 +108,7 @@ export class ShiftOptimizer {
         }
 
         if (score <= 1) break;
-      } catch (e) {
-        lastError = e as Error;
+      } catch (_e) {
       }
     }
 
@@ -107,43 +116,121 @@ export class ShiftOptimizer {
       return bestResult;
     }
 
-    throw lastError || new Error("Optimization failed after multiple attempts. Please check constraints or add more staff.");
+    const relaxedResult = this.tryWithRelaxedConstraints();
+    if (relaxedResult) {
+      return relaxedResult;
+    }
+
+    throw new Error(
+      "Could not find a valid schedule. The constraints may be too tight. " +
+      "Try adding more staff, increasing max shifts per person, or reducing blocked dates."
+    );
   }
 
-  private generateStrategies(): FillStrategy[] {
+  private checkFeasibility(): string | null {
+    for (let day = 1; day <= this.daysInMonth; day++) {
+      for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
+        const required = this.config.staffPerShift[shiftIdx];
+        let available = 0;
+
+        for (const member of this.staff) {
+          const isBlocked = member.blocked.some(b => b.date === day && (b.shift === -1 || b.shift === shiftIdx));
+          if (!isBlocked) available++;
+        }
+
+        if (available < required) {
+          return `Day ${day}, Shift "${this.config.shiftNames[shiftIdx]}": ` +
+            `needs ${required} staff but only ${available} are available. ` +
+            `This is impossible to solve. Please add more staff or remove some blocked dates for this day.`;
+        }
+      }
+    }
+
+    const totalSlotsPerDay = this.config.staffPerShift.reduce((a, b) => a + b, 0);
+    if (totalSlotsPerDay > this.staff.length) {
+      return `Each day requires ${totalSlotsPerDay} staff slots but only ${this.staff.length} staff members exist. ` +
+        `Please add more staff or reduce staff per shift.`;
+    }
+
+    return null;
+  }
+
+  private tryWithRelaxedConstraints(): OptimizerResult | null {
+    for (let relaxLevel = 1; relaxLevel <= 3; relaxLevel++) {
+      const originalMaxShifts = this.staff.map(s => s.maxShifts);
+
+      this.staff.forEach(s => {
+        s.maxShifts = s.maxShifts + relaxLevel;
+      });
+
+      const strategies = this.generateStrategies(200);
+
+      for (let attempt = 0; attempt < 200; attempt++) {
+        try {
+          this.resetState();
+          this.initializeSchedule();
+
+          const strategy = strategies[attempt % strategies.length];
+          this.fillAllShiftsWithStrategy(strategy);
+
+          this.localRepair(5000);
+          this.circadianRepair(3000);
+
+          const metrics = this.calculateMetrics();
+
+          this.staff.forEach((s, i) => {
+            s.maxShifts = originalMaxShifts[i];
+          });
+
+          return {
+            schedule: JSON.parse(JSON.stringify(this.schedule)),
+            metrics
+          };
+        } catch (_e) {
+        }
+      }
+
+      this.staff.forEach((s, i) => {
+        s.maxShifts = originalMaxShifts[i];
+      });
+    }
+
+    return null;
+  }
+
+  private generateStrategies(count: number): FillStrategy[] {
     const strategies: FillStrategy[] = [];
 
-    strategies.push({ order: "hardest-first", scoring: "balanced" });
-    strategies.push({ order: "hardest-first", scoring: "greedy-load" });
-    strategies.push({ order: "hardest-first", scoring: "random-biased" });
-    strategies.push({ order: "hardest-first", scoring: "minimal" });
+    const orders: FillStrategy["order"][] = ["hardest-first", "forward", "reverse", "random", "weekday-first", "holiday-first"];
+    const scorings: FillStrategy["scoring"][] = ["balanced", "greedy-load", "random-biased", "minimal"];
 
-    strategies.push({ order: "forward", scoring: "balanced" });
-    strategies.push({ order: "reverse", scoring: "balanced" });
-    strategies.push({ order: "weekday-first", scoring: "balanced" });
-    strategies.push({ order: "holiday-first", scoring: "balanced" });
+    for (let i = 0; i < count; i++) {
+      let order: FillStrategy["order"];
+      const r = Math.random();
+      if (r < 0.50) {
+        order = "hardest-first";
+      } else if (r < 0.65) {
+        order = "random";
+      } else if (r < 0.75) {
+        order = "forward";
+      } else if (r < 0.85) {
+        order = "reverse";
+      } else if (r < 0.92) {
+        order = "weekday-first";
+      } else {
+        order = "holiday-first";
+      }
 
-    strategies.push({ order: "forward", scoring: "greedy-load" });
-    strategies.push({ order: "reverse", scoring: "greedy-load" });
+      const scoring = scorings[Math.floor(Math.random() * scorings.length)];
+      const staffShuffle = Math.random() < 0.5;
 
-    for (let i = 0; i < 30; i++) {
-      strategies.push({ order: "hardest-first", scoring: "random-biased" });
+      strategies.push({ order, scoring, staffShuffle });
     }
-    for (let i = 0; i < 15; i++) {
-      strategies.push({ order: "hardest-first", scoring: "balanced" });
-    }
-    for (let i = 0; i < 15; i++) {
-      strategies.push({ order: "hardest-first", scoring: "greedy-load" });
-    }
-    for (let i = 0; i < 10; i++) {
-      strategies.push({ order: "random", scoring: "balanced" });
-    }
-    for (let i = 0; i < 10; i++) {
-      strategies.push({ order: "random", scoring: "random-biased" });
-    }
-    for (let i = 0; i < 10; i++) {
-      strategies.push({ order: "random", scoring: "minimal" });
-    }
+
+    strategies[0] = { order: "hardest-first", scoring: "balanced", staffShuffle: false };
+    strategies[1] = { order: "hardest-first", scoring: "greedy-load", staffShuffle: false };
+    strategies[2] = { order: "forward", scoring: "balanced", staffShuffle: false };
+    strategies[3] = { order: "hardest-first", scoring: "random-biased", staffShuffle: true };
 
     return strategies;
   }
@@ -239,16 +326,13 @@ export class ShiftOptimizer {
     this.schedule = [];
     for (let day = 1; day <= this.daysInMonth; day++) {
       const shifts: string[][] = Array(this.config.shiftNames.length).fill([]).map(() => []);
-      this.schedule.push({
-        date: day,
-        shifts
-      });
+      this.schedule.push({ date: day, shifts });
     }
   }
 
   private fillAllShiftsWithStrategy(strategy: FillStrategy) {
     const dayOrder = this.getDayOrder(strategy);
-    const maxBacktracks = 500;
+    const maxBacktracks = 5000;
     let backtracks = 0;
 
     const filledDays = new Set<number>();
@@ -256,6 +340,7 @@ export class ShiftOptimizer {
 
     while (orderIdx < dayOrder.length) {
       const dayIdx = dayOrder[orderIdx];
+
       const success = this.fillDayShifts(dayIdx, strategy);
 
       if (success) {
@@ -263,17 +348,24 @@ export class ShiftOptimizer {
         orderIdx++;
       } else {
         if (backtracks >= maxBacktracks) {
-          throw new Error(`Cannot fill Day ${dayIdx + 1}. Backtrack limit reached.`);
+          throw new Error(`Backtrack limit reached at Day ${dayIdx + 1}.`);
         }
 
-        if (orderIdx > 0) {
-          const prevDayIdx = dayOrder[orderIdx - 1];
+        const clearCount = Math.min(
+          Math.max(1, Math.floor(Math.random() * Math.min(5, orderIdx))),
+          orderIdx
+        );
+
+        for (let c = 0; c < clearCount && orderIdx > 0; c++) {
+          orderIdx--;
+          const prevDayIdx = dayOrder[orderIdx];
           this.clearDay(prevDayIdx);
           filledDays.delete(prevDayIdx);
-          orderIdx--;
           backtracks++;
-        } else {
-          throw new Error(`Cannot fill Day ${dayIdx + 1}, Shift assignments impossible.`);
+        }
+
+        if (orderIdx === 0 && !success) {
+          throw new Error(`Cannot fill Day ${dayIdx + 1}. No solution found.`);
         }
       }
     }
@@ -286,7 +378,9 @@ export class ShiftOptimizer {
       daySchedule.shifts[si] = [];
     }
 
-    for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
+    const shiftOrder = this.getShiftFillOrder(dayIdx);
+
+    for (const shiftIdx of shiftOrder) {
       const requiredStaff = this.config.staffPerShift[shiftIdx];
 
       for (let k = 0; k < requiredStaff; k++) {
@@ -309,6 +403,26 @@ export class ShiftOptimizer {
     return true;
   }
 
+  private getShiftFillOrder(dayIdx: number): number[] {
+    const date = dayIdx + 1;
+    const indices = Array.from({ length: this.config.shiftNames.length }, (_, i) => i);
+
+    const scored = indices.map(shiftIdx => {
+      const required = this.config.staffPerShift[shiftIdx];
+      let available = 0;
+      for (const member of this.staff) {
+        const isBlocked = member.blocked.some(b => b.date === date && (b.shift === -1 || b.shift === shiftIdx));
+        if (!isBlocked && (this.staffWorkLoad.get(member.id) || 0) < member.maxShifts) {
+          available++;
+        }
+      }
+      return { shiftIdx, slack: available - required };
+    });
+
+    scored.sort((a, b) => a.slack - b.slack);
+    return scored.map(s => s.shiftIdx);
+  }
+
   private clearDay(dayIdx: number) {
     const daySchedule = this.schedule[dayIdx];
     for (let si = 0; si < daySchedule.shifts.length; si++) {
@@ -320,9 +434,14 @@ export class ShiftOptimizer {
   }
 
   private selectBestCandidate(date: number, shiftIdx: number, currentAssigned: string[], strategy: FillStrategy): StaffMember | null {
+    let staffList = this.staff;
+    if (strategy.staffShuffle) {
+      staffList = this.shuffleArray([...this.staff]);
+    }
+
     const candidates: { member: StaffMember; score: number }[] = [];
 
-    for (const member of this.staff) {
+    for (const member of staffList) {
       if (!this.canAssign(member, date, shiftIdx, currentAssigned)) {
         continue;
       }
@@ -335,7 +454,7 @@ export class ShiftOptimizer {
     candidates.sort((a, b) => a.score - b.score);
 
     if (strategy.scoring === "random-biased" || strategy.scoring === "minimal") {
-      const topN = Math.min(Math.max(3, Math.ceil(candidates.length * 0.3)), candidates.length);
+      const topN = Math.min(Math.max(3, Math.ceil(candidates.length * 0.4)), candidates.length);
       const idx = Math.floor(Math.random() * topN);
       return candidates[idx].member;
     }
@@ -363,7 +482,6 @@ export class ShiftOptimizer {
 
     if (date > 1) {
       const prevDaySchedule = this.schedule[date - 2];
-      
       for (const rule of this.config.consecutiveRules) {
         if (rule.to === shiftIdx) {
           if (prevDaySchedule.shifts[rule.from].includes(member.id)) {
@@ -378,7 +496,7 @@ export class ShiftOptimizer {
       for (const rule of this.config.consecutiveRules) {
         if (rule.from === shiftIdx) {
           const nextShiftAssigned = nextDaySchedule.shifts[rule.to];
-          if (nextShiftAssigned.length > 0 && nextShiftAssigned.includes(member.id)) {
+          if (nextShiftAssigned.length >= this.config.staffPerShift[rule.to] && nextShiftAssigned.includes(member.id)) {
             return false;
           }
         }
@@ -698,7 +816,7 @@ export class ShiftOptimizer {
     return score;
   }
 
-  private checkConsecutiveRulesForSwap(member: StaffMember, dayIdx: number, shiftIdx: number, excludeStaffId?: string): boolean {
+  private checkConsecutiveRulesForSwap(member: StaffMember, dayIdx: number, shiftIdx: number, _excludeStaffId?: string): boolean {
     const date = dayIdx + 1;
 
     if (date > 1) {
@@ -737,17 +855,17 @@ export class ShiftOptimizer {
       const underLoadedId = staffIds[0];
       const overLoadedId = staffIds[staffIds.length - 1];
       const loadDiff = (this.staffWorkLoad.get(overLoadedId) || 0) - (this.staffWorkLoad.get(underLoadedId) || 0);
-      
+
       if (loadDiff > 1) {
         if (this.trySwap(overLoadedId, underLoadedId)) continue;
       }
 
       let foundSwap = false;
       for (let sIdx = 0; sIdx < this.config.shiftNames.length; sIdx++) {
-        const sortedByShift = [...staffIds].sort((a, b) => 
+        const sortedByShift = [...staffIds].sort((a, b) =>
           (this.staffShiftCounts.get(a)![sIdx] || 0) - (this.staffShiftCounts.get(b)![sIdx] || 0)
         );
-        
+
         const minShiftId = sortedByShift[0];
         const maxShiftId = sortedByShift[sortedByShift.length - 1];
         const maxVal = this.staffShiftCounts.get(maxShiftId)![sIdx] || 0;
@@ -805,8 +923,8 @@ export class ShiftOptimizer {
           }
         }
       }
-      
-      if (!foundSwap && loadDiff <= 1) break; 
+
+      if (!foundSwap && loadDiff <= 1) break;
     }
   }
 
@@ -889,7 +1007,7 @@ export class ShiftOptimizer {
 
             if (this.canAssign(toMember, date, shiftIdx, tempAssigned1) &&
                 this.canAssign(fromMember, date2, sIdx2, tempAssigned2)) {
-              
+
               daySchedule.shifts[shiftIdx][assignedIndex] = toId;
               daySchedule2.shifts[sIdx2][idx2] = fromId;
 
@@ -897,7 +1015,7 @@ export class ShiftOptimizer {
               this.updateStats(toId, shiftIdx, date);
               this.removeStats(toId, sIdx2, date2);
               this.updateStats(fromId, sIdx2, date2);
-              
+
               return true;
             }
           }
@@ -948,7 +1066,7 @@ export class ShiftOptimizer {
               const tempAssigned2 = assignedStaff2.filter(id => id !== toId);
               if (this.canAssign(toMember, dayIdx + 1, targetShiftIdx, tempAssigned1) &&
                   this.canAssign(fromMember, dayIdx2 + 1, sIdx2, tempAssigned2)) {
-                
+
                 daySchedule.shifts[targetShiftIdx][assignedIndex] = toId;
                 daySchedule2.shifts[sIdx2][idx2] = fromId;
 
@@ -956,7 +1074,7 @@ export class ShiftOptimizer {
                 this.updateStats(toId, targetShiftIdx, dayIdx + 1);
                 this.removeStats(toId, sIdx2, dayIdx2 + 1);
                 this.updateStats(fromId, sIdx2, dayIdx2 + 1);
-                
+
                 return true;
               }
             }
@@ -984,10 +1102,10 @@ export class ShiftOptimizer {
 
           if (this.canAssign(toMember, dayIdx + 1, shiftIdx, tempAssigned)) {
             daySchedule.shifts[shiftIdx][assignedIndex] = toId;
-            
+
             this.removeStats(fromId, shiftIdx, dayIdx + 1);
             this.updateStats(toId, shiftIdx, dayIdx + 1);
-            
+
             return true;
           }
         }
@@ -1026,9 +1144,4 @@ export class ShiftOptimizer {
       perStaff
     };
   }
-}
-
-interface FillStrategy {
-  order: "forward" | "reverse" | "random" | "hardest-first" | "weekday-first" | "holiday-first";
-  scoring: "balanced" | "greedy-load" | "random-biased" | "minimal";
 }
