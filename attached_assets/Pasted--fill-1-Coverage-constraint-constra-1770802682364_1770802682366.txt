@@ -1,0 +1,134 @@
+สาเหตุทางเทคนิคที่ทำให้ fill ไม่ครบ และวิธีแก้
+1. Coverage constraint ใช้ <= แทน =
+ปัญหา
+
+ใน constraint ของแต่ละวัน–เวร ใช้รูปแบบ
+
+Σ x[i,d,s] ≤ required[d,s]
+
+
+ซึ่งเปิดช่องให้ solver เลือกไม่ fill บางเวรได้ แม้จะยังมี capacity เหลือ
+
+วิธีแก้ (เลือกอย่างใดอย่างหนึ่ง)
+
+ทางเลือก A (บังคับเต็ม)
+
+Σ x[i,d,s] = required[d,s]
+
+
+ทางเลือก B (ยัง allow ว่าง แต่มี penalty)
+เพิ่ม slack variable u[d,s] ≥ 0
+
+Σ x[i,d,s] + u[d,s] = required[d,s]
+
+
+แล้วเพิ่มใน objective:
+
+- M · Σ u[d,s]   (M เป็นค่ามาก)
+
+2. Fairness model ใช้ min/max ผิดโครงสร้าง
+ปัญหา
+
+ใช้ตัวแปร wmin, wmax (เช่นเดียวกับ smin/smax, hmin/hmax) ในรูปแบบ
+
+wmax ≥ Σ x[i]
+wmin ≤ Σ x[i]
+maximize (wmin - wmax)
+
+
+โครงสร้างนี้ทำให้ solution ที่ดีที่สุดคือ Σ x[i] = 0
+เพราะช่วยกด wmax และไม่ violate constraint
+
+วิธีแก้ (ห้ามใช้ min/max โดยตรงกับ Σx)
+
+แทนด้วย deviation variable
+
+workload_i = Σ x[i]
+avg = constant หรือ variable
+
+workload_i - avg ≤ dev_i
+avg - workload_i ≤ dev_i
+
+
+objective:
+
+minimize Σ dev_i
+
+3. Fairness ถูก optimize พร้อม coverage ใน objective เดียว
+ปัญหา
+
+coverage และ fairness อยู่ใน objective เดียว ทำให้ solver trade-off โดยยอมเสีย coverage เพื่อลด fairness penalty
+
+วิธีแก้ (มาตรฐาน)
+
+ใช้ 2-phase optimization
+
+Phase 1
+
+maximize Σ x[i,d,s]
+
+
+เก็บค่า coverage* ที่ดีที่สุด
+
+Phase 2
+
+maximize Σ x[i,d,s] - fairness_penalty
+subject to Σ x[i,d,s] ≥ coverage*
+
+4. ไม่มีตัวแปรแทน unfilled slot
+ปัญหา
+
+objective ไม่มี term ที่แทน “เวรที่ว่าง”
+solver ไม่ถูกลงโทษเมื่อปล่อย slot ว่าง
+
+วิธีแก้
+
+เพิ่ม unfilled variable:
+
+u[d,s] ≥ required[d,s] - Σ x[i,d,s]
+u[d,s] ≥ 0
+
+
+objective:
+
+maximize Σ x[i,d,s] - M · Σ u[d,s]
+
+5. Consecutive constraint ถูกต้อง แต่ทำให้ fairness พังเร็ว
+ปัญหา
+
+sequence constraint เช่น
+
+x[i,d,N] + x[i,d+1,M] ≤ 1
+
+
+เมื่อรวมกับ fairness ที่ model ผิด จะเร่งให้ solver เลือกไม่ assign
+
+วิธีแก้
+
+หลังแก้ fairness ตามข้อ 2–4
+ไม่ต้องแก้ sequence constraint
+
+6. Weight scaling ไม่ใช่ root cause แต่ซ้ำเติม
+ปัญหา
+
+แม้ COVERAGE_W >> FAIRNESS_W
+แต่เมื่อ fairness constraint ผิด โครงสร้าง model ยังผลักไปทาง x = 0
+
+วิธีแก้
+
+แก้ formulation ก่อน ไม่ใช่แค่ปรับ weight
+
+สรุปเชิงเทคนิค
+
+สาเหตุที่ fill ไม่ครบ ไม่ได้มาจาก solver หรือ max shift
+แต่มาจาก:
+
+Coverage constraint อนุญาตให้ไม่ fill
+
+Fairness ใช้ min/max กับ Σx (ผิด modeling)
+
+ไม่มี penalty สำหรับ unfilled slot
+
+Optimize coverage + fairness พร้อมกัน
+
+การแก้ต้องเป็น การแก้ formulation ไม่ใช่ tuning parameter
