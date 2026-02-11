@@ -351,9 +351,14 @@ export class ShiftOptimizer {
     const SHIFT_W = 0.4;
     const HOLIDAY_W = enableHolidayBalance ? 0.6 : 0;
 
-    const avgWorkload = phase1Targets.totalCoverage / N;
-    const shiftTargets = phase1Targets.perShift.map(total => total / N);
-    const avgHoliday = enableHolidayBalance ? phase1Targets.holidayTotal / N : 0;
+    const totalMaxShifts = this.staff.reduce((sum, s) => sum + s.maxShifts, 0);
+    const staffWorkloadTargets = this.staff.map(s => phase1Targets.totalCoverage * (s.maxShifts / totalMaxShifts));
+    const staffShiftTargets = phase1Targets.perShift.map(total =>
+      this.staff.map(s => total * (s.maxShifts / totalMaxShifts))
+    );
+    const staffHolidayTargets = enableHolidayBalance
+      ? this.staff.map(s => phase1Targets.holidayTotal * (s.maxShifts / totalMaxShifts))
+      : this.staff.map(() => 0);
 
     const lines: string[] = [];
 
@@ -366,21 +371,17 @@ export class ShiftOptimizer {
     }
     for (let i = 0; i < N; i++) {
       for (let s = 0; s < S; s++) {
-        if (shiftTargets[s] > 0) {
+        if (staffShiftTargets[s][i] > 0) {
           const w = fmt(SHIFT_W + (Math.random() - 0.5) * 0.001);
           objParts.push(`+ ${w} ds_${i}_${s}`);
         }
       }
     }
-    if (enableHolidayBalance && avgHoliday > 0) {
+    if (enableHolidayBalance && staffHolidayTargets.some(t => t > 0)) {
       for (let i = 0; i < N; i++) {
         const w = fmt(HOLIDAY_W + (Math.random() - 0.5) * 0.001);
         objParts.push(`+ ${w} dh_${i}`);
       }
-    }
-    for (const xv of binaryVars) {
-      const n = (Math.random() - 0.5) * 0.0001;
-      objParts.push(n >= 0 ? `+ ${fmt(n)} ${xv}` : `- ${fmt(-n)} ${xv}`);
     }
     lines.push(writeTerms(objParts, 8));
 
@@ -404,13 +405,14 @@ export class ShiftOptimizer {
       lines.push(writeTerms(defTerms, 10));
       lines.push(`  = 0`);
 
-      lines.push(`  c${cIdx.val++}: tw_${i} - dw_${i} <= ${fmt(avgWorkload)}`);
-      lines.push(`  c${cIdx.val++}: - tw_${i} - dw_${i} <= ${fmt(-avgWorkload)}`);
+      const wTarget = staffWorkloadTargets[i];
+      lines.push(`  c${cIdx.val++}: tw_${i} - dw_${i} <= ${fmt(wTarget)}`);
+      lines.push(`  c${cIdx.val++}: - tw_${i} - dw_${i} <= ${fmt(-wTarget)}`);
     }
 
     for (let i = 0; i < N; i++) {
       for (let s = 0; s < S; s++) {
-        const target = shiftTargets[s];
+        const target = staffShiftTargets[s][i];
         if (target === 0) continue;
 
         const shiftVars: string[] = [];
@@ -431,8 +433,10 @@ export class ShiftOptimizer {
       }
     }
 
-    if (enableHolidayBalance && avgHoliday > 0) {
+    if (enableHolidayBalance && staffHolidayTargets.some(t => t > 0)) {
       for (let i = 0; i < N; i++) {
+        const hTarget = staffHolidayTargets[i];
+        if (hTarget === 0) continue;
         const holVars: string[] = [];
         for (let d = 0; d < D; d++) {
           if (!this.isHoliday(d + 1)) continue;
@@ -449,8 +453,8 @@ export class ShiftOptimizer {
         lines.push(writeTerms(defTerms, 10));
         lines.push(`  = 0`);
 
-        lines.push(`  c${cIdx.val++}: th_${i} - dh_${i} <= ${fmt(avgHoliday)}`);
-        lines.push(`  c${cIdx.val++}: - th_${i} - dh_${i} <= ${fmt(-avgHoliday)}`);
+        lines.push(`  c${cIdx.val++}: th_${i} - dh_${i} <= ${fmt(hTarget)}`);
+        lines.push(`  c${cIdx.val++}: - th_${i} - dh_${i} <= ${fmt(-hTarget)}`);
       }
     }
 
@@ -461,13 +465,13 @@ export class ShiftOptimizer {
     }
     for (let i = 0; i < N; i++) {
       for (let s = 0; s < S; s++) {
-        if (shiftTargets[s] > 0) {
+        if (staffShiftTargets[s][i] > 0) {
           lines.push(`  ts_${i}_${s} >= 0`);
           lines.push(`  ds_${i}_${s} >= 0`);
         }
       }
     }
-    if (enableHolidayBalance && avgHoliday > 0) {
+    if (enableHolidayBalance && staffHolidayTargets.some(t => t > 0)) {
       for (let i = 0; i < N; i++) {
         lines.push(`  th_${i} >= 0`);
         lines.push(`  dh_${i} >= 0`);
