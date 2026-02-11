@@ -681,7 +681,7 @@ export class ShiftOptimizer {
     return unfilled;
   }
 
-  private greedyFillUnfilled(schedule: DaySchedule[]): { filled: number; forceFilled: number } {
+  private greedyFillUnfilled(schedule: DaySchedule[]): number {
     const S = this.config.shiftNames.length;
     const D = this.daysInMonth;
 
@@ -704,54 +704,7 @@ export class ShiftOptimizer {
       return { totals, dayAssigned };
     };
 
-    const findCandidates = (
-      d: number, s: number, arr: string[],
-      totals: Map<string, number>, dayAssigned: Map<string, Set<number>>,
-      relaxConsecutive: boolean
-    ) => {
-      const candidates: { idx: number; id: string; total: number }[] = [];
-      for (let i = 0; i < this.staff.length; i++) {
-        const member = this.staff[i];
-        const currentTotal = totals.get(member.id) || 0;
-        if (currentTotal >= member.maxShifts) continue;
-        if (this.isBlocked(i, d, s)) continue;
-
-        const maxPerDay = this.config.shiftsPerDay || S;
-        const dayShifts = dayAssigned.get(member.id);
-        if (dayShifts && dayShifts.has(d)) {
-          let dayCount = 0;
-          for (let ss = 0; ss < S; ss++) {
-            if (schedule[d].shifts[ss].includes(member.id)) dayCount++;
-          }
-          if (dayCount >= maxPerDay) continue;
-        }
-
-        if (!relaxConsecutive) {
-          let violatesConsecutive = false;
-          for (const rule of this.config.consecutiveRules) {
-            if (rule.to === s && d > 0) {
-              if (schedule[d - 1].shifts[rule.from]?.includes(member.id)) {
-                violatesConsecutive = true;
-                break;
-              }
-            }
-            if (rule.from === s && d < D - 1) {
-              if (schedule[d + 1].shifts[rule.to]?.includes(member.id)) {
-                violatesConsecutive = true;
-                break;
-              }
-            }
-          }
-          if (violatesConsecutive) continue;
-        }
-
-        if (arr.includes(member.id)) continue;
-        candidates.push({ idx: i, id: member.id, total: currentTotal });
-      }
-      return candidates;
-    };
-
-    const doPass = (relaxConsecutive: boolean): number => {
+    const doPass = (): number => {
       const { totals, dayAssigned } = rebuildState();
       let passCount = 0;
       for (let d = 0; d < D; d++) {
@@ -761,7 +714,45 @@ export class ShiftOptimizer {
           const arr = schedule[d].shifts[s];
           for (let pos = 0; pos < arr.length; pos++) {
             if (arr[pos] !== "") continue;
-            const candidates = findCandidates(d, s, arr, totals, dayAssigned, relaxConsecutive);
+
+            const candidates: { idx: number; id: string; total: number }[] = [];
+            for (let i = 0; i < this.staff.length; i++) {
+              const member = this.staff[i];
+              const currentTotal = totals.get(member.id) || 0;
+              if (currentTotal >= member.maxShifts) continue;
+              if (this.isBlocked(i, d, s)) continue;
+
+              const maxPerDay = this.config.shiftsPerDay || S;
+              const dayShifts = dayAssigned.get(member.id);
+              if (dayShifts && dayShifts.has(d)) {
+                let dayCount = 0;
+                for (let ss = 0; ss < S; ss++) {
+                  if (schedule[d].shifts[ss].includes(member.id)) dayCount++;
+                }
+                if (dayCount >= maxPerDay) continue;
+              }
+
+              let violatesConsecutive = false;
+              for (const rule of this.config.consecutiveRules) {
+                if (rule.to === s && d > 0) {
+                  if (schedule[d - 1].shifts[rule.from]?.includes(member.id)) {
+                    violatesConsecutive = true;
+                    break;
+                  }
+                }
+                if (rule.from === s && d < D - 1) {
+                  if (schedule[d + 1].shifts[rule.to]?.includes(member.id)) {
+                    violatesConsecutive = true;
+                    break;
+                  }
+                }
+              }
+              if (violatesConsecutive) continue;
+
+              if (arr.includes(member.id)) continue;
+              candidates.push({ idx: i, id: member.id, total: currentTotal });
+            }
+
             if (candidates.length > 0) {
               candidates.sort((a, b) => a.total - b.total);
               const chosen = candidates[0];
@@ -778,22 +769,98 @@ export class ShiftOptimizer {
 
     let filled = 0;
     for (let pass = 0; pass < 3; pass++) {
-      const count = doPass(false);
+      const count = doPass();
       filled += count;
       if (count === 0) break;
     }
 
-    let forceFilled = 0;
-    const remaining = this.findUnfilledSlots(schedule);
-    if (remaining.length > 0) {
-      for (let pass = 0; pass < 3; pass++) {
-        const count = doPass(true);
-        forceFilled += count;
-        if (count === 0) break;
+    return filled;
+  }
+
+  private diagnoseUnfilled(schedule: DaySchedule[]): string[] {
+    const S = this.config.shiftNames.length;
+    const D = this.daysInMonth;
+    const diagnostics: string[] = [];
+    const unfilled = this.findUnfilledSlots(schedule);
+    if (unfilled.length === 0) return diagnostics;
+
+    const staffTotals = new Map<string, number>();
+    for (const member of this.staff) staffTotals.set(member.id, 0);
+    for (let d = 0; d < D; d++) {
+      for (let s = 0; s < S; s++) {
+        for (const staffId of schedule[d].shifts[s]) {
+          if (staffId) staffTotals.set(staffId, (staffTotals.get(staffId) || 0) + 1);
+        }
       }
     }
 
-    return { filled, forceFilled };
+    for (const slot of unfilled) {
+      const d = slot.date - 1;
+      const s = slot.shiftIdx;
+      const reasons: { name: string; reason: string }[] = [];
+
+      for (let i = 0; i < this.staff.length; i++) {
+        const member = this.staff[i];
+        const currentTotal = staffTotals.get(member.id) || 0;
+
+        if (schedule[d].shifts[s].includes(member.id)) {
+          continue;
+        }
+        if (currentTotal >= member.maxShifts) {
+          reasons.push({ name: member.name, reason: "at maxShifts" });
+          continue;
+        }
+        if (this.isBlocked(i, d, s)) {
+          reasons.push({ name: member.name, reason: "blocked" });
+          continue;
+        }
+
+        const maxPerDay = this.config.shiftsPerDay || S;
+        let dayCount = 0;
+        for (let ss = 0; ss < S; ss++) {
+          if (schedule[d].shifts[ss].includes(member.id)) dayCount++;
+        }
+        if (dayCount >= maxPerDay) {
+          reasons.push({ name: member.name, reason: `at maxPerDay(${maxPerDay})` });
+          continue;
+        }
+
+        let consecutiveBlock = "";
+        for (const rule of this.config.consecutiveRules) {
+          if (rule.to === s && d > 0) {
+            if (schedule[d - 1].shifts[rule.from]?.includes(member.id)) {
+              consecutiveBlock = `worked ${this.config.shiftNames[rule.from]} on Day${slot.date - 1}`;
+              break;
+            }
+          }
+          if (rule.from === s && d < D - 1) {
+            if (schedule[d + 1].shifts[rule.to]?.includes(member.id)) {
+              consecutiveBlock = `works ${this.config.shiftNames[rule.to]} on Day${slot.date + 1}`;
+              break;
+            }
+          }
+        }
+        if (consecutiveBlock) {
+          reasons.push({ name: member.name, reason: `consecutive rule: ${consecutiveBlock}` });
+          continue;
+        }
+
+        reasons.push({ name: member.name, reason: "unknown" });
+      }
+
+      const grouped: Record<string, string[]> = {};
+      for (const r of reasons) {
+        if (!grouped[r.reason]) grouped[r.reason] = [];
+        grouped[r.reason].push(r.name);
+      }
+      const summary = Object.entries(grouped).map(([reason, names]) =>
+        `${names.length} staff ${reason}`
+      ).join(", ");
+
+      diagnostics.push(`Day${slot.date}-${slot.shiftName}(${slot.assigned}/${slot.required}): ${summary}`);
+    }
+
+    return diagnostics;
   }
 
   private makeEmptyResult(warning: string): OptimizerResult {
@@ -912,12 +979,9 @@ export class ShiftOptimizer {
     console.log(`[OPT] Solver result (Phase ${usedPhase}): coverage ${coverageBefore}/${totalRequired}, unfilled slots: ${unfilledBefore.length}`);
 
     if (unfilledBefore.length > 0) {
-      const { filled, forceFilled } = this.greedyFillUnfilled(schedule);
-      if (filled > 0) {
-        console.log(`[OPT] Greedy post-fill: filled ${filled} slot(s) respecting all constraints`);
-      }
-      if (forceFilled > 0) {
-        console.log(`[OPT] Force-fill: filled ${forceFilled} slot(s) by relaxing consecutive shift rules`);
+      const greedyFilled = this.greedyFillUnfilled(schedule);
+      if (greedyFilled > 0) {
+        console.log(`[OPT] Greedy post-fill: filled ${greedyFilled} slot(s) respecting all hard constraints`);
       }
     }
 
@@ -928,6 +992,10 @@ export class ShiftOptimizer {
     console.log(`[OPT] Final result: coverage ${finalCoverage}/${totalRequired}, unfilled slots: ${unfilledSlots.length}`);
     if (unfilledSlots.length > 0) {
       console.log(`[OPT] Unfilled: ${unfilledSlots.slice(0, 10).map(u => `Day${u.date}-${u.shiftName}(${u.assigned}/${u.required})`).join(', ')}${unfilledSlots.length > 10 ? '...' : ''}`);
+      const diagnostics = this.diagnoseUnfilled(schedule);
+      for (const diag of diagnostics) {
+        console.log(`[OPT] Diagnosis: ${diag}`);
+      }
     }
 
     const result: OptimizerResult = {
