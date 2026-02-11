@@ -176,7 +176,15 @@ export default function WizardPage() {
         const res = optimizer.optimize();
         setResult(res);
         setStep(4);
-        toast({ title: t.scheduleGenerated, description: t.optimizationComplete });
+        if (res.isPartial && res.unfilledSlots && res.unfilledSlots.length > 0) {
+          toast({ 
+            title: t.partialScheduleWarning, 
+            description: t.partialScheduleDesc, 
+            variant: "destructive" 
+          });
+        } else {
+          toast({ title: t.scheduleGenerated, description: t.optimizationComplete });
+        }
       } catch (e: any) {
         toast({ 
           title: t.optimizationFailed, 
@@ -199,6 +207,8 @@ export default function WizardPage() {
         config,
         staff,
         result: result.schedule as any,
+        isPartial: result.isPartial || false,
+        unfilledSlots: result.unfilledSlots || [],
         isPublished: false
       });
       setLocation("/history");
@@ -850,7 +860,8 @@ export default function WizardPage() {
                     config={config} 
                     staff={staff} 
                     month={month} 
-                    year={year} 
+                    year={year}
+                    unfilledSlots={result.unfilledSlots}
                   />
                 </TabsContent>
 

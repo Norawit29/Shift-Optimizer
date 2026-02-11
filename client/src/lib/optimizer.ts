@@ -1,4 +1,4 @@
-import type { StaffMember, SchedulerConfig, DaySchedule, OptimizerResult } from "@shared/schema";
+import type { StaffMember, SchedulerConfig, DaySchedule, OptimizerResult, UnfilledSlot } from "@shared/schema";
 import { getDaysInMonth } from "date-fns";
 
 type Slot = { dayIdx: number; shiftIdx: number; position: number };
@@ -69,13 +69,12 @@ export class ShiftOptimizer {
     return this.holidayDays.has(date);
   }
 
+  private feasibilityMsg: string | null = null;
+
   public optimize(): OptimizerResult {
     this.optimizeStartTime = Date.now();
 
-    const infeasible = this.checkFeasibility();
-    if (infeasible) {
-      throw new Error(infeasible);
-    }
+    this.feasibilityMsg = this.checkFeasibility();
 
     let bestResult: OptimizerResult | null = null;
     let bestScore = Infinity;
@@ -115,22 +114,14 @@ export class ShiftOptimizer {
       return bestResult;
     }
 
-    if (this.isTimedOut()) {
-      throw new Error(
-        "Timed out after 5 minutes without finding a valid schedule. " +
-        "Try adding more staff, increasing max shifts per person, or reducing blocked dates."
-      );
+    if (!this.isTimedOut()) {
+      const relaxedResult = this.tryWithRelaxedConstraints();
+      if (relaxedResult) {
+        return relaxedResult;
+      }
     }
 
-    const relaxedResult = this.tryWithRelaxedConstraints();
-    if (relaxedResult) {
-      return relaxedResult;
-    }
-
-    throw new Error(
-      "Could not find a valid schedule. The constraints may be too tight. " +
-      "Try adding more staff, increasing max shifts per person, or reducing blocked dates."
-    );
+    return this.buildPartialResult();
   }
 
   private checkFeasibility(): string | null {
@@ -208,6 +199,80 @@ export class ShiftOptimizer {
     }
 
     return null;
+  }
+
+  private buildPartialResult(): OptimizerResult {
+    this.resetState();
+    this.initializeSchedule();
+
+    try {
+      this.greedyFill();
+    } catch (_e) {
+    }
+
+    this.localRepair(2000);
+
+    const unfilledSlots = this.findUnfilledSlots();
+    const metrics = this.calculateMetrics();
+
+    return {
+      schedule: JSON.parse(JSON.stringify(this.schedule)),
+      metrics,
+      isPartial: true,
+      unfilledSlots,
+      feasibilityWarning: this.feasibilityMsg || undefined,
+    };
+  }
+
+  private greedyFill() {
+    for (let dayIdx = 0; dayIdx < this.daysInMonth; dayIdx++) {
+      for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
+        const required = this.config.staffPerShift[shiftIdx];
+        const assigned = this.schedule[dayIdx].shifts[shiftIdx];
+
+        while (assigned.length < required) {
+          const candidates = this.staff.filter(s => {
+            const member = this.staffLookup.get(s.id)!;
+            return this.canAssignCSP(member, dayIdx, shiftIdx);
+          });
+
+          if (candidates.length === 0) {
+            assigned.push("");
+            continue;
+          }
+
+          candidates.sort((a, b) => {
+            const loadA = this.staffWorkLoad.get(a.id) || 0;
+            const loadB = this.staffWorkLoad.get(b.id) || 0;
+            return loadA - loadB;
+          });
+
+          const chosen = candidates[0];
+          assigned.push(chosen.id);
+          this.updateStats(chosen.id, shiftIdx, dayIdx + 1);
+        }
+      }
+    }
+  }
+
+  private findUnfilledSlots(): UnfilledSlot[] {
+    const unfilled: UnfilledSlot[] = [];
+    for (let dayIdx = 0; dayIdx < this.daysInMonth; dayIdx++) {
+      for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
+        const required = this.config.staffPerShift[shiftIdx];
+        const assigned = this.schedule[dayIdx].shifts[shiftIdx].filter(id => id !== "");
+        if (assigned.length < required) {
+          unfilled.push({
+            date: dayIdx + 1,
+            shiftIdx,
+            shiftName: this.config.shiftNames[shiftIdx],
+            required,
+            assigned: assigned.length,
+          });
+        }
+      }
+    }
+    return unfilled;
   }
 
   private cspNodeCount = 0;

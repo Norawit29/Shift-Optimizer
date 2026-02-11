@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { format, setDate } from "date-fns";
 import * as XLSX from "xlsx";
-import type { DaySchedule, SchedulerConfig, StaffMember } from "@shared/schema";
+import type { DaySchedule, SchedulerConfig, StaffMember, UnfilledSlot } from "@shared/schema";
 import { useLanguage } from "@/context/LanguageContext";
 import { LanguageToggle } from "@/components/LanguageToggle";
 
@@ -136,7 +136,8 @@ export default function ScheduleDetailsPage() {
               config={schedule.config} 
               staff={schedule.staff} 
               month={schedule.month} 
-              year={schedule.year} 
+              year={schedule.year}
+              unfilledSlots={(schedule as any).unfilledSlots as UnfilledSlot[] | undefined}
             />
           </TabsContent>
         </Tabs>

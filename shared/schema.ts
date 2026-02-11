@@ -35,12 +35,23 @@ export interface StaffMetrics {
   holidayByShift?: number[];
 }
 
+export interface UnfilledSlot {
+  date: number;
+  shiftIdx: number;
+  shiftName: string;
+  required: number;
+  assigned: number;
+}
+
 export interface OptimizerResult {
   schedule: DaySchedule[];
   metrics: {
     range: number;
     perStaff: StaffMetrics[];
   };
+  isPartial?: boolean;
+  unfilledSlots?: UnfilledSlot[];
+  feasibilityWarning?: string;
 }
 
 // === TABLE DEFINITIONS ===
@@ -60,6 +71,8 @@ export const schedules = pgTable("schedules", {
     shifts: number[][];
   }[]>().default([]),
 
+  isPartial: boolean("is_partial").default(false),
+  unfilledSlots: jsonb("unfilled_slots").$type<UnfilledSlot[]>().default([]),
   isPublished: boolean("is_published").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

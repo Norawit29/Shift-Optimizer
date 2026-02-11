@@ -131,6 +131,13 @@ const translations = {
     optimizationComplete: "Optimization complete!",
     optimizationFailed: "Optimization Failed",
 
+    // Partial result
+    partialScheduleWarning: "Partial Schedule",
+    partialScheduleDesc: "Could not fill all slots. Unfilled positions are highlighted in red for you to assign manually.",
+    unfilledSlots: "Unfilled Slots",
+    unfilledSlotDetail: "needs {required} staff but only {assigned} assigned",
+    vacancy: "VACANT",
+
     // Months
     months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
 
@@ -266,6 +273,13 @@ const translations = {
     scheduleGenerated: "สร้างตารางเวรแล้ว",
     optimizationComplete: "จัดเวรเสร็จสมบูรณ์!",
     optimizationFailed: "จัดเวรล้มเหลว",
+
+    // Partial result
+    partialScheduleWarning: "ตารางเวรไม่สมบูรณ์",
+    partialScheduleDesc: "ไม่สามารถจัดคนลงได้ครบทุกช่อง ช่องที่ยังไม่มีคนจะแสดงเป็นสีแดง ให้ท่านจัดเองต่อได้",
+    unfilledSlots: "ช่องที่ยังขาดคน",
+    unfilledSlotDetail: "ต้องการ {required} คน แต่จัดได้ {assigned} คน",
+    vacancy: "ว่าง",
 
     // Months
     months: ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"],
