@@ -165,6 +165,7 @@ export class ShiftOptimizer {
     const D = this.daysInMonth;
     const S = this.config.shiftNames.length;
 
+    const maxPerDay = this.config.shiftsPerDay || S;
     for (let i = 0; i < N; i++) {
       for (let d = 0; d < D; d++) {
         const dayVars: string[] = [];
@@ -172,11 +173,11 @@ export class ShiftOptimizer {
           const v = this.vn(i, d, s);
           if (varMap.has(v)) dayVars.push(v);
         }
-        if (dayVars.length > 1) {
+        if (dayVars.length > 1 && maxPerDay < dayVars.length) {
           const terms = dayVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
           lines.push(`  c${cIdx.val++}:`);
           lines.push(writeTerms(terms, 10));
-          lines.push(`  <= 1`);
+          lines.push(`  <= ${maxPerDay}`);
         }
       }
     }
