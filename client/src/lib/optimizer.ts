@@ -136,6 +136,13 @@ export class ShiftOptimizer {
     }
 
     if (bestResult) {
+      const unfilledSlots = this.findUnfilledSlots(bestResult.schedule);
+
+      if (unfilledSlots.length > 0) {
+        bestResult.isPartial = true;
+        bestResult.unfilledSlots = unfilledSlots;
+        bestResult.feasibilityWarning = this.feasibilityMsg || undefined;
+      }
       return bestResult;
     }
 
@@ -718,19 +725,21 @@ export class ShiftOptimizer {
     }
   }
 
-  private findUnfilledSlots(): UnfilledSlot[] {
+  private findUnfilledSlots(targetSchedule?: DaySchedule[]): UnfilledSlot[] {
+    const sched = targetSchedule || this.schedule;
     const unfilled: UnfilledSlot[] = [];
     for (let dayIdx = 0; dayIdx < this.daysInMonth; dayIdx++) {
       for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
         const required = this.config.staffPerShift[shiftIdx];
-        const assigned = this.schedule[dayIdx].shifts[shiftIdx].filter(id => id !== "");
-        if (assigned.length < required) {
+        const shiftArray = sched[dayIdx]?.shifts?.[shiftIdx];
+        const filledCount = shiftArray ? shiftArray.filter(id => id !== "").length : 0;
+        if (filledCount < required) {
           unfilled.push({
             date: dayIdx + 1,
             shiftIdx,
             shiftName: this.config.shiftNames[shiftIdx],
             required,
-            assigned: assigned.length,
+            assigned: filledCount,
           });
         }
       }
