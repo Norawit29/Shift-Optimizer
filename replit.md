@@ -41,8 +41,9 @@ The project uses a **monorepo layout** with three top-level directories:
 - **Build Tool**: Vite
 
 Key pages:
-- `HomePage` — Landing page with navigation to create or view history
-- `WizardPage` — Multi-step form wizard for schedule creation (config → staff → blocked dates → optimize → save)
+- `HomePage` — Landing page with navigation to create, quick export, or view history
+- `WizardPage` — Multi-step form wizard for schedule creation (config → staff → blocked dates → optimize → save). Accepts `exportOnly` prop for Excel-only mode (no database).
+- `WizardPage (exportOnly)` — Accessed via `/export` route. Same wizard flow but exports directly to Excel instead of saving to database.
 - `HistoryPage` — Lists all saved schedules
 - `ScheduleDetailsPage` — View a specific saved schedule with table and stats
 

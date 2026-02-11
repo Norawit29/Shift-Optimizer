@@ -31,7 +31,8 @@ import {
   Activity,
   History,
   Trash2,
-  CalendarDays
+  CalendarDays,
+  FileSpreadsheet
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { nanoid } from "nanoid";
@@ -39,6 +40,7 @@ import { Link, useLocation } from "wouter";
 import { getDaysInMonth, format, setDate, parseISO, differenceInCalendarDays, addDays } from "date-fns";
 import { useLanguage } from "@/context/LanguageContext";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import * as XLSX from "xlsx";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June", 
@@ -60,7 +62,78 @@ const INITIAL_STAFF: StaffMember[] = [
   { id: "5", name: "Dr. Grey", maxShifts: 20, blocked: [] },
 ];
 
-export default function WizardPage() {
+function exportToExcel(
+  name: string,
+  month: number,
+  year: number,
+  result: DaySchedule[],
+  config: SchedulerConfig,
+  staff: StaffMember[],
+  labels: { date: string; day: string; staffName: string; total: string; summary: string; schedule: string }
+) {
+  const isCustomRange = config.useCustomRange && config.customStartDate;
+  const baseDate = isCustomRange
+    ? parseISO(config.customStartDate!)
+    : new Date(year, month - 1, 1);
+  const getStaffName = (id: string) => staff.find(s => s.id === id)?.name || "Unknown";
+  const getDateForIdx = (dayIndex: number): Date => {
+    if (isCustomRange) return addDays(parseISO(config.customStartDate!), dayIndex - 1);
+    return setDate(baseDate, dayIndex);
+  };
+
+  const rows = result.map((day) => {
+    const currentDate = getDateForIdx(day.date);
+    const row: Record<string, string> = {
+      [labels.date]: format(currentDate, "MMM d"),
+      [labels.day]: format(currentDate, "EEEE"),
+    };
+    config.shiftNames.forEach((shiftName, shiftIdx) => {
+      const names = day.shifts[shiftIdx]?.map(id => getStaffName(String(id))) || [];
+      row[shiftName] = names.join(", ");
+    });
+    return row;
+  });
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws["!cols"] = [
+    { wch: 8 },
+    { wch: 12 },
+    ...config.shiftNames.map(() => ({ wch: 35 })),
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, labels.schedule);
+
+  const summaryRows = staff.map(s => {
+    const row: Record<string, string | number> = { [labels.staffName]: s.name };
+    let total = 0;
+    config.shiftNames.forEach((shiftName, shiftIdx) => {
+      const count = result.reduce((acc, day) =>
+        acc + (day.shifts[shiftIdx]?.map(String).includes(s.id) ? 1 : 0), 0);
+      row[shiftName] = count;
+      total += count;
+    });
+    row[labels.total] = total;
+    return row;
+  });
+
+  const ws2 = XLSX.utils.json_to_sheet(summaryRows);
+  ws2["!cols"] = [
+    { wch: 20 },
+    ...config.shiftNames.map(() => ({ wch: 12 })),
+    { wch: 8 },
+  ];
+  XLSX.utils.book_append_sheet(wb, ws2, labels.summary);
+
+  const rangeLabel = isCustomRange
+    ? `${config.customStartDate}_to_${config.customEndDate}`
+    : `${month}_${year}`;
+  const filename = `${name.replace(/[^a-zA-Z0-9]/g, "_")}_${rangeLabel}.xlsx`;
+  XLSX.writeFile(wb, filename);
+}
+
+export default function WizardPage(props: { exportOnly?: boolean } & Record<string, any>) {
+  const exportOnly = props.exportOnly ?? false;
   const [step, setStep] = useState(1);
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
@@ -303,10 +376,28 @@ export default function WizardPage() {
     }
   };
 
+  const doExcelExport = (versionIdx: number) => {
+    const r = results[versionIdx];
+    if (!r) return;
+    const exConfig = {
+      ...config,
+      useCustomRange,
+      customStartDate: useCustomRange ? customStartDate : undefined,
+      customEndDate: useCustomRange ? customEndDate : undefined,
+    };
+    exportToExcel(
+      scheduleName, month, year, r.schedule, exConfig, staff,
+      { date: t.date, day: t.day, staffName: t.staffName, total: t.total, summary: t.summary, schedule: t.scheduleView }
+    );
+    setShowSaveDialog(false);
+  };
+
   const handleSaveClick = () => {
     if (results.length > 1) {
       setSaveVersion(selectedVersion);
       setShowSaveDialog(true);
+    } else if (exportOnly) {
+      doExcelExport(0);
     } else {
       saveSchedule(0);
     }
@@ -355,9 +446,14 @@ export default function WizardPage() {
           
           <div className="flex items-center gap-2">
             {step === 4 && (
-              <Button onClick={handleSaveClick} disabled={createMutation.isPending} className="bg-green-600 hover:bg-green-700" data-testid="button-save-schedule">
-                {createMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin"/> : <Save className="w-4 h-4 mr-2" />}
-                {t.saveSchedule}
+              <Button onClick={handleSaveClick} disabled={!exportOnly && createMutation.isPending} className="bg-green-600 hover:bg-green-700" data-testid="button-save-schedule">
+                {!exportOnly && createMutation.isPending
+                  ? <Loader2 className="w-4 h-4 mr-2 animate-spin"/>
+                  : exportOnly
+                    ? <FileSpreadsheet className="w-4 h-4 mr-2" />
+                    : <Save className="w-4 h-4 mr-2" />
+                }
+                {exportOnly ? t.exportExcel : t.saveSchedule}
               </Button>
             )}
           </div>
@@ -1275,8 +1371,8 @@ export default function WizardPage() {
       <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{t.saveVersionTitle}</DialogTitle>
-            <DialogDescription>{t.saveVersionDesc}</DialogDescription>
+            <DialogTitle>{exportOnly ? t.exportVersionTitle : t.saveVersionTitle}</DialogTitle>
+            <DialogDescription>{exportOnly ? t.exportVersionDesc : t.saveVersionDesc}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
             {results.map((r, idx) => {
@@ -1324,13 +1420,21 @@ export default function WizardPage() {
             })}
           </div>
           <Button
-            onClick={() => saveSchedule(saveVersion)}
-            disabled={createMutation.isPending}
+            onClick={() => exportOnly ? doExcelExport(saveVersion) : saveSchedule(saveVersion)}
+            disabled={!exportOnly && createMutation.isPending}
             className="w-full bg-green-600 hover:bg-green-700"
             data-testid="button-confirm-save"
           >
-            {createMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-            {t.confirmSave} ({t.version} {saveVersion + 1})
+            {!exportOnly && createMutation.isPending
+              ? <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              : exportOnly
+                ? <FileSpreadsheet className="w-4 h-4 mr-2" />
+                : <Save className="w-4 h-4 mr-2" />
+            }
+            {exportOnly
+              ? `${t.exportThisVersion} (${t.version} ${saveVersion + 1})`
+              : `${t.confirmSave} (${t.version} ${saveVersion + 1})`
+            }
           </Button>
         </DialogContent>
       </Dialog>

@@ -15,6 +15,7 @@ function Router() {
     <Switch>
       <Route path="/" component={HomePage} />
       <Route path="/create" component={WizardPage} />
+      <Route path="/export">{() => <WizardPage exportOnly />}</Route>
       <Route path="/history" component={HistoryPage} />
       <Route path="/schedule/:id" component={ScheduleDetailsPage} />
       <Route component={NotFound} />

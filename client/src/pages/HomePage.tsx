@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Plus, History, Activity } from "lucide-react";
+import { Plus, History, Activity, FileSpreadsheet } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/context/LanguageContext";
 import { LanguageToggle } from "@/components/LanguageToggle";
@@ -45,16 +45,23 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8 flex-wrap">
           <Link href="/create" className="w-full sm:w-auto">
-            <Button size="lg" className="w-full sm:w-auto h-14 px-8 text-lg rounded-2xl shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all hover:-translate-y-1">
+            <Button size="lg" className="w-full sm:w-auto h-14 px-8 text-lg rounded-2xl shadow-xl shadow-primary/20" data-testid="button-create-schedule">
               <Plus className="mr-2 h-5 w-5" />
               {t.createNewSchedule}
             </Button>
           </Link>
+
+          <Link href="/export" className="w-full sm:w-auto">
+            <Button variant="outline" size="lg" className="w-full sm:w-auto h-14 px-8 text-lg rounded-2xl border-2" data-testid="button-quick-export">
+              <FileSpreadsheet className="mr-2 h-5 w-5" />
+              {t.quickExport}
+            </Button>
+          </Link>
           
           <Link href="/history" className="w-full sm:w-auto">
-            <Button variant="outline" size="lg" className="w-full sm:w-auto h-14 px-8 text-lg rounded-2xl border-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+            <Button variant="outline" size="lg" className="w-full sm:w-auto h-14 px-8 text-lg rounded-2xl border-2" data-testid="button-view-history">
               <History className="mr-2 h-5 w-5" />
               {t.viewHistory}
             </Button>
