@@ -7,17 +7,12 @@ import { LanguageProvider } from "@/context/LanguageContext";
 import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/HomePage";
 import WizardPage from "@/pages/WizardPage";
-import HistoryPage from "@/pages/HistoryPage";
-import ScheduleDetailsPage from "@/pages/ScheduleDetailsPage";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={HomePage} />
-      <Route path="/create" component={WizardPage} />
-      <Route path="/export">{() => <WizardPage exportOnly />}</Route>
-      <Route path="/history" component={HistoryPage} />
-      <Route path="/schedule/:id" component={ScheduleDetailsPage} />
+      <Route path="/create">{() => <WizardPage exportOnly />}</Route>
       <Route component={NotFound} />
     </Switch>
   );

@@ -41,11 +41,8 @@ The project uses a **monorepo layout** with three top-level directories:
 - **Build Tool**: Vite
 
 Key pages:
-- `HomePage` — Landing page with navigation to create, quick export, or view history
-- `WizardPage` — Multi-step form wizard for schedule creation (config → staff → blocked dates → optimize → save). Accepts `exportOnly` prop for Excel-only mode (no database).
-- `WizardPage (exportOnly)` — Accessed via `/export` route. Same wizard flow but exports directly to Excel instead of saving to database.
-- `HistoryPage` — Lists all saved schedules
-- `ScheduleDetailsPage` — View a specific saved schedule with table and stats
+- `HomePage` — Landing page with single "Create Schedule" button
+- `WizardPage` — Multi-step form wizard for schedule creation (config → staff → blocked dates → optimize → export). Always runs in export-only mode — generates Excel output directly, no database saving.
 
 The shift optimization algorithm runs **client-side** in `client/src/lib/optimizer.ts` using **Mixed Integer Programming (MIP)** via the HiGHS solver (WASM). The optimizer uses a **2-phase approach**:
 - **Phase 1**: Maximizes total coverage (`Σ x[i,d,s]`) subject to hard constraints (blocked dates, one-shift-per-day, consecutive rules, max shifts, staffing caps). Produces optimal coverage value `C*`.
