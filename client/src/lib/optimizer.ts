@@ -1,8 +1,6 @@
 import type { StaffMember, SchedulerConfig, DaySchedule, OptimizerResult, UnfilledSlot } from "@shared/schema";
 import { getDaysInMonth, differenceInCalendarDays, addDays, parseISO } from "date-fns";
 
-type Slot = { dayIdx: number; shiftIdx: number; position: number };
-
 export class ShiftOptimizer {
   private config: SchedulerConfig;
   private staff: StaffMember[];
@@ -107,7 +105,7 @@ export class ShiftOptimizer {
     let bestResult: OptimizerResult | null = null;
     let bestScore = Infinity;
 
-    const maxAttempts = 50;
+    const maxAttempts = 30;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       if (this.isTimedOut()) break;
@@ -115,11 +113,7 @@ export class ShiftOptimizer {
       this.resetState();
       this.initializeSchedule();
 
-      const domains = this.buildAllDomains();
-
-      this.ac3Propagate(domains);
-
-      this.constructiveFill(domains, attempt > 0);
+      this.dayByDayFill(attempt > 0);
 
       this.gapFillRepair(3000);
       this.localRepair(5000);
@@ -200,493 +194,129 @@ export class ShiftOptimizer {
     return null;
   }
 
-  private buildAllDomains(): Map<string, Set<string>> {
-    const domains = new Map<string, Set<string>>();
+  private dayByDayFill(randomize: boolean): void {
+    const numShifts = this.config.shiftNames.length;
+    const dayOrder = this.computeDayOrder(randomize);
 
-    for (let dayIdx = 0; dayIdx < this.daysInMonth; dayIdx++) {
+    for (const dayIdx of dayOrder) {
       const date = dayIdx + 1;
-      const dayStaffPerShift = this.getStaffPerShiftForDay(date);
-      for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
-        const required = dayStaffPerShift[shiftIdx];
-        for (let pos = 0; pos < required; pos++) {
-          const key = `${dayIdx}-${shiftIdx}-${pos}`;
-          const eligible = new Set<string>();
+      const staffPerShift = this.getStaffPerShiftForDay(date);
 
-          for (const member of this.staff) {
-            const isBlocked = member.blocked.some(b => b.date === date && (b.shift === -1 || b.shift === shiftIdx));
-            if (!isBlocked) {
-              eligible.add(member.id);
-            }
-          }
-
-          domains.set(key, eligible);
-        }
-      }
-    }
-
-    return domains;
-  }
-
-  private ac3Propagate(domains: Map<string, Set<string>>) {
-    const numShifts = this.config.shiftNames.length;
-
-    let changed = true;
-    let iterations = 0;
-    while (changed && iterations < 200) {
-      changed = false;
-      iterations++;
-
-      for (let dayIdx = 0; dayIdx < this.daysInMonth; dayIdx++) {
-        const dayStaffPerShift = this.getStaffPerShiftForDay(dayIdx + 1);
-        const allDayKeys: string[] = [];
-        for (let shiftIdx = 0; shiftIdx < numShifts; shiftIdx++) {
-          const required = dayStaffPerShift[shiftIdx];
-          for (let pos = 0; pos < required; pos++) {
-            allDayKeys.push(`${dayIdx}-${shiftIdx}-${pos}`);
-          }
-        }
-
-        for (let i = 0; i < allDayKeys.length; i++) {
-          const domainI = domains.get(allDayKeys[i])!;
-          if (domainI.size !== 1) continue;
-          const fixedId = Array.from(domainI)[0];
-
-          for (let j = 0; j < allDayKeys.length; j++) {
-            if (i === j) continue;
-            const domainJ = domains.get(allDayKeys[j])!;
-            if (domainJ.has(fixedId)) {
-              domainJ.delete(fixedId);
-              changed = true;
-            }
-          }
-        }
-
-        for (let shiftIdx = 0; shiftIdx < numShifts; shiftIdx++) {
-          const required = dayStaffPerShift[shiftIdx];
-          const shiftUnion = new Set<string>();
-          for (let pos = 0; pos < required; pos++) {
-            const key = `${dayIdx}-${shiftIdx}-${pos}`;
-            Array.from(domains.get(key)!).forEach(id => shiftUnion.add(id));
-          }
-
-          if (shiftUnion.size === required) {
-            for (let otherShift = 0; otherShift < numShifts; otherShift++) {
-              if (otherShift === shiftIdx) continue;
-              const otherRequired = dayStaffPerShift[otherShift];
-              for (let otherPos = 0; otherPos < otherRequired; otherPos++) {
-                const otherKey = `${dayIdx}-${otherShift}-${otherPos}`;
-                const otherDomain = domains.get(otherKey)!;
-                for (const id of Array.from(shiftUnion)) {
-                  if (otherDomain.has(id)) {
-                    otherDomain.delete(id);
-                    changed = true;
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        for (let shiftIdx = 0; shiftIdx < numShifts; shiftIdx++) {
-          const required = dayStaffPerShift[shiftIdx];
-
-          for (const rule of this.config.consecutiveRules) {
-            if (rule.from === shiftIdx && dayIdx + 1 < this.daysInMonth) {
-              const nextDay = dayIdx + 1;
-              const toShift = rule.to;
-              const nextDayStaffPerShift = this.getStaffPerShiftForDay(nextDay + 1);
-              const toRequired = nextDayStaffPerShift[toShift];
-
-              for (let pos = 0; pos < required; pos++) {
-                const fromDomain = domains.get(`${dayIdx}-${shiftIdx}-${pos}`)!;
-                if (fromDomain.size === 1) {
-                  const fixedStaff = Array.from(fromDomain)[0];
-                  for (let toPos = 0; toPos < toRequired; toPos++) {
-                    const toDomain = domains.get(`${nextDay}-${toShift}-${toPos}`)!;
-                    if (toDomain.has(fixedStaff)) {
-                      toDomain.delete(fixedStaff);
-                      changed = true;
-                    }
-                  }
-                }
-              }
-            }
-
-            if (rule.to === shiftIdx && dayIdx > 0) {
-              const prevDay = dayIdx - 1;
-              const fromShift = rule.from;
-              const prevDayStaffPerShift = this.getStaffPerShiftForDay(prevDay + 1);
-              const fromRequired = prevDayStaffPerShift[fromShift];
-
-              for (let pos = 0; pos < required; pos++) {
-                const toDomain = domains.get(`${dayIdx}-${shiftIdx}-${pos}`)!;
-                if (toDomain.size === 1) {
-                  const fixedStaff = Array.from(toDomain)[0];
-                  for (let fromPos = 0; fromPos < fromRequired; fromPos++) {
-                    const fromDomain = domains.get(`${prevDay}-${fromShift}-${fromPos}`)!;
-                    if (fromDomain.has(fixedStaff)) {
-                      fromDomain.delete(fixedStaff);
-                      changed = true;
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  private constructiveFill(domains: Map<string, Set<string>>, randomize: boolean): void {
-    const slots = this.buildSlots();
-    const slotOrder = this.computeSlotOrder(slots, domains, randomize);
-
-    const assignmentHistory: { slot: Slot; staffId: string; triedSet: Set<string> }[] = [];
-    const skippedSlots: Slot[] = [];
-    let idx = 0;
-
-    while (idx < slotOrder.length) {
-      const slot = slotOrder[idx];
-
-      if (this.getSlotValue(slot) !== null) {
-        idx++;
-        continue;
-      }
-
-      const triedAlready = assignmentHistory.length > 0 &&
-        assignmentHistory[assignmentHistory.length - 1].slot === slot
-        ? assignmentHistory[assignmentHistory.length - 1].triedSet
-        : new Set<string>();
-
-      const candidates = this.staff
-        .filter(m => !triedAlready.has(m.id) && this.canAssignHard(m, slot.dayIdx, slot.shiftIdx))
-        .map(m => m.id);
-
-      if (candidates.length === 0) {
-        const recovered = this.tryRecoverSlot(slot, domains);
-        if (recovered) {
-          idx++;
-          continue;
-        }
-
-        let backtracked = false;
-        for (let undoCount = 0; undoCount < Math.min(assignmentHistory.length, 8); undoCount++) {
-          const lastEntry = assignmentHistory[assignmentHistory.length - 1];
-          this.unassignSlot(lastEntry.slot);
-          lastEntry.triedSet.add(lastEntry.staffId);
-          assignmentHistory.pop();
-
-          const retrySlot = lastEntry.slot;
-          const retryCandidateIds = this.staff
-            .filter(m => !lastEntry.triedSet.has(m.id) && this.canAssignHard(m, retrySlot.dayIdx, retrySlot.shiftIdx))
-            .map(m => m.id);
-
-          if (retryCandidateIds.length > 0) {
-            const chosen = this.pickBestCandidate(retryCandidateIds, retrySlot, randomize);
-            this.assignSlot(retrySlot, chosen);
-            lastEntry.triedSet.add(chosen);
-            assignmentHistory.push({
-              slot: retrySlot,
-              staffId: chosen,
-              triedSet: lastEntry.triedSet
-            });
-            backtracked = true;
-            break;
-          }
-        }
-
-        if (!backtracked) {
-          skippedSlots.push(slot);
-          idx++;
-          continue;
-        }
-        continue;
-      }
-
-      const chosen = this.pickBestCandidate(candidates, slot, randomize);
-      this.assignSlot(slot, chosen);
-
-      const newTriedSet = triedAlready.size > 0 ? triedAlready : new Set<string>();
-      newTriedSet.add(chosen);
-      assignmentHistory.push({ slot, staffId: chosen, triedSet: newTriedSet });
-      idx++;
-    }
-
-    if (skippedSlots.length > 0) {
-      this.retrySkippedSlots(skippedSlots, domains, randomize);
-    }
-  }
-
-  private retrySkippedSlots(skippedSlots: Slot[], domains: Map<string, Set<string>>, randomize: boolean): void {
-    const maxPasses = 5;
-    for (let pass = 0; pass < maxPasses; pass++) {
-      let filledAny = false;
-      const remaining: Slot[] = [];
-
-      for (const slot of skippedSlots) {
-        if (this.getSlotValue(slot) !== null) continue;
-
-        const recovered = this.tryRecoverSlot(slot, domains);
-        if (recovered) {
-          filledAny = true;
-          continue;
-        }
-
-        const candidates = this.staff
-          .filter(m => this.canAssignHard(m, slot.dayIdx, slot.shiftIdx))
-          .map(m => m.id);
-
-        if (candidates.length > 0) {
-          const chosen = this.pickBestCandidate(candidates, slot, randomize);
-          this.assignSlot(slot, chosen);
-          this.pruneDomainsAfterAssign(slot, chosen, domains);
-          filledAny = true;
-        } else {
-          remaining.push(slot);
-        }
-      }
-
-      if (!filledAny || remaining.length === 0) break;
-      skippedSlots.length = 0;
-      skippedSlots.push(...remaining);
-    }
-  }
-
-  private unassignSlot(slot: Slot) {
-    const shifts = this.schedule[slot.dayIdx].shifts[slot.shiftIdx];
-    if (slot.position < shifts.length && shifts[slot.position]) {
-      const staffId = shifts[slot.position];
-      shifts[slot.position] = "";
-      this.removeStats(staffId, slot.shiftIdx, slot.dayIdx + 1);
-    }
-  }
-
-  private computeSlotOrder(slots: Slot[], domains: Map<string, Set<string>>, randomize: boolean): Slot[] {
-    const scored = slots.map(slot => {
-      const key = this.slotKey(slot);
-      const domain = domains.get(key);
-      const domainSize = domain ? domain.size : 0;
-      return { slot, domainSize };
-    });
-
-    scored.sort((a, b) => {
-      if (a.domainSize !== b.domainSize) return a.domainSize - b.domainSize;
-      if (a.slot.dayIdx !== b.slot.dayIdx) return a.slot.dayIdx - b.slot.dayIdx;
-      return a.slot.shiftIdx - b.slot.shiftIdx;
-    });
-
-    if (randomize) {
-      for (let i = 0; i < scored.length - 1; i++) {
-        if (scored[i].domainSize === scored[i + 1].domainSize && Math.random() < 0.3) {
-          [scored[i], scored[i + 1]] = [scored[i + 1], scored[i]];
-        }
-      }
-    }
-
-    return scored.map(s => s.slot);
-  }
-
-  private pickBestCandidate(candidates: string[], slot: Slot, randomize: boolean): string {
-    if (randomize && candidates.length > 1 && Math.random() < 0.4) {
-      return candidates[Math.floor(Math.random() * candidates.length)];
-    }
-
-    const numShifts = this.config.shiftNames.length;
-
-    candidates.sort((a, b) => {
-      const loadA = this.staffWorkLoad.get(a) || 0;
-      const loadB = this.staffWorkLoad.get(b) || 0;
-      if (loadA !== loadB) return loadA - loadB;
-
-      const countsA = this.staffShiftCounts.get(a)!;
-      const countsB = this.staffShiftCounts.get(b)!;
-      const shiftCountA = countsA[slot.shiftIdx] || 0;
-      const shiftCountB = countsB[slot.shiftIdx] || 0;
-      if (shiftCountA !== shiftCountB) return shiftCountA - shiftCountB;
-
-      if (this.config.balanceHolidays && this.isHoliday(slot.dayIdx + 1)) {
-        const holA = this.staffHolidayLoad.get(a) || 0;
-        const holB = this.staffHolidayLoad.get(b) || 0;
-        if (holA !== holB) return holA - holB;
-      }
-
-      const futureA = this.countFutureOptions(a, slot.dayIdx, numShifts);
-      const futureB = this.countFutureOptions(b, slot.dayIdx, numShifts);
-      return futureB - futureA;
-    });
-
-    return candidates[0];
-  }
-
-  private countFutureOptions(staffId: string, currentDayIdx: number, numShifts: number): number {
-    let options = 0;
-    const member = this.staffLookup.get(staffId)!;
-    const maxLookahead = Math.min(currentDayIdx + 5, this.daysInMonth - 1);
-
-    for (let d = currentDayIdx + 1; d <= maxLookahead; d++) {
       for (let s = 0; s < numShifts; s++) {
-        if (this.canAssignHard(member, d, s)) options++;
-      }
-    }
-    return options;
-  }
-
-  private pruneDomainsAfterAssign(slot: Slot, staffId: string, domains: Map<string, Set<string>>) {
-    const numShifts = this.config.shiftNames.length;
-    const dayIdx = slot.dayIdx;
-
-    const currentDayStaffPerShift = this.getStaffPerShiftForDay(dayIdx + 1);
-    for (let s = 0; s < numShifts; s++) {
-      const required = currentDayStaffPerShift[s];
-      for (let p = 0; p < required; p++) {
-        const key = `${dayIdx}-${s}-${p}`;
-        const domain = domains.get(key);
-        if (domain) domain.delete(staffId);
-      }
-    }
-
-    for (const rule of this.config.consecutiveRules) {
-      if (rule.from === slot.shiftIdx && dayIdx + 1 < this.daysInMonth) {
-        const nextDay = dayIdx + 1;
-        const nextDayStaffPerShift = this.getStaffPerShiftForDay(nextDay + 1);
-        const toRequired = nextDayStaffPerShift[rule.to];
-        for (let p = 0; p < toRequired; p++) {
-          const key = `${nextDay}-${rule.to}-${p}`;
-          const domain = domains.get(key);
-          if (domain) domain.delete(staffId);
+        const required = staffPerShift[s];
+        while (this.schedule[dayIdx].shifts[s].length < required) {
+          this.schedule[dayIdx].shifts[s].push("");
         }
       }
-      if (rule.to === slot.shiftIdx && dayIdx > 0) {
-        const prevDay = dayIdx - 1;
-        const prevDayStaffPerShift = this.getStaffPerShiftForDay(prevDay + 1);
-        const fromRequired = prevDayStaffPerShift[rule.from];
-        for (let p = 0; p < fromRequired; p++) {
-          const key = `${prevDay}-${rule.from}-${p}`;
-          const domain = domains.get(key);
-          if (domain) domain.delete(staffId);
-        }
+
+      const activeShifts: number[] = [];
+      for (let s = 0; s < numShifts; s++) {
+        if (staffPerShift[s] > 0) activeShifts.push(s);
       }
-    }
+      if (activeShifts.length === 0) continue;
 
-    const member = this.staffLookup.get(staffId)!;
-    const currentLoad = this.staffWorkLoad.get(staffId) || 0;
-    if (currentLoad >= member.maxShifts) {
-      Array.from(domains.entries()).forEach(([_key, domain]) => {
-        domain.delete(staffId);
-      });
-    }
-  }
-
-  private tryRecoverSlot(slot: Slot, domains: Map<string, Set<string>>): boolean {
-    const numShifts = this.config.shiftNames.length;
-    const dayIdx = slot.dayIdx;
-    const shiftIdx = slot.shiftIdx;
-
-    for (let otherShift = 0; otherShift < numShifts; otherShift++) {
-      if (otherShift === shiftIdx) continue;
-      const otherAssigned = this.schedule[dayIdx].shifts[otherShift];
-
-      for (let pos = 0; pos < otherAssigned.length; pos++) {
-        const otherStaffId = otherAssigned[pos];
-        if (!otherStaffId) continue;
-
-        const otherMember = this.staffLookup.get(otherStaffId)!;
-
-        const isBlockedForTarget = otherMember.blocked.some(
-          b => b.date === dayIdx + 1 && (b.shift === -1 || b.shift === shiftIdx)
-        );
-        if (isBlockedForTarget) continue;
-
-        let violatesConsecutive = false;
+      const isEligibleForShift = (member: StaffMember, s: number): boolean => {
+        const load = this.staffWorkLoad.get(member.id) || 0;
+        if (load >= member.maxShifts) return false;
+        for (let si = 0; si < numShifts; si++) {
+          if (this.schedule[dayIdx].shifts[si].includes(member.id)) return false;
+        }
+        if (member.blocked.some(b => b.date === date && (b.shift === -1 || b.shift === s))) return false;
         if (dayIdx > 0) {
-          const prevDay = this.schedule[dayIdx - 1];
           for (const rule of this.config.consecutiveRules) {
-            if (rule.to === shiftIdx && prevDay.shifts[rule.from].includes(otherStaffId)) {
-              violatesConsecutive = true;
-              break;
-            }
+            if (rule.to === s && this.schedule[dayIdx - 1].shifts[rule.from].includes(member.id)) return false;
           }
         }
-        if (!violatesConsecutive && dayIdx < this.daysInMonth - 1) {
-          const nextDay = this.schedule[dayIdx + 1];
+        if (dayIdx < this.daysInMonth - 1) {
           for (const rule of this.config.consecutiveRules) {
-            if (rule.from === shiftIdx && nextDay.shifts[rule.to].includes(otherStaffId)) {
-              violatesConsecutive = true;
-              break;
-            }
+            if (rule.from === s && this.schedule[dayIdx + 1].shifts[rule.to].includes(member.id)) return false;
           }
         }
-        if (violatesConsecutive) continue;
+        return true;
+      };
 
-        const replacements = this.staff.filter(m => {
-          if (m.id === otherStaffId) return false;
-          return this.canAssignHard(m, dayIdx, otherShift);
+      const assignedToday = new Set<string>();
+      let anyAssigned = true;
+
+      while (anyAssigned) {
+        anyAssigned = false;
+
+        const shiftsNeedingFill = activeShifts.filter(s => {
+          const filled = this.schedule[dayIdx].shifts[s].filter(id => id !== "").length;
+          return filled < staffPerShift[s];
         });
 
-        if (replacements.length > 0) {
-          replacements.sort((a, b) =>
-            (this.staffWorkLoad.get(a.id) || 0) - (this.staffWorkLoad.get(b.id) || 0)
+        if (shiftsNeedingFill.length === 0) break;
+
+        shiftsNeedingFill.sort((a, b) => {
+          const eligA = this.staff.filter(m => !assignedToday.has(m.id) && isEligibleForShift(m, a)).length;
+          const eligB = this.staff.filter(m => !assignedToday.has(m.id) && isEligibleForShift(m, b)).length;
+          const needA = staffPerShift[a] - this.schedule[dayIdx].shifts[a].filter(id => id !== "").length;
+          const needB = staffPerShift[b] - this.schedule[dayIdx].shifts[b].filter(id => id !== "").length;
+          const ratioA = needA > 0 ? eligA / needA : Infinity;
+          const ratioB = needB > 0 ? eligB / needB : Infinity;
+          if (ratioA !== ratioB) return ratioA - ratioB;
+          return needB - needA;
+        });
+
+        for (const shiftIdx of shiftsNeedingFill) {
+          const filled = this.schedule[dayIdx].shifts[shiftIdx].filter(id => id !== "").length;
+          if (filled >= staffPerShift[shiftIdx]) continue;
+
+          const candidates = this.staff.filter(m =>
+            !assignedToday.has(m.id) && isEligibleForShift(m, shiftIdx)
           );
-          const replacement = replacements[0];
+          if (candidates.length === 0) continue;
 
-          this.removeStats(otherStaffId, otherShift, dayIdx + 1);
-          otherAssigned[pos] = replacement.id;
-          this.updateStats(replacement.id, otherShift, dayIdx + 1);
-          this.pruneDomainsAfterAssign(
-            { dayIdx, shiftIdx: otherShift, position: pos },
-            replacement.id,
-            domains
-          );
+          candidates.sort((a, b) => {
+            const loadA = this.staffWorkLoad.get(a.id) || 0;
+            const loadB = this.staffWorkLoad.get(b.id) || 0;
+            if (loadA !== loadB) return loadA - loadB;
+            const countA = this.staffShiftCounts.get(a.id)![shiftIdx] || 0;
+            const countB = this.staffShiftCounts.get(b.id)![shiftIdx] || 0;
+            if (countA !== countB) return countA - countB;
+            if (this.config.balanceHolidays && this.isHoliday(date)) {
+              const holA = this.staffHolidayLoad.get(a.id) || 0;
+              const holB = this.staffHolidayLoad.get(b.id) || 0;
+              if (holA !== holB) return holA - holB;
+            }
+            return 0;
+          });
 
-          this.assignSlot(slot, otherStaffId);
-          this.pruneDomainsAfterAssign(slot, otherStaffId, domains);
-          return true;
-        }
-      }
-    }
+          if (randomize && candidates.length > 1) {
+            const topLoad = this.staffWorkLoad.get(candidates[0].id) || 0;
+            let groupEnd = 1;
+            while (groupEnd < candidates.length &&
+                   (this.staffWorkLoad.get(candidates[groupEnd].id) || 0) <= topLoad + 2) {
+              groupEnd++;
+            }
+            for (let i = groupEnd - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+            }
+          }
 
-    for (let nearDay = Math.max(0, dayIdx - 3); nearDay <= Math.min(this.daysInMonth - 1, dayIdx + 3); nearDay++) {
-      if (nearDay === dayIdx) continue;
-
-      for (let s = 0; s < numShifts; s++) {
-        const nearAssigned = this.schedule[nearDay].shifts[s];
-
-        for (let pos = 0; pos < nearAssigned.length; pos++) {
-          const candidateId = nearAssigned[pos];
-          if (!candidateId) continue;
-
-          const candidateMember = this.staffLookup.get(candidateId)!;
-          if (!this.canMoveToSlot(candidateMember, dayIdx, shiftIdx)) continue;
-
-          const replacements = this.staff.filter(m =>
-            m.id !== candidateId && this.canAssignHard(m, nearDay, s)
-          );
-
-          if (replacements.length > 0) {
-            replacements.sort((a, b) =>
-              (this.staffWorkLoad.get(a.id) || 0) - (this.staffWorkLoad.get(b.id) || 0)
-            );
-            const replacement = replacements[0];
-
-            this.removeStats(candidateId, s, nearDay + 1);
-            nearAssigned[pos] = replacement.id;
-            this.updateStats(replacement.id, s, nearDay + 1);
-            this.pruneDomainsAfterAssign(
-              { dayIdx: nearDay, shiftIdx: s, position: pos },
-              replacement.id,
-              domains
-            );
-
-            this.assignSlot(slot, candidateId);
-            this.pruneDomainsAfterAssign(slot, candidateId, domains);
-            return true;
+          const emptyPos = this.schedule[dayIdx].shifts[shiftIdx].indexOf("");
+          if (emptyPos !== -1) {
+            this.schedule[dayIdx].shifts[shiftIdx][emptyPos] = candidates[0].id;
+            this.updateStats(candidates[0].id, shiftIdx, date);
+            assignedToday.add(candidates[0].id);
+            anyAssigned = true;
           }
         }
       }
     }
+  }
 
-    return false;
+  private computeDayOrder(randomize: boolean): number[] {
+    const days = Array.from({ length: this.daysInMonth }, (_, i) => i);
+    if (!randomize) return days;
+
+    for (let i = days.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [days[i], days[j]] = [days[j], days[i]];
+    }
+    return days;
   }
 
   private canAssignHard(member: StaffMember, dayIdx: number, shiftIdx: number): boolean {
@@ -732,7 +362,7 @@ export class ShiftOptimizer {
     this.resetState();
     this.initializeSchedule();
 
-    this.greedyFill();
+    this.dayByDayFill(false);
 
     this.gapFillRepair(3000);
     this.localRepair(2000);
@@ -748,55 +378,6 @@ export class ShiftOptimizer {
       unfilledSlots: unfilledSlots.length > 0 ? unfilledSlots : undefined,
       feasibilityWarning: this.feasibilityMsg || undefined,
     };
-  }
-
-  private greedyFill() {
-    for (let dayIdx = 0; dayIdx < this.daysInMonth; dayIdx++) {
-      for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
-        const required = this.getStaffPerShiftForDay(dayIdx + 1)[shiftIdx];
-        const assigned = this.schedule[dayIdx].shifts[shiftIdx];
-
-        while (assigned.length < required) {
-          const candidates = this.staff.filter(s => {
-            return this.canAssignHard(s, dayIdx, shiftIdx);
-          });
-
-          if (candidates.length === 0) {
-            const softCandidates = this.staff.filter(s => {
-              const date = dayIdx + 1;
-              if (s.blocked.some(b => b.date === date && (b.shift === -1 || b.shift === shiftIdx))) return false;
-              const daySchedule = this.schedule[dayIdx];
-              for (let si = 0; si < daySchedule.shifts.length; si++) {
-                if (daySchedule.shifts[si].includes(s.id)) return false;
-              }
-              return true;
-            });
-
-            if (softCandidates.length > 0) {
-              softCandidates.sort((a, b) =>
-                (this.staffWorkLoad.get(a.id) || 0) - (this.staffWorkLoad.get(b.id) || 0)
-              );
-              const chosen = softCandidates[0];
-              assigned.push(chosen.id);
-              this.updateStats(chosen.id, shiftIdx, dayIdx + 1);
-            } else {
-              assigned.push("");
-            }
-            continue;
-          }
-
-          candidates.sort((a, b) => {
-            const loadA = this.staffWorkLoad.get(a.id) || 0;
-            const loadB = this.staffWorkLoad.get(b.id) || 0;
-            return loadA - loadB;
-          });
-
-          const chosen = candidates[0];
-          assigned.push(chosen.id);
-          this.updateStats(chosen.id, shiftIdx, dayIdx + 1);
-        }
-      }
-    }
   }
 
   private findUnfilledSlots(targetSchedule?: DaySchedule[]): UnfilledSlot[] {
@@ -819,40 +400,6 @@ export class ShiftOptimizer {
       }
     }
     return unfilled;
-  }
-
-  private buildSlots(): Slot[] {
-    const slots: Slot[] = [];
-    for (let dayIdx = 0; dayIdx < this.daysInMonth; dayIdx++) {
-      for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
-        const required = this.getStaffPerShiftForDay(dayIdx + 1)[shiftIdx];
-        for (let pos = 0; pos < required; pos++) {
-          slots.push({ dayIdx, shiftIdx, position: pos });
-        }
-      }
-    }
-    return slots;
-  }
-
-  private slotKey(slot: Slot): string {
-    return `${slot.dayIdx}-${slot.shiftIdx}-${slot.position}`;
-  }
-
-  private getSlotValue(slot: Slot): string | null {
-    const assigned = this.schedule[slot.dayIdx].shifts[slot.shiftIdx];
-    if (slot.position < assigned.length && assigned[slot.position]) {
-      return assigned[slot.position];
-    }
-    return null;
-  }
-
-  private assignSlot(slot: Slot, staffId: string) {
-    const shifts = this.schedule[slot.dayIdx].shifts[slot.shiftIdx];
-    while (shifts.length <= slot.position) {
-      shifts.push("");
-    }
-    shifts[slot.position] = staffId;
-    this.updateStats(staffId, slot.shiftIdx, slot.dayIdx + 1);
   }
 
   private evaluateSolutionQuality(metrics: any, unfilledCount: number = 0): number {
