@@ -4,6 +4,10 @@
 
 This is a **Hospital Shift Scheduler** web application that automates duty roster creation for hospital staff. It uses a constraint-based optimization algorithm to generate fair shift schedules, handling staff availability, consecutive shift rules, workload balancing, and optional weekend/holiday shift balancing. The app follows a wizard-based workflow where users configure schedule parameters, add staff, set blocked dates, configure constraints (including holiday balancing), run the optimizer, and save/review results.
 
+The scheduler supports two timeline modes:
+- **Full Month**: Traditional month/year selection for a complete calendar month
+- **Custom Range**: Arbitrary start and end dates (e.g., March 8 - April 4, 2026) for scheduling across month boundaries. Custom range info is stored in the `SchedulerConfig` JSONB (`useCustomRange`, `customStartDate`, `customEndDate`) to avoid DB schema changes. Day indices are 1-based sequential and mapped to actual dates via `addDays(startDate, index - 1)`. Switching modes clears blocked dates and holidays to prevent misapplication.
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.

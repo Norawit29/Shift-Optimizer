@@ -1,5 +1,5 @@
 import type { StaffMember, SchedulerConfig, DaySchedule, OptimizerResult, UnfilledSlot } from "@shared/schema";
-import { getDaysInMonth } from "date-fns";
+import { getDaysInMonth, differenceInCalendarDays, addDays, parseISO } from "date-fns";
 
 type Slot = { dayIdx: number; shiftIdx: number; position: number };
 
@@ -10,6 +10,7 @@ export class ShiftOptimizer {
   private year: number;
   private daysInMonth: number;
   private schedule: DaySchedule[] = [];
+  private rangeStartDate: Date | null = null;
 
   private staffWorkLoad: Map<string, number>;
   private staffShiftCounts: Map<string, number[]>;
@@ -22,12 +23,27 @@ export class ShiftOptimizer {
 
   private staffLookup: Map<string, StaffMember>;
 
+  private getActualDate(dayIndex: number): Date {
+    if (this.rangeStartDate) {
+      return addDays(this.rangeStartDate, dayIndex - 1);
+    }
+    return new Date(this.year, this.month - 1, dayIndex);
+  }
+
   constructor(config: SchedulerConfig, staff: StaffMember[], month: number, year: number) {
     this.config = config;
     this.staff = staff;
     this.month = month;
     this.year = year;
-    this.daysInMonth = getDaysInMonth(new Date(year, month - 1));
+
+    if (config.useCustomRange && config.customStartDate && config.customEndDate) {
+      const start = parseISO(config.customStartDate);
+      const end = parseISO(config.customEndDate);
+      this.rangeStartDate = start;
+      this.daysInMonth = differenceInCalendarDays(end, start) + 1;
+    } else {
+      this.daysInMonth = getDaysInMonth(new Date(year, month - 1));
+    }
 
     this.staffLookup = new Map();
     staff.forEach(s => this.staffLookup.set(s.id, s));
@@ -35,7 +51,7 @@ export class ShiftOptimizer {
     this.holidayDays = new Set<number>();
     if (config.balanceHolidays) {
       for (let d = 1; d <= this.daysInMonth; d++) {
-        const date = new Date(year, month - 1, d);
+        const date = this.getActualDate(d);
         const dayOfWeek = date.getDay();
         if (dayOfWeek === 0 || dayOfWeek === 6) {
           this.holidayDays.add(d);

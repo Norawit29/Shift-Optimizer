@@ -5,7 +5,7 @@ import { Loader2, ArrowLeft, FileSpreadsheet } from "lucide-react";
 import { ScheduleView } from "@/components/ScheduleView";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { format, setDate } from "date-fns";
+import { format, setDate, parseISO, addDays } from "date-fns";
 import * as XLSX from "xlsx";
 import type { DaySchedule, SchedulerConfig, StaffMember, UnfilledSlot } from "@shared/schema";
 import { useLanguage } from "@/context/LanguageContext";
@@ -20,11 +20,18 @@ function exportToExcel(
   staff: StaffMember[],
   labels: { date: string; day: string; staffName: string; total: string; summary: string; schedule: string }
 ) {
-  const baseDate = new Date(year, month - 1, 1);
+  const isCustomRange = config.useCustomRange && config.customStartDate;
+  const baseDate = isCustomRange
+    ? parseISO(config.customStartDate!)
+    : new Date(year, month - 1, 1);
   const getStaffName = (id: string) => staff.find(s => s.id === id)?.name || "Unknown";
+  const getDateForIdx = (dayIndex: number): Date => {
+    if (isCustomRange) return addDays(parseISO(config.customStartDate!), dayIndex - 1);
+    return setDate(baseDate, dayIndex);
+  };
 
   const rows = result.map((day) => {
-    const currentDate = setDate(baseDate, day.date);
+    const currentDate = getDateForIdx(day.date);
     const row: Record<string, string> = {
       [labels.date]: format(currentDate, "MMM d"),
       [labels.day]: format(currentDate, "EEEE"),
@@ -67,7 +74,10 @@ function exportToExcel(
   ];
   XLSX.utils.book_append_sheet(wb, ws2, labels.summary);
 
-  const filename = `${name.replace(/[^a-zA-Z0-9]/g, "_")}_${month}_${year}.xlsx`;
+  const rangeLabel = isCustomRange
+    ? `${config.customStartDate}_to_${config.customEndDate}`
+    : `${month}_${year}`;
+  const filename = `${name.replace(/[^a-zA-Z0-9]/g, "_")}_${rangeLabel}.xlsx`;
   XLSX.writeFile(wb, filename);
 }
 
@@ -107,7 +117,11 @@ export default function ScheduleDetailsPage() {
             <div>
               <h1 className="text-3xl font-display font-bold" data-testid="text-schedule-name">{schedule.name}</h1>
               <div className="flex items-center gap-2 text-muted-foreground">
-                <span>{schedule.month}/{schedule.year}</span>
+                <span>
+                  {schedule.config.useCustomRange && schedule.config.customStartDate && schedule.config.customEndDate
+                    ? `${format(parseISO(schedule.config.customStartDate), "d MMM yyyy")} — ${format(parseISO(schedule.config.customEndDate), "d MMM yyyy")}`
+                    : `${schedule.month}/${schedule.year}`}
+                </span>
                 <Badge variant="secondary">{t.saved}</Badge>
               </div>
             </div>

@@ -35,7 +35,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { nanoid } from "nanoid";
 import { Link, useLocation } from "wouter";
-import { getDaysInMonth, format, setDate } from "date-fns";
+import { getDaysInMonth, format, setDate, parseISO, differenceInCalendarDays, addDays } from "date-fns";
 import { useLanguage } from "@/context/LanguageContext";
 import { LanguageToggle } from "@/components/LanguageToggle";
 
@@ -68,13 +68,38 @@ export default function WizardPage() {
   const [result, setResult] = useState<OptimizerResult | null>(null);
   const [scheduleName, setScheduleName] = useState("My Schedule");
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [useCustomRange, setUseCustomRange] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
+
+  const handleModeSwitch = (mode: string) => {
+    const newMode = mode === "custom";
+    if (newMode !== useCustomRange) {
+      setUseCustomRange(newMode);
+      setStaff(prev => prev.map(s => ({ ...s, blocked: [] })));
+      setConfig(prev => ({ ...prev, holidays: [] }));
+    }
+  };
   
   const createMutation = useCreateSchedule();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { t, dayNames } = useLanguage();
 
-  const daysInMonth = useMemo(() => getDaysInMonth(new Date(year, month - 1)), [month, year]);
+  const daysInMonth = useMemo(() => {
+    if (useCustomRange && customStartDate && customEndDate) {
+      try {
+        const start = parseISO(customStartDate);
+        const end = parseISO(customEndDate);
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) return 0;
+        const diff = differenceInCalendarDays(end, start) + 1;
+        return diff > 0 ? diff : 0;
+      } catch {
+        return 0;
+      }
+    }
+    return getDaysInMonth(new Date(year, month - 1));
+  }, [month, year, useCustomRange, customStartDate, customEndDate]);
 
   const handleNext = () => setStep(s => Math.min(s + 1, 4));
   const handleBack = () => setStep(s => Math.max(s - 1, 1));
@@ -172,7 +197,13 @@ export default function WizardPage() {
     setIsOptimizing(true);
     setTimeout(() => {
       try {
-        const optimizer = new ShiftOptimizer(config, staff, month, year);
+        const optimizerConfig = {
+          ...config,
+          useCustomRange,
+          customStartDate: useCustomRange ? customStartDate : undefined,
+          customEndDate: useCustomRange ? customEndDate : undefined,
+        };
+        const optimizer = new ShiftOptimizer(optimizerConfig, staff, month, year);
         const res = optimizer.optimize();
         setResult(res);
         setStep(4);
@@ -200,11 +231,17 @@ export default function WizardPage() {
   const saveSchedule = async () => {
     if (!result) return;
     try {
+      const saveConfig = {
+        ...config,
+        useCustomRange,
+        customStartDate: useCustomRange ? customStartDate : undefined,
+        customEndDate: useCustomRange ? customEndDate : undefined,
+      };
       await createMutation.mutateAsync({
         name: scheduleName,
         month,
         year,
-        config,
+        config: saveConfig,
         staff,
         result: result.schedule as any,
         isPartial: result.isPartial || false,
@@ -218,8 +255,17 @@ export default function WizardPage() {
 
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const selectedStaffMember = staff.find(s => s.id === selectedStaffId) || null;
-  const baseDate = new Date(year, month - 1, 1);
+  const baseDate = useCustomRange && customStartDate
+    ? parseISO(customStartDate)
+    : new Date(year, month - 1, 1);
   const firstDayOfWeek = baseDate.getDay();
+
+  const getDateForIndex = (dayIndex: number): Date => {
+    if (useCustomRange && customStartDate) {
+      return addDays(parseISO(customStartDate), dayIndex - 1);
+    }
+    return setDate(baseDate, dayIndex);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
@@ -309,23 +355,68 @@ export default function WizardPage() {
 
                 <div className="space-y-4">
                   <Label className="text-base font-semibold">{t.timeline}</Label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>{t.monthLabel}</Label>
-                      <Select value={month.toString()} onValueChange={(v) => setMonth(parseInt(v))}>
-                        <SelectTrigger data-testid="select-month"><SelectValue /></SelectTrigger>
-                        <SelectContent position="popper" sideOffset={4} className="bg-white dark:bg-slate-900">
-                          {t.months.map((m, i) => (
-                            <SelectItem key={i} value={(i + 1).toString()}>{m}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>{t.yearLabel}</Label>
-                      <Input type="number" value={year} onChange={e => setYear(parseInt(e.target.value))} data-testid="input-year" />
-                    </div>
-                  </div>
+                  <Tabs value={useCustomRange ? "custom" : "month"} onValueChange={handleModeSwitch}>
+                    <TabsList className="w-full">
+                      <TabsTrigger value="month" className="flex-1" data-testid="tab-full-month">
+                        <CalendarIcon className="w-4 h-4 mr-1.5" />
+                        {t.fullMonth}
+                      </TabsTrigger>
+                      <TabsTrigger value="custom" className="flex-1" data-testid="tab-custom-range">
+                        <CalendarDays className="w-4 h-4 mr-1.5" />
+                        {t.customRange}
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="month" className="mt-3">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>{t.monthLabel}</Label>
+                          <Select value={month.toString()} onValueChange={(v) => setMonth(parseInt(v))}>
+                            <SelectTrigger data-testid="select-month"><SelectValue /></SelectTrigger>
+                            <SelectContent position="popper" sideOffset={4} className="bg-white dark:bg-slate-900">
+                              {t.months.map((m, i) => (
+                                <SelectItem key={i} value={(i + 1).toString()}>{m}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{t.yearLabel}</Label>
+                          <Input type="number" value={year} onChange={e => setYear(parseInt(e.target.value))} data-testid="input-year" />
+                        </div>
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="custom" className="mt-3">
+                      <p className="text-sm text-muted-foreground mb-3">{t.customRangeDesc}</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>{t.startDate}</Label>
+                          <Input
+                            type="date"
+                            value={customStartDate}
+                            onChange={e => setCustomStartDate(e.target.value)}
+                            data-testid="input-start-date"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{t.endDate}</Label>
+                          <Input
+                            type="date"
+                            value={customEndDate}
+                            min={customStartDate || undefined}
+                            onChange={e => setCustomEndDate(e.target.value)}
+                            data-testid="input-end-date"
+                          />
+                        </div>
+                      </div>
+                      {useCustomRange && customStartDate && customEndDate && daysInMonth > 0 && (
+                        <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                          <p className="text-sm text-blue-700 dark:text-blue-300">
+                            {format(parseISO(customStartDate), "d MMM yyyy")} — {format(parseISO(customEndDate), "d MMM yyyy")} ({daysInMonth} {daysInMonth === 1 ? t.shiftPerDay.split(" ")[0] : t.day.toLowerCase() + "s"})
+                          </p>
+                        </div>
+                      )}
+                    </TabsContent>
+                  </Tabs>
                 </div>
               </CardContent>
             </Card>
@@ -480,7 +571,7 @@ export default function WizardPage() {
                           const date = i + 1;
                           const blocked = isFullDayBlocked(selectedStaffId!, date);
                           const partiallyBlocked = !blocked && selectedStaffMember.blocked?.some(b => b.date === date);
-                          const currentDate = setDate(baseDate, date);
+                          const currentDate = getDateForIndex(date);
                           const isWeekend = currentDate.getDay() === 0 || currentDate.getDay() === 6;
                           
                           return (
@@ -500,7 +591,13 @@ export default function WizardPage() {
                               `}
                               data-testid={`calendar-day-${date}`}
                             >
-                              {date}
+                              {useCustomRange ? format(currentDate, "d") : date}
+                              {useCustomRange && date === 1 && (
+                                <span className="block text-[9px] text-muted-foreground leading-none mt-0.5">{format(currentDate, "MMM")}</span>
+                              )}
+                              {useCustomRange && currentDate.getDate() === 1 && date !== 1 && (
+                                <span className="block text-[9px] text-muted-foreground leading-none mt-0.5">{format(currentDate, "MMM")}</span>
+                              )}
                             </button>
                           );
                         })}
@@ -512,7 +609,7 @@ export default function WizardPage() {
                       <p className="text-xs text-muted-foreground">{t.blockSpecificShiftsDesc}</p>
                       <div className="max-h-[200px] overflow-y-auto space-y-1 pr-1">
                         {selectedStaffMember.blocked?.filter(b => b.shift === -1).map((b) => {
-                          const currentDate = setDate(baseDate, b.date);
+                          const currentDate = getDateForIndex(b.date);
                           return (
                             <div key={`full-${b.date}`} className="flex items-center justify-between gap-2 p-2 bg-red-50 dark:bg-red-900/20 rounded-md border border-red-200 dark:border-red-800">
                               <div className="flex items-center gap-2">
@@ -559,7 +656,7 @@ export default function WizardPage() {
                           }, [])
                           .sort((a, b) => a.date - b.date)
                           .map((group) => {
-                            const currentDate = setDate(baseDate, group.date);
+                            const currentDate = getDateForIndex(group.date);
                             return (
                               <div key={`partial-${group.date}`} className="flex items-center justify-between gap-2 p-2 bg-orange-50 dark:bg-orange-900/10 rounded-md border border-orange-200 dark:border-orange-800">
                                 <span className="text-sm font-medium">{format(currentDate, "MMM d")} ({format(currentDate, "EEE")})</span>
@@ -725,7 +822,7 @@ export default function WizardPage() {
                           ))}
                           {Array.from({ length: daysInMonth }).map((_, i) => {
                             const date = i + 1;
-                            const currentDate = setDate(baseDate, date);
+                            const currentDate = getDateForIndex(date);
                             const isWeekend = currentDate.getDay() === 0 || currentDate.getDay() === 6;
                             const isHoliday = (config.holidays || []).includes(date);
                             
@@ -752,7 +849,10 @@ export default function WizardPage() {
                                 disabled={isWeekend}
                                 data-testid={`holiday-day-${date}`}
                               >
-                                {date}
+                                {useCustomRange ? format(currentDate, "d") : date}
+                                {useCustomRange && currentDate.getDate() === 1 && (
+                                  <span className="block text-[9px] text-muted-foreground leading-none mt-0.5">{format(currentDate, "MMM")}</span>
+                                )}
                               </button>
                             );
                           })}
@@ -764,7 +864,7 @@ export default function WizardPage() {
                             <span className="text-xs text-muted-foreground">{t.customHolidaysLabel}</span>
                             {(config.holidays || []).sort((a, b) => a - b).map(d => (
                               <Badge key={d} variant="secondary" className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
-                                {format(setDate(baseDate, d), "MMM d")}
+                                {format(getDateForIndex(d), "MMM d")}
                                 <button
                                   className="ml-1 hover:text-destructive"
                                   onClick={() => setConfig({...config, holidays: (config.holidays || []).filter(h => h !== d)})}
@@ -857,7 +957,12 @@ export default function WizardPage() {
                 <TabsContent value="calendar" className="mt-0">
                   <ScheduleView 
                     schedule={result.schedule} 
-                    config={config} 
+                    config={{
+                      ...config,
+                      useCustomRange,
+                      customStartDate: useCustomRange ? customStartDate : undefined,
+                      customEndDate: useCustomRange ? customEndDate : undefined,
+                    }} 
                     staff={staff} 
                     month={month} 
                     year={year}
@@ -987,7 +1092,12 @@ export default function WizardPage() {
               
               <div className="flex gap-2">
                 {step < 3 ? (
-                  <Button onClick={handleNext} className="px-8 rounded-full shadow-lg shadow-primary/25" data-testid="button-next-step">
+                  <Button
+                    onClick={handleNext}
+                    disabled={step === 1 && useCustomRange && (!customStartDate || !customEndDate || daysInMonth <= 0)}
+                    className="px-8 rounded-full shadow-lg shadow-primary/25"
+                    data-testid="button-next-step"
+                  >
                     {t.nextStep} <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 ) : (

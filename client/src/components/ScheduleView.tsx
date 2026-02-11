@@ -1,5 +1,5 @@
 import { type DaySchedule, type SchedulerConfig, type StaffMember, type UnfilledSlot } from "@shared/schema";
-import { format, setDate } from "date-fns";
+import { format, setDate, parseISO, addDays } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -28,8 +28,18 @@ export function ScheduleView({ schedule, config, staff, month, year, unfilledSlo
   const getStaffName = (id: string) => staff.find(s => s.id === id)?.name || "Unknown";
   const { t } = useLanguage();
 
-  const baseDate = new Date(year, month - 1, 1);
+  const isCustomRange = config.useCustomRange && config.customStartDate;
+  const baseDate = isCustomRange
+    ? parseISO(config.customStartDate!)
+    : new Date(year, month - 1, 1);
   const holidays = new Set(config.holidays || []);
+
+  const getDateForIndex = (dayIndex: number): Date => {
+    if (isCustomRange) {
+      return addDays(parseISO(config.customStartDate!), dayIndex - 1);
+    }
+    return setDate(baseDate, dayIndex);
+  };
 
   const unfilledSet = new Set<string>();
   if (unfilledSlots) {
@@ -51,7 +61,7 @@ export function ScheduleView({ schedule, config, staff, month, year, unfilledSlo
                 <p className="font-medium">{t.unfilledSlots} ({unfilledSlots.length}):</p>
                 <div className="flex flex-wrap gap-1.5">
                   {unfilledSlots.map((slot, idx) => {
-                    const slotDate = setDate(baseDate, slot.date);
+                    const slotDate = getDateForIndex(slot.date);
                     return (
                       <Badge
                         key={idx}
@@ -87,7 +97,7 @@ export function ScheduleView({ schedule, config, staff, month, year, unfilledSlo
               </TableHeader>
               <TableBody>
                 {schedule.map((day, idx) => {
-                  const currentDate = setDate(baseDate, day.date);
+                  const currentDate = getDateForIndex(day.date);
                   const isWeekend = currentDate.getDay() === 0 || currentDate.getDay() === 6;
                   const isHoliday = holidays.has(day.date);
 
