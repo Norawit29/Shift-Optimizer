@@ -1,11 +1,7 @@
 import type { StaffMember, SchedulerConfig, DaySchedule, OptimizerResult } from "@shared/schema";
 import { getDaysInMonth } from "date-fns";
 
-interface FillStrategy {
-  order: "forward" | "reverse" | "random" | "hardest-first" | "weekday-first" | "holiday-first";
-  scoring: "balanced" | "greedy-load" | "random-biased" | "minimal";
-  staffShuffle: boolean;
-}
+type Slot = { dayIdx: number; shiftIdx: number; position: number };
 
 export class ShiftOptimizer {
   private config: SchedulerConfig;
@@ -82,16 +78,15 @@ export class ShiftOptimizer {
     let bestResult: OptimizerResult | null = null;
     let bestScore = Infinity;
 
-    const maxAttempts = 500;
-    const strategies = this.generateStrategies(maxAttempts);
+    const maxAttempts = 200;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
         this.resetState();
         this.initializeSchedule();
 
-        const strategy = strategies[attempt % strategies.length];
-        this.fillAllShiftsWithStrategy(strategy);
+        const useRandom = attempt > 0;
+        this.cspSolve(useRandom);
 
         this.localRepair(5000);
         this.circadianRepair(3000);
@@ -163,15 +158,12 @@ export class ShiftOptimizer {
         s.maxShifts = s.maxShifts + relaxLevel;
       });
 
-      const strategies = this.generateStrategies(200);
-
-      for (let attempt = 0; attempt < 200; attempt++) {
+      for (let attempt = 0; attempt < 100; attempt++) {
         try {
           this.resetState();
           this.initializeSchedule();
 
-          const strategy = strategies[attempt % strategies.length];
-          this.fillAllShiftsWithStrategy(strategy);
+          this.cspSolve(attempt > 0);
 
           this.localRepair(5000);
           this.circadianRepair(3000);
@@ -198,41 +190,239 @@ export class ShiftOptimizer {
     return null;
   }
 
-  private generateStrategies(count: number): FillStrategy[] {
-    const strategies: FillStrategy[] = [];
+  private cspNodeCount = 0;
+  private readonly CSP_NODE_LIMIT = 2000000;
 
-    const orders: FillStrategy["order"][] = ["hardest-first", "forward", "reverse", "random", "weekday-first", "holiday-first"];
-    const scorings: FillStrategy["scoring"][] = ["balanced", "greedy-load", "random-biased", "minimal"];
+  private cspSolve(randomize: boolean) {
+    const slots = this.buildSlots();
+    const domains = this.buildDomains(slots);
 
-    for (let i = 0; i < count; i++) {
-      let order: FillStrategy["order"];
-      const r = Math.random();
-      if (r < 0.50) {
-        order = "hardest-first";
-      } else if (r < 0.65) {
-        order = "random";
-      } else if (r < 0.75) {
-        order = "forward";
-      } else if (r < 0.85) {
-        order = "reverse";
-      } else if (r < 0.92) {
-        order = "weekday-first";
-      } else {
-        order = "holiday-first";
+    this.propagateForced(slots, domains);
+
+    const unassigned = slots.filter(s => this.getSlotValue(s) === null);
+    this.cspNodeCount = 0;
+
+    const success = this.backtrackSolve(unassigned, domains, randomize);
+    if (!success) {
+      throw new Error("CSP solver could not find a valid assignment.");
+    }
+  }
+
+  private buildSlots(): Slot[] {
+    const slots: Slot[] = [];
+    for (let dayIdx = 0; dayIdx < this.daysInMonth; dayIdx++) {
+      for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
+        const required = this.config.staffPerShift[shiftIdx];
+        for (let pos = 0; pos < required; pos++) {
+          slots.push({ dayIdx, shiftIdx, position: pos });
+        }
+      }
+    }
+    return slots;
+  }
+
+  private slotKey(slot: Slot): string {
+    return `${slot.dayIdx}-${slot.shiftIdx}-${slot.position}`;
+  }
+
+  private getSlotValue(slot: Slot): string | null {
+    const assigned = this.schedule[slot.dayIdx].shifts[slot.shiftIdx];
+    if (slot.position < assigned.length && assigned[slot.position]) {
+      return assigned[slot.position];
+    }
+    return null;
+  }
+
+  private buildDomains(slots: Slot[]): Map<string, string[]> {
+    const domains = new Map<string, string[]>();
+
+    for (const slot of slots) {
+      const date = slot.dayIdx + 1;
+      const eligible: string[] = [];
+
+      for (const member of this.staff) {
+        const isBlocked = member.blocked.some(b => b.date === date && (b.shift === -1 || b.shift === slot.shiftIdx));
+        if (!isBlocked) {
+          eligible.push(member.id);
+        }
       }
 
-      const scoring = scorings[Math.floor(Math.random() * scorings.length)];
-      const staffShuffle = Math.random() < 0.5;
-
-      strategies.push({ order, scoring, staffShuffle });
+      domains.set(this.slotKey(slot), eligible);
     }
 
-    strategies[0] = { order: "hardest-first", scoring: "balanced", staffShuffle: false };
-    strategies[1] = { order: "hardest-first", scoring: "greedy-load", staffShuffle: false };
-    strategies[2] = { order: "forward", scoring: "balanced", staffShuffle: false };
-    strategies[3] = { order: "hardest-first", scoring: "random-biased", staffShuffle: true };
+    return domains;
+  }
 
-    return strategies;
+  private propagateForced(slots: Slot[], domains: Map<string, string[]>) {
+    let changed = true;
+    while (changed) {
+      changed = false;
+
+      for (const slot of slots) {
+        if (this.getSlotValue(slot) !== null) continue;
+
+        const key = this.slotKey(slot);
+        const domain = domains.get(key)!;
+
+        const validCandidates = domain.filter(staffId => {
+          const member = this.staffLookup.get(staffId)!;
+          return this.canAssignCSP(member, slot.dayIdx, slot.shiftIdx);
+        });
+
+        domains.set(key, validCandidates);
+
+        if (validCandidates.length === 1) {
+          const staffId = validCandidates[0];
+          this.assignSlot(slot, staffId);
+          changed = true;
+        }
+
+        if (validCandidates.length === 0 && this.getSlotValue(slot) === null) {
+          throw new Error(`No valid candidate for Day ${slot.dayIdx + 1}, Shift ${this.config.shiftNames[slot.shiftIdx]}, position ${slot.position + 1}.`);
+        }
+      }
+    }
+  }
+
+  private assignSlot(slot: Slot, staffId: string) {
+    const shifts = this.schedule[slot.dayIdx].shifts[slot.shiftIdx];
+    while (shifts.length <= slot.position) {
+      shifts.push("");
+    }
+    shifts[slot.position] = staffId;
+    this.updateStats(staffId, slot.shiftIdx, slot.dayIdx + 1);
+  }
+
+  private unassignSlot(slot: Slot) {
+    const shifts = this.schedule[slot.dayIdx].shifts[slot.shiftIdx];
+    if (slot.position < shifts.length && shifts[slot.position]) {
+      const staffId = shifts[slot.position];
+      shifts[slot.position] = "";
+      this.removeStats(staffId, slot.shiftIdx, slot.dayIdx + 1);
+    }
+  }
+
+  private backtrackSolve(unassigned: Slot[], domains: Map<string, string[]>, randomize: boolean): boolean {
+    this.cspNodeCount++;
+    if (this.cspNodeCount > this.CSP_NODE_LIMIT) return false;
+
+    let bestSlot: Slot | null = null;
+    let bestDomainSize = Infinity;
+
+    for (let i = 0; i < unassigned.length; i++) {
+      const slot = unassigned[i];
+      if (this.getSlotValue(slot) !== null) continue;
+
+      const key = this.slotKey(slot);
+      const domain = domains.get(key)!;
+      let validCount = 0;
+      for (const staffId of domain) {
+        const member = this.staffLookup.get(staffId)!;
+        if (this.canAssignCSP(member, slot.dayIdx, slot.shiftIdx)) {
+          validCount++;
+        }
+      }
+
+      if (validCount === 0) return false;
+
+      if (validCount < bestDomainSize) {
+        bestDomainSize = validCount;
+        bestSlot = slot;
+
+      }
+    }
+
+    if (!bestSlot) return true;
+
+    const key = this.slotKey(bestSlot);
+    let candidates = domains.get(key)!.filter(staffId => {
+      const member = this.staffLookup.get(staffId)!;
+      return this.canAssignCSP(member, bestSlot!.dayIdx, bestSlot!.shiftIdx);
+    });
+
+    if (randomize && candidates.length > 1) {
+      candidates = this.shuffleArray(candidates);
+    } else {
+      candidates.sort((a, b) => {
+        const loadA = this.staffWorkLoad.get(a) || 0;
+        const loadB = this.staffWorkLoad.get(b) || 0;
+        return loadA - loadB;
+      });
+    }
+
+    for (const staffId of candidates) {
+      this.assignSlot(bestSlot, staffId);
+
+      if (this.forwardCheck(unassigned, domains)) {
+        if (this.backtrackSolve(unassigned, domains, randomize)) {
+          return true;
+        }
+      }
+
+      this.unassignSlot(bestSlot);
+    }
+
+    return false;
+  }
+
+  private forwardCheck(unassigned: Slot[], domains: Map<string, string[]>): boolean {
+    for (const slot of unassigned) {
+      if (this.getSlotValue(slot) !== null) continue;
+
+      const key = this.slotKey(slot);
+      const domain = domains.get(key)!;
+
+      let hasValid = false;
+      for (const staffId of domain) {
+        const member = this.staffLookup.get(staffId)!;
+        if (this.canAssignCSP(member, slot.dayIdx, slot.shiftIdx)) {
+          hasValid = true;
+          break;
+        }
+      }
+
+      if (!hasValid) return false;
+    }
+    return true;
+  }
+
+  private canAssignCSP(member: StaffMember, dayIdx: number, shiftIdx: number): boolean {
+    const currentLoad = this.staffWorkLoad.get(member.id) || 0;
+    if (currentLoad >= member.maxShifts) return false;
+
+    const daySchedule = this.schedule[dayIdx];
+    for (let s = 0; s < daySchedule.shifts.length; s++) {
+      if (daySchedule.shifts[s].includes(member.id)) return false;
+    }
+
+    const date = dayIdx + 1;
+    if (member.blocked.some(b => b.date === date && (b.shift === -1 || b.shift === shiftIdx))) {
+      return false;
+    }
+
+    if (dayIdx > 0) {
+      const prevDaySchedule = this.schedule[dayIdx - 1];
+      for (const rule of this.config.consecutiveRules) {
+        if (rule.to === shiftIdx) {
+          if (prevDaySchedule.shifts[rule.from].includes(member.id)) {
+            return false;
+          }
+        }
+      }
+    }
+
+    if (dayIdx < this.daysInMonth - 1) {
+      const nextDaySchedule = this.schedule[dayIdx + 1];
+      for (const rule of this.config.consecutiveRules) {
+        if (rule.from === shiftIdx) {
+          if (nextDaySchedule.shifts[rule.to].includes(member.id)) {
+            return false;
+          }
+        }
+      }
+    }
+
+    return true;
   }
 
   private evaluateSolutionQuality(metrics: any): number {
@@ -243,57 +433,6 @@ export class ShiftOptimizer {
       score += variance;
     }
     return score;
-  }
-
-  private getDayOrder(strategy: FillStrategy): number[] {
-    const days = Array.from({ length: this.daysInMonth }, (_, i) => i);
-
-    switch (strategy.order) {
-      case "forward":
-        return days;
-      case "reverse":
-        return days.reverse();
-      case "random":
-        return this.shuffleArray(days);
-      case "hardest-first":
-        return this.sortDaysByDifficulty(days);
-      case "weekday-first": {
-        const weekdays = days.filter(d => !this.isHoliday(d + 1));
-        const holidays = days.filter(d => this.isHoliday(d + 1));
-        return [...this.shuffleArray(weekdays), ...this.shuffleArray(holidays)];
-      }
-      case "holiday-first": {
-        const weekdays2 = days.filter(d => !this.isHoliday(d + 1));
-        const holidays2 = days.filter(d => this.isHoliday(d + 1));
-        return [...this.shuffleArray(holidays2), ...this.shuffleArray(weekdays2)];
-      }
-      default:
-        return days;
-    }
-  }
-
-  private sortDaysByDifficulty(days: number[]): number[] {
-    const difficulty = days.map(dayIdx => {
-      const date = dayIdx + 1;
-      let totalUnavailable = 0;
-
-      for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
-        const required = this.config.staffPerShift[shiftIdx];
-        let unavailableForShift = 0;
-
-        for (const member of this.staff) {
-          const isBlocked = member.blocked.some(b => b.date === date && (b.shift === -1 || b.shift === shiftIdx));
-          if (isBlocked) unavailableForShift++;
-        }
-
-        totalUnavailable += unavailableForShift * required;
-      }
-
-      return { dayIdx, totalUnavailable };
-    });
-
-    difficulty.sort((a, b) => b.totalUnavailable - a.totalUnavailable);
-    return difficulty.map(d => d.dayIdx);
   }
 
   private shuffleArray<T>(arr: T[]): T[] {
@@ -330,182 +469,6 @@ export class ShiftOptimizer {
     }
   }
 
-  private fillAllShiftsWithStrategy(strategy: FillStrategy) {
-    const dayOrder = this.getDayOrder(strategy);
-    const maxBacktracks = 5000;
-    let backtracks = 0;
-
-    const filledDays = new Set<number>();
-    let orderIdx = 0;
-
-    while (orderIdx < dayOrder.length) {
-      const dayIdx = dayOrder[orderIdx];
-
-      const success = this.fillDayShifts(dayIdx, strategy);
-
-      if (success) {
-        filledDays.add(dayIdx);
-        orderIdx++;
-      } else {
-        if (backtracks >= maxBacktracks) {
-          throw new Error(`Backtrack limit reached at Day ${dayIdx + 1}.`);
-        }
-
-        const clearCount = Math.min(
-          Math.max(1, Math.floor(Math.random() * Math.min(5, orderIdx))),
-          orderIdx
-        );
-
-        for (let c = 0; c < clearCount && orderIdx > 0; c++) {
-          orderIdx--;
-          const prevDayIdx = dayOrder[orderIdx];
-          this.clearDay(prevDayIdx);
-          filledDays.delete(prevDayIdx);
-          backtracks++;
-        }
-
-        if (orderIdx === 0 && !success) {
-          throw new Error(`Cannot fill Day ${dayIdx + 1}. No solution found.`);
-        }
-      }
-    }
-  }
-
-  private fillDayShifts(dayIdx: number, strategy: FillStrategy): boolean {
-    const daySchedule = this.schedule[dayIdx];
-
-    for (let si = 0; si < daySchedule.shifts.length; si++) {
-      daySchedule.shifts[si] = [];
-    }
-
-    const shiftOrder = this.getShiftFillOrder(dayIdx);
-
-    for (const shiftIdx of shiftOrder) {
-      const requiredStaff = this.config.staffPerShift[shiftIdx];
-
-      for (let k = 0; k < requiredStaff; k++) {
-        const candidate = this.selectBestCandidate(dayIdx + 1, shiftIdx, daySchedule.shifts[shiftIdx], strategy);
-
-        if (candidate) {
-          daySchedule.shifts[shiftIdx].push(candidate.id);
-          this.updateStats(candidate.id, shiftIdx, dayIdx + 1);
-        } else {
-          for (let si = 0; si < daySchedule.shifts.length; si++) {
-            for (const staffId of daySchedule.shifts[si]) {
-              this.removeStats(staffId, si, dayIdx + 1);
-            }
-            daySchedule.shifts[si] = [];
-          }
-          return false;
-        }
-      }
-    }
-    return true;
-  }
-
-  private getShiftFillOrder(dayIdx: number): number[] {
-    const date = dayIdx + 1;
-    const indices = Array.from({ length: this.config.shiftNames.length }, (_, i) => i);
-
-    const scored = indices.map(shiftIdx => {
-      const required = this.config.staffPerShift[shiftIdx];
-      let available = 0;
-      for (const member of this.staff) {
-        const isBlocked = member.blocked.some(b => b.date === date && (b.shift === -1 || b.shift === shiftIdx));
-        if (!isBlocked && (this.staffWorkLoad.get(member.id) || 0) < member.maxShifts) {
-          available++;
-        }
-      }
-      return { shiftIdx, slack: available - required };
-    });
-
-    scored.sort((a, b) => a.slack - b.slack);
-    return scored.map(s => s.shiftIdx);
-  }
-
-  private clearDay(dayIdx: number) {
-    const daySchedule = this.schedule[dayIdx];
-    for (let si = 0; si < daySchedule.shifts.length; si++) {
-      for (const staffId of daySchedule.shifts[si]) {
-        this.removeStats(staffId, si, dayIdx + 1);
-      }
-      daySchedule.shifts[si] = [];
-    }
-  }
-
-  private selectBestCandidate(date: number, shiftIdx: number, currentAssigned: string[], strategy: FillStrategy): StaffMember | null {
-    let staffList = this.staff;
-    if (strategy.staffShuffle) {
-      staffList = this.shuffleArray([...this.staff]);
-    }
-
-    const candidates: { member: StaffMember; score: number }[] = [];
-
-    for (const member of staffList) {
-      if (!this.canAssign(member, date, shiftIdx, currentAssigned)) {
-        continue;
-      }
-      const score = this.calculateScore(member, shiftIdx, date, strategy.scoring);
-      candidates.push({ member, score });
-    }
-
-    if (candidates.length === 0) return null;
-
-    candidates.sort((a, b) => a.score - b.score);
-
-    if (strategy.scoring === "random-biased" || strategy.scoring === "minimal") {
-      const topN = Math.min(Math.max(3, Math.ceil(candidates.length * 0.4)), candidates.length);
-      const idx = Math.floor(Math.random() * topN);
-      return candidates[idx].member;
-    }
-
-    const bestScore = candidates[0].score;
-    const topCandidates = candidates.filter(c => c.score <= bestScore + 0.5);
-    const chosen = topCandidates[Math.floor(Math.random() * topCandidates.length)];
-    return chosen.member;
-  }
-
-  private canAssign(member: StaffMember, date: number, shiftIdx: number, currentAssigned: string[]): boolean {
-    const currentLoad = this.staffWorkLoad.get(member.id) || 0;
-    if (currentLoad >= member.maxShifts) return false;
-
-    if (currentAssigned.includes(member.id)) return false;
-
-    const daySchedule = this.schedule[date - 1];
-    for (let s = 0; s < daySchedule.shifts.length; s++) {
-      if (daySchedule.shifts[s].includes(member.id)) return false;
-    }
-
-    if (member.blocked.some(b => b.date === date && (b.shift === -1 || b.shift === shiftIdx))) {
-      return false;
-    }
-
-    if (date > 1) {
-      const prevDaySchedule = this.schedule[date - 2];
-      for (const rule of this.config.consecutiveRules) {
-        if (rule.to === shiftIdx) {
-          if (prevDaySchedule.shifts[rule.from].includes(member.id)) {
-            return false;
-          }
-        }
-      }
-    }
-
-    if (date < this.daysInMonth) {
-      const nextDaySchedule = this.schedule[date];
-      for (const rule of this.config.consecutiveRules) {
-        if (rule.from === shiftIdx) {
-          const nextShiftAssigned = nextDaySchedule.shifts[rule.to];
-          if (nextShiftAssigned.length >= this.config.staffPerShift[rule.to] && nextShiftAssigned.includes(member.id)) {
-            return false;
-          }
-        }
-      }
-    }
-
-    return true;
-  }
-
   private getStaffShiftOnDay(staffId: string, dayIdx: number): number {
     if (dayIdx < 0 || dayIdx >= this.daysInMonth) return -1;
     const daySchedule = this.schedule[dayIdx];
@@ -521,84 +484,6 @@ export class ShiftOptimizer {
     if (sum === 0) return 0;
     const mean = sum / counts.length;
     return counts.reduce((acc, c) => acc + Math.pow(c - mean, 2), 0);
-  }
-
-  private calculateScore(member: StaffMember, shiftIdx: number, date: number, scoring: string): number {
-    if (scoring === "minimal") {
-      const totalCount = this.staffWorkLoad.get(member.id) || 0;
-      return totalCount + Math.random() * 2;
-    }
-
-    const totalCount = this.staffWorkLoad.get(member.id) || 0;
-    const shiftCounts = this.staffShiftCounts.get(member.id) || [];
-    const specificShiftCount = shiftCounts[shiftIdx] || 0;
-
-    let score: number;
-
-    if (scoring === "greedy-load") {
-      score = (Math.pow(totalCount, 2) * 40) + (Math.pow(specificShiftCount, 2) * 60);
-    } else if (scoring === "random-biased") {
-      score = (Math.pow(totalCount, 2) * 10) + (Math.pow(specificShiftCount, 2) * 30) + Math.random() * 20;
-    } else {
-      score = (Math.pow(totalCount, 2) * 20) + (Math.pow(specificShiftCount, 2) * 100);
-    }
-
-    if (this.config.balanceHolidays && this.holidayDays.size > 0) {
-      const holiday = this.isHoliday(date);
-      if (holiday) {
-        const holLoad = this.staffHolidayLoad.get(member.id) || 0;
-        const holShiftCounts = this.staffHolidayShiftCounts.get(member.id) || [];
-        const holSpecific = holShiftCounts[shiftIdx] || 0;
-        score += (Math.pow(holLoad, 2) * 30) + (Math.pow(holSpecific, 2) * 80);
-
-        const simCounts = [...holShiftCounts];
-        simCounts[shiftIdx] = (simCounts[shiftIdx] || 0) + 1;
-        score += this.shiftTypeVariance(simCounts) * 120;
-      } else {
-        const wdLoad = this.staffWeekdayLoad.get(member.id) || 0;
-        const wdShiftCounts = this.staffWeekdayShiftCounts.get(member.id) || [];
-        const wdSpecific = wdShiftCounts[shiftIdx] || 0;
-        score += (Math.pow(wdLoad, 2) * 30) + (Math.pow(wdSpecific, 2) * 80);
-
-        const simCounts = [...wdShiftCounts];
-        simCounts[shiftIdx] = (simCounts[shiftIdx] || 0) + 1;
-        score += this.shiftTypeVariance(simCounts) * 120;
-      }
-    }
-
-    if (scoring !== "greedy-load") {
-      const dayIdx = date - 1;
-      const numShiftTypes = this.config.shiftNames.length;
-
-      if (dayIdx > 0) {
-        const prevShift = this.getStaffShiftOnDay(member.id, dayIdx - 1);
-
-        if (prevShift !== -1) {
-          if (prevShift === shiftIdx) {
-            score -= 50;
-          } else {
-            const forwardDist = (shiftIdx - prevShift + numShiftTypes) % numShiftTypes;
-            if (forwardDist === 1) {
-              score -= 15;
-            } else {
-              score += 25;
-            }
-          }
-        }
-
-        if (dayIdx > 1) {
-          const prevPrevShift = this.getStaffShiftOnDay(member.id, dayIdx - 2);
-          if (prevPrevShift !== -1 && prevPrevShift === shiftIdx) {
-            const prevShiftAgain = this.getStaffShiftOnDay(member.id, dayIdx - 1);
-            if (prevShiftAgain === shiftIdx) {
-              score -= 30;
-            }
-          }
-        }
-      }
-    }
-
-    return score;
   }
 
   private updateStats(memberId: string, shiftIdx: number, date: number) {
@@ -651,6 +536,46 @@ export class ShiftOptimizer {
     }
   }
 
+  private canAssign(member: StaffMember, date: number, shiftIdx: number, currentAssigned: string[]): boolean {
+    const currentLoad = this.staffWorkLoad.get(member.id) || 0;
+    if (currentLoad >= member.maxShifts) return false;
+
+    if (currentAssigned.includes(member.id)) return false;
+
+    const daySchedule = this.schedule[date - 1];
+    for (let s = 0; s < daySchedule.shifts.length; s++) {
+      if (daySchedule.shifts[s].includes(member.id)) return false;
+    }
+
+    if (member.blocked.some(b => b.date === date && (b.shift === -1 || b.shift === shiftIdx))) {
+      return false;
+    }
+
+    if (date > 1) {
+      const prevDaySchedule = this.schedule[date - 2];
+      for (const rule of this.config.consecutiveRules) {
+        if (rule.to === shiftIdx) {
+          if (prevDaySchedule.shifts[rule.from].includes(member.id)) {
+            return false;
+          }
+        }
+      }
+    }
+
+    if (date < this.daysInMonth) {
+      const nextDaySchedule = this.schedule[date];
+      for (const rule of this.config.consecutiveRules) {
+        if (rule.from === shiftIdx) {
+          if (nextDaySchedule.shifts[rule.to].includes(member.id)) {
+            return false;
+          }
+        }
+      }
+    }
+
+    return true;
+  }
+
   private circadianRepair(maxIter: number) {
     const numShifts = this.config.shiftNames.length;
     if (numShifts <= 1) return;
@@ -694,8 +619,8 @@ export class ShiftOptimizer {
             if (memberA.blocked.some(b => b.date === dayIdx2 + 1 && (b.shift === -1 || b.shift === shiftIdx2))) continue;
             if (memberB.blocked.some(b => b.date === dayIdx + 1 && (b.shift === -1 || b.shift === shiftIdx))) continue;
 
-            if (!this.checkConsecutiveRulesForSwap(memberB, dayIdx, shiftIdx, staffA)) continue;
-            if (!this.checkConsecutiveRulesForSwap(memberA, dayIdx2, shiftIdx2, staffB)) continue;
+            if (!this.checkConsecutiveRulesForSwap(memberB, dayIdx, shiftIdx)) continue;
+            if (!this.checkConsecutiveRulesForSwap(memberA, dayIdx2, shiftIdx2)) continue;
 
             const prevShiftB = this.getStaffShiftOnDay(staffB, dayIdx2 - 1);
             const nextShiftB = this.getStaffShiftOnDay(staffB, dayIdx2 + 1);
@@ -816,15 +741,14 @@ export class ShiftOptimizer {
     return score;
   }
 
-  private checkConsecutiveRulesForSwap(member: StaffMember, dayIdx: number, shiftIdx: number, _excludeStaffId?: string): boolean {
+  private checkConsecutiveRulesForSwap(member: StaffMember, dayIdx: number, shiftIdx: number): boolean {
     const date = dayIdx + 1;
 
     if (date > 1) {
       const prevDaySchedule = this.schedule[date - 2];
       for (const rule of this.config.consecutiveRules) {
         if (rule.to === shiftIdx) {
-          const prevAssigned = prevDaySchedule.shifts[rule.from];
-          if (prevAssigned.includes(member.id)) {
+          if (prevDaySchedule.shifts[rule.from].includes(member.id)) {
             return false;
           }
         }
@@ -835,8 +759,7 @@ export class ShiftOptimizer {
       const nextDaySchedule = this.schedule[date];
       for (const rule of this.config.consecutiveRules) {
         if (rule.from === shiftIdx) {
-          const nextAssigned = nextDaySchedule.shifts[rule.to];
-          if (nextAssigned.includes(member.id)) {
+          if (nextDaySchedule.shifts[rule.to].includes(member.id)) {
             return false;
           }
         }
