@@ -70,55 +70,57 @@ export class ShiftOptimizer {
   }
 
   private feasibilityMsg: string | null = null;
+  private optimizeStartTime = 0;
+  private readonly TIMEOUT_MS = 5 * 60 * 1000;
+
+  private isTimedOut(): boolean {
+    return Date.now() - this.optimizeStartTime > this.TIMEOUT_MS;
+  }
 
   public optimize(): OptimizerResult {
     this.optimizeStartTime = Date.now();
-
     this.feasibilityMsg = this.checkFeasibility();
 
     let bestResult: OptimizerResult | null = null;
     let bestScore = Infinity;
 
-    const maxAttempts = 200;
+    const maxAttempts = 50;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       if (this.isTimedOut()) break;
 
-      try {
-        this.resetState();
-        this.initializeSchedule();
+      this.resetState();
+      this.initializeSchedule();
 
-        const useRandom = attempt > 0;
-        this.cspSolve(useRandom);
+      const domains = this.buildAllDomains();
 
-        this.localRepair(5000);
-        this.circadianRepair(3000);
+      this.ac3Propagate(domains);
 
-        const metrics = this.calculateMetrics();
-        const score = this.evaluateSolutionQuality(metrics);
+      const filled = this.constructiveFill(domains, attempt > 0);
 
-        if (score < bestScore) {
-          bestScore = score;
-          bestResult = {
-            schedule: JSON.parse(JSON.stringify(this.schedule)),
-            metrics
-          };
-        }
-
-        if (score <= 1) break;
-      } catch (_e) {
+      if (!filled) {
+        continue;
       }
+
+      this.localRepair(5000);
+      this.circadianRepair(3000);
+
+      const metrics = this.calculateMetrics();
+      const score = this.evaluateSolutionQuality(metrics);
+
+      if (score < bestScore) {
+        bestScore = score;
+        bestResult = {
+          schedule: JSON.parse(JSON.stringify(this.schedule)),
+          metrics
+        };
+      }
+
+      if (score <= 1) break;
     }
 
     if (bestResult) {
       return bestResult;
-    }
-
-    if (!this.isTimedOut()) {
-      const relaxedResult = this.tryWithRelaxedConstraints();
-      if (relaxedResult) {
-        return relaxedResult;
-      }
     }
 
     return this.buildPartialResult();
@@ -152,247 +154,211 @@ export class ShiftOptimizer {
     return null;
   }
 
-  private tryWithRelaxedConstraints(): OptimizerResult | null {
-    for (let relaxLevel = 1; relaxLevel <= 3; relaxLevel++) {
-      if (this.isTimedOut()) return null;
+  private buildAllDomains(): Map<string, Set<string>> {
+    const domains = new Map<string, Set<string>>();
 
-      const originalMaxShifts = this.staff.map(s => s.maxShifts);
-
-      this.staff.forEach(s => {
-        s.maxShifts = s.maxShifts + relaxLevel;
-      });
-
-      for (let attempt = 0; attempt < 100; attempt++) {
-        if (this.isTimedOut()) {
-          this.staff.forEach((s, i) => {
-            s.maxShifts = originalMaxShifts[i];
-          });
-          return null;
-        }
-
-        try {
-          this.resetState();
-          this.initializeSchedule();
-
-          this.cspSolve(attempt > 0);
-
-          this.localRepair(5000);
-          this.circadianRepair(3000);
-
-          const metrics = this.calculateMetrics();
-
-          this.staff.forEach((s, i) => {
-            s.maxShifts = originalMaxShifts[i];
-          });
-
-          return {
-            schedule: JSON.parse(JSON.stringify(this.schedule)),
-            metrics
-          };
-        } catch (_e) {
-        }
-      }
-
-      this.staff.forEach((s, i) => {
-        s.maxShifts = originalMaxShifts[i];
-      });
-    }
-
-    return null;
-  }
-
-  private buildPartialResult(): OptimizerResult {
-    this.resetState();
-    this.initializeSchedule();
-
-    try {
-      this.greedyFill();
-    } catch (_e) {
-    }
-
-    this.localRepair(2000);
-
-    const unfilledSlots = this.findUnfilledSlots();
-    const metrics = this.calculateMetrics();
-
-    return {
-      schedule: JSON.parse(JSON.stringify(this.schedule)),
-      metrics,
-      isPartial: true,
-      unfilledSlots,
-      feasibilityWarning: this.feasibilityMsg || undefined,
-    };
-  }
-
-  private greedyFill() {
     for (let dayIdx = 0; dayIdx < this.daysInMonth; dayIdx++) {
-      for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
-        const required = this.config.staffPerShift[shiftIdx];
-        const assigned = this.schedule[dayIdx].shifts[shiftIdx];
-
-        while (assigned.length < required) {
-          const candidates = this.staff.filter(s => {
-            const member = this.staffLookup.get(s.id)!;
-            return this.canAssignCSP(member, dayIdx, shiftIdx);
-          });
-
-          if (candidates.length === 0) {
-            assigned.push("");
-            continue;
-          }
-
-          candidates.sort((a, b) => {
-            const loadA = this.staffWorkLoad.get(a.id) || 0;
-            const loadB = this.staffWorkLoad.get(b.id) || 0;
-            return loadA - loadB;
-          });
-
-          const chosen = candidates[0];
-          assigned.push(chosen.id);
-          this.updateStats(chosen.id, shiftIdx, dayIdx + 1);
-        }
-      }
-    }
-  }
-
-  private findUnfilledSlots(): UnfilledSlot[] {
-    const unfilled: UnfilledSlot[] = [];
-    for (let dayIdx = 0; dayIdx < this.daysInMonth; dayIdx++) {
-      for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
-        const required = this.config.staffPerShift[shiftIdx];
-        const assigned = this.schedule[dayIdx].shifts[shiftIdx].filter(id => id !== "");
-        if (assigned.length < required) {
-          unfilled.push({
-            date: dayIdx + 1,
-            shiftIdx,
-            shiftName: this.config.shiftNames[shiftIdx],
-            required,
-            assigned: assigned.length,
-          });
-        }
-      }
-    }
-    return unfilled;
-  }
-
-  private cspNodeCount = 0;
-  private readonly CSP_NODE_LIMIT = 100000;
-  private optimizeStartTime = 0;
-  private readonly TIMEOUT_MS = 5 * 60 * 1000;
-
-  private isTimedOut(): boolean {
-    return Date.now() - this.optimizeStartTime > this.TIMEOUT_MS;
-  }
-
-  private cspSolve(randomize: boolean) {
-    if (this.isTimedOut()) {
-      throw new Error("Timeout reached.");
-    }
-
-    const slots = this.buildSlots();
-    const domains = this.buildDomains(slots);
-
-    const slotsByDay = new Map<number, Slot[]>();
-    for (const slot of slots) {
-      const arr = slotsByDay.get(slot.dayIdx) || [];
-      arr.push(slot);
-      slotsByDay.set(slot.dayIdx, arr);
-    }
-
-    this.propagateForced(slots, domains);
-
-    const unassigned = slots.filter(s => this.getSlotValue(s) === null);
-    this.cspNodeCount = 0;
-
-    const success = this.backtrackSolve(unassigned, domains, randomize, slotsByDay);
-    if (!success) {
-      throw new Error("CSP solver could not find a valid assignment.");
-    }
-  }
-
-  private buildSlots(): Slot[] {
-    const slots: Slot[] = [];
-    for (let dayIdx = 0; dayIdx < this.daysInMonth; dayIdx++) {
+      const date = dayIdx + 1;
       for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
         const required = this.config.staffPerShift[shiftIdx];
         for (let pos = 0; pos < required; pos++) {
-          slots.push({ dayIdx, shiftIdx, position: pos });
+          const key = `${dayIdx}-${shiftIdx}-${pos}`;
+          const eligible = new Set<string>();
+
+          for (const member of this.staff) {
+            const isBlocked = member.blocked.some(b => b.date === date && (b.shift === -1 || b.shift === shiftIdx));
+            if (!isBlocked) {
+              eligible.add(member.id);
+            }
+          }
+
+          domains.set(key, eligible);
         }
       }
-    }
-    return slots;
-  }
-
-  private slotKey(slot: Slot): string {
-    return `${slot.dayIdx}-${slot.shiftIdx}-${slot.position}`;
-  }
-
-  private getSlotValue(slot: Slot): string | null {
-    const assigned = this.schedule[slot.dayIdx].shifts[slot.shiftIdx];
-    if (slot.position < assigned.length && assigned[slot.position]) {
-      return assigned[slot.position];
-    }
-    return null;
-  }
-
-  private buildDomains(slots: Slot[]): Map<string, string[]> {
-    const domains = new Map<string, string[]>();
-
-    for (const slot of slots) {
-      const date = slot.dayIdx + 1;
-      const eligible: string[] = [];
-
-      for (const member of this.staff) {
-        const isBlocked = member.blocked.some(b => b.date === date && (b.shift === -1 || b.shift === slot.shiftIdx));
-        if (!isBlocked) {
-          eligible.push(member.id);
-        }
-      }
-
-      domains.set(this.slotKey(slot), eligible);
     }
 
     return domains;
   }
 
-  private propagateForced(slots: Slot[], domains: Map<string, string[]>) {
+  private ac3Propagate(domains: Map<string, Set<string>>) {
+    const numShifts = this.config.shiftNames.length;
+
     let changed = true;
-    while (changed) {
+    let iterations = 0;
+    while (changed && iterations < 200) {
       changed = false;
+      iterations++;
 
-      for (const slot of slots) {
-        if (this.getSlotValue(slot) !== null) continue;
-
-        const key = this.slotKey(slot);
-        const domain = domains.get(key)!;
-
-        const validCandidates = domain.filter(staffId => {
-          const member = this.staffLookup.get(staffId)!;
-          return this.canAssignCSP(member, slot.dayIdx, slot.shiftIdx);
-        });
-
-        domains.set(key, validCandidates);
-
-        if (validCandidates.length === 1) {
-          const staffId = validCandidates[0];
-          this.assignSlot(slot, staffId);
-          changed = true;
+      for (let dayIdx = 0; dayIdx < this.daysInMonth; dayIdx++) {
+        const allDayKeys: string[] = [];
+        for (let shiftIdx = 0; shiftIdx < numShifts; shiftIdx++) {
+          const required = this.config.staffPerShift[shiftIdx];
+          for (let pos = 0; pos < required; pos++) {
+            allDayKeys.push(`${dayIdx}-${shiftIdx}-${pos}`);
+          }
         }
 
-        if (validCandidates.length === 0 && this.getSlotValue(slot) === null) {
-          throw new Error(`No valid candidate for Day ${slot.dayIdx + 1}, Shift ${this.config.shiftNames[slot.shiftIdx]}, position ${slot.position + 1}.`);
+        for (let i = 0; i < allDayKeys.length; i++) {
+          const domainI = domains.get(allDayKeys[i])!;
+          if (domainI.size !== 1) continue;
+          const fixedId = Array.from(domainI)[0];
+
+          for (let j = 0; j < allDayKeys.length; j++) {
+            if (i === j) continue;
+            const domainJ = domains.get(allDayKeys[j])!;
+            if (domainJ.has(fixedId)) {
+              domainJ.delete(fixedId);
+              changed = true;
+            }
+          }
+        }
+
+        for (let shiftIdx = 0; shiftIdx < numShifts; shiftIdx++) {
+          const required = this.config.staffPerShift[shiftIdx];
+          const shiftUnion = new Set<string>();
+          for (let pos = 0; pos < required; pos++) {
+            const key = `${dayIdx}-${shiftIdx}-${pos}`;
+            Array.from(domains.get(key)!).forEach(id => shiftUnion.add(id));
+          }
+
+          if (shiftUnion.size === required) {
+            for (let otherShift = 0; otherShift < numShifts; otherShift++) {
+              if (otherShift === shiftIdx) continue;
+              const otherRequired = this.config.staffPerShift[otherShift];
+              for (let otherPos = 0; otherPos < otherRequired; otherPos++) {
+                const otherKey = `${dayIdx}-${otherShift}-${otherPos}`;
+                const otherDomain = domains.get(otherKey)!;
+                for (const id of Array.from(shiftUnion)) {
+                  if (otherDomain.has(id)) {
+                    otherDomain.delete(id);
+                    changed = true;
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        for (let shiftIdx = 0; shiftIdx < numShifts; shiftIdx++) {
+          const required = this.config.staffPerShift[shiftIdx];
+
+          for (const rule of this.config.consecutiveRules) {
+            if (rule.from === shiftIdx && dayIdx + 1 < this.daysInMonth) {
+              const nextDay = dayIdx + 1;
+              const toShift = rule.to;
+              const toRequired = this.config.staffPerShift[toShift];
+
+              for (let pos = 0; pos < required; pos++) {
+                const fromDomain = domains.get(`${dayIdx}-${shiftIdx}-${pos}`)!;
+                if (fromDomain.size === 1) {
+                  const fixedStaff = Array.from(fromDomain)[0];
+                  for (let toPos = 0; toPos < toRequired; toPos++) {
+                    const toDomain = domains.get(`${nextDay}-${toShift}-${toPos}`)!;
+                    if (toDomain.has(fixedStaff)) {
+                      toDomain.delete(fixedStaff);
+                      changed = true;
+                    }
+                  }
+                }
+              }
+            }
+
+            if (rule.to === shiftIdx && dayIdx > 0) {
+              const prevDay = dayIdx - 1;
+              const fromShift = rule.from;
+              const fromRequired = this.config.staffPerShift[fromShift];
+
+              for (let pos = 0; pos < required; pos++) {
+                const toDomain = domains.get(`${dayIdx}-${shiftIdx}-${pos}`)!;
+                if (toDomain.size === 1) {
+                  const fixedStaff = Array.from(toDomain)[0];
+                  for (let fromPos = 0; fromPos < fromRequired; fromPos++) {
+                    const fromDomain = domains.get(`${prevDay}-${fromShift}-${fromPos}`)!;
+                    if (fromDomain.has(fixedStaff)) {
+                      fromDomain.delete(fixedStaff);
+                      changed = true;
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }
   }
 
-  private assignSlot(slot: Slot, staffId: string) {
-    const shifts = this.schedule[slot.dayIdx].shifts[slot.shiftIdx];
-    while (shifts.length <= slot.position) {
-      shifts.push("");
+  private constructiveFill(domains: Map<string, Set<string>>, randomize: boolean): boolean {
+    const slots = this.buildSlots();
+    const slotOrder = this.computeSlotOrder(slots, domains, randomize);
+
+    const assignmentHistory: { slot: Slot; staffId: string; triedSet: Set<string> }[] = [];
+    let idx = 0;
+
+    while (idx < slotOrder.length) {
+      const slot = slotOrder[idx];
+
+      if (this.getSlotValue(slot) !== null) {
+        idx++;
+        continue;
+      }
+
+      const triedAlready = assignmentHistory.length > 0 &&
+        assignmentHistory[assignmentHistory.length - 1].slot === slot
+        ? assignmentHistory[assignmentHistory.length - 1].triedSet
+        : new Set<string>();
+
+      const candidates = this.staff
+        .filter(m => !triedAlready.has(m.id) && this.canAssignHard(m, slot.dayIdx, slot.shiftIdx))
+        .map(m => m.id);
+
+      if (candidates.length === 0) {
+        const recovered = this.tryRecoverSlot(slot, domains);
+        if (recovered) {
+          idx++;
+          continue;
+        }
+
+        let backtracked = false;
+        for (let undoCount = 0; undoCount < Math.min(assignmentHistory.length, 8); undoCount++) {
+          const lastEntry = assignmentHistory[assignmentHistory.length - 1];
+          this.unassignSlot(lastEntry.slot);
+          lastEntry.triedSet.add(lastEntry.staffId);
+          assignmentHistory.pop();
+
+          const retrySlot = lastEntry.slot;
+          const retryCandidateIds = this.staff
+            .filter(m => !lastEntry.triedSet.has(m.id) && this.canAssignHard(m, retrySlot.dayIdx, retrySlot.shiftIdx))
+            .map(m => m.id);
+
+          if (retryCandidateIds.length > 0) {
+            const chosen = this.pickBestCandidate(retryCandidateIds, retrySlot, randomize);
+            this.assignSlot(retrySlot, chosen);
+            lastEntry.triedSet.add(chosen);
+            assignmentHistory.push({
+              slot: retrySlot,
+              staffId: chosen,
+              triedSet: lastEntry.triedSet
+            });
+            backtracked = true;
+            break;
+          }
+        }
+
+        if (!backtracked) return false;
+        continue;
+      }
+
+      const chosen = this.pickBestCandidate(candidates, slot, randomize);
+      this.assignSlot(slot, chosen);
+
+      const newTriedSet = triedAlready.size > 0 ? triedAlready : new Set<string>();
+      newTriedSet.add(chosen);
+      assignmentHistory.push({ slot, staffId: chosen, triedSet: newTriedSet });
+      idx++;
     }
-    shifts[slot.position] = staffId;
-    this.updateStats(staffId, slot.shiftIdx, slot.dayIdx + 1);
+
+    return true;
   }
 
   private unassignSlot(slot: Slot) {
@@ -404,96 +370,231 @@ export class ShiftOptimizer {
     }
   }
 
-  private backtrackSolve(unassigned: Slot[], domains: Map<string, string[]>, randomize: boolean, slotsByDay: Map<number, Slot[]>): boolean {
-    this.cspNodeCount++;
-    if (this.cspNodeCount > this.CSP_NODE_LIMIT) return false;
-    if ((this.cspNodeCount & 0xFFF) === 0 && this.isTimedOut()) return false;
-
-    let bestSlot: Slot | null = null;
-    let bestDomainSize = Infinity;
-
-    for (let i = 0; i < unassigned.length; i++) {
-      const slot = unassigned[i];
-      if (this.getSlotValue(slot) !== null) continue;
-
+  private computeSlotOrder(slots: Slot[], domains: Map<string, Set<string>>, randomize: boolean): Slot[] {
+    const scored = slots.map(slot => {
       const key = this.slotKey(slot);
-      const domain = domains.get(key)!;
-      let validCount = 0;
-      for (const staffId of domain) {
-        const member = this.staffLookup.get(staffId)!;
-        if (this.canAssignCSP(member, slot.dayIdx, slot.shiftIdx)) {
-          validCount++;
-        }
-      }
-
-      if (validCount === 0) return false;
-
-      if (validCount < bestDomainSize) {
-        bestDomainSize = validCount;
-        bestSlot = slot;
-      }
-    }
-
-    if (!bestSlot) return true;
-
-    const key = this.slotKey(bestSlot);
-    let candidates = domains.get(key)!.filter(staffId => {
-      const member = this.staffLookup.get(staffId)!;
-      return this.canAssignCSP(member, bestSlot!.dayIdx, bestSlot!.shiftIdx);
+      const domain = domains.get(key);
+      const domainSize = domain ? domain.size : 0;
+      return { slot, domainSize };
     });
 
-    if (randomize && candidates.length > 1) {
-      candidates = this.shuffleArray(candidates);
-    } else {
-      candidates.sort((a, b) => {
-        const loadA = this.staffWorkLoad.get(a) || 0;
-        const loadB = this.staffWorkLoad.get(b) || 0;
-        return loadA - loadB;
-      });
+    scored.sort((a, b) => {
+      if (a.domainSize !== b.domainSize) return a.domainSize - b.domainSize;
+      if (a.slot.dayIdx !== b.slot.dayIdx) return a.slot.dayIdx - b.slot.dayIdx;
+      return a.slot.shiftIdx - b.slot.shiftIdx;
+    });
+
+    if (randomize) {
+      for (let i = 0; i < scored.length - 1; i++) {
+        if (scored[i].domainSize === scored[i + 1].domainSize && Math.random() < 0.3) {
+          [scored[i], scored[i + 1]] = [scored[i + 1], scored[i]];
+        }
+      }
     }
 
-    for (const staffId of candidates) {
-      this.assignSlot(bestSlot, staffId);
+    return scored.map(s => s.slot);
+  }
 
-      if (this.forwardCheckScoped(bestSlot.dayIdx, domains, slotsByDay)) {
-        if (this.backtrackSolve(unassigned, domains, randomize, slotsByDay)) {
+  private pickBestCandidate(candidates: string[], slot: Slot, randomize: boolean): string {
+    if (randomize && candidates.length > 1 && Math.random() < 0.4) {
+      return candidates[Math.floor(Math.random() * candidates.length)];
+    }
+
+    const numShifts = this.config.shiftNames.length;
+
+    candidates.sort((a, b) => {
+      const loadA = this.staffWorkLoad.get(a) || 0;
+      const loadB = this.staffWorkLoad.get(b) || 0;
+      if (loadA !== loadB) return loadA - loadB;
+
+      const countsA = this.staffShiftCounts.get(a)!;
+      const countsB = this.staffShiftCounts.get(b)!;
+      const shiftCountA = countsA[slot.shiftIdx] || 0;
+      const shiftCountB = countsB[slot.shiftIdx] || 0;
+      if (shiftCountA !== shiftCountB) return shiftCountA - shiftCountB;
+
+      if (this.config.balanceHolidays && this.isHoliday(slot.dayIdx + 1)) {
+        const holA = this.staffHolidayLoad.get(a) || 0;
+        const holB = this.staffHolidayLoad.get(b) || 0;
+        if (holA !== holB) return holA - holB;
+      }
+
+      const futureA = this.countFutureOptions(a, slot.dayIdx, numShifts);
+      const futureB = this.countFutureOptions(b, slot.dayIdx, numShifts);
+      return futureB - futureA;
+    });
+
+    return candidates[0];
+  }
+
+  private countFutureOptions(staffId: string, currentDayIdx: number, numShifts: number): number {
+    let options = 0;
+    const member = this.staffLookup.get(staffId)!;
+    const maxLookahead = Math.min(currentDayIdx + 5, this.daysInMonth - 1);
+
+    for (let d = currentDayIdx + 1; d <= maxLookahead; d++) {
+      for (let s = 0; s < numShifts; s++) {
+        if (this.canAssignHard(member, d, s)) options++;
+      }
+    }
+    return options;
+  }
+
+  private pruneDomainsAfterAssign(slot: Slot, staffId: string, domains: Map<string, Set<string>>) {
+    const numShifts = this.config.shiftNames.length;
+    const dayIdx = slot.dayIdx;
+
+    for (let s = 0; s < numShifts; s++) {
+      const required = this.config.staffPerShift[s];
+      for (let p = 0; p < required; p++) {
+        const key = `${dayIdx}-${s}-${p}`;
+        const domain = domains.get(key);
+        if (domain) domain.delete(staffId);
+      }
+    }
+
+    for (const rule of this.config.consecutiveRules) {
+      if (rule.from === slot.shiftIdx && dayIdx + 1 < this.daysInMonth) {
+        const nextDay = dayIdx + 1;
+        const toRequired = this.config.staffPerShift[rule.to];
+        for (let p = 0; p < toRequired; p++) {
+          const key = `${nextDay}-${rule.to}-${p}`;
+          const domain = domains.get(key);
+          if (domain) domain.delete(staffId);
+        }
+      }
+      if (rule.to === slot.shiftIdx && dayIdx > 0) {
+        const prevDay = dayIdx - 1;
+        const fromRequired = this.config.staffPerShift[rule.from];
+        for (let p = 0; p < fromRequired; p++) {
+          const key = `${prevDay}-${rule.from}-${p}`;
+          const domain = domains.get(key);
+          if (domain) domain.delete(staffId);
+        }
+      }
+    }
+
+    const member = this.staffLookup.get(staffId)!;
+    const currentLoad = this.staffWorkLoad.get(staffId) || 0;
+    if (currentLoad >= member.maxShifts) {
+      Array.from(domains.entries()).forEach(([_key, domain]) => {
+        domain.delete(staffId);
+      });
+    }
+  }
+
+  private tryRecoverSlot(slot: Slot, domains: Map<string, Set<string>>): boolean {
+    const numShifts = this.config.shiftNames.length;
+    const dayIdx = slot.dayIdx;
+    const shiftIdx = slot.shiftIdx;
+
+    for (let otherShift = 0; otherShift < numShifts; otherShift++) {
+      if (otherShift === shiftIdx) continue;
+      const otherAssigned = this.schedule[dayIdx].shifts[otherShift];
+
+      for (let pos = 0; pos < otherAssigned.length; pos++) {
+        const otherStaffId = otherAssigned[pos];
+        if (!otherStaffId) continue;
+
+        const otherMember = this.staffLookup.get(otherStaffId)!;
+
+        const isBlockedForTarget = otherMember.blocked.some(
+          b => b.date === dayIdx + 1 && (b.shift === -1 || b.shift === shiftIdx)
+        );
+        if (isBlockedForTarget) continue;
+
+        let violatesConsecutive = false;
+        if (dayIdx > 0) {
+          const prevDay = this.schedule[dayIdx - 1];
+          for (const rule of this.config.consecutiveRules) {
+            if (rule.to === shiftIdx && prevDay.shifts[rule.from].includes(otherStaffId)) {
+              violatesConsecutive = true;
+              break;
+            }
+          }
+        }
+        if (!violatesConsecutive && dayIdx < this.daysInMonth - 1) {
+          const nextDay = this.schedule[dayIdx + 1];
+          for (const rule of this.config.consecutiveRules) {
+            if (rule.from === shiftIdx && nextDay.shifts[rule.to].includes(otherStaffId)) {
+              violatesConsecutive = true;
+              break;
+            }
+          }
+        }
+        if (violatesConsecutive) continue;
+
+        const replacements = this.staff.filter(m => {
+          if (m.id === otherStaffId) return false;
+          return this.canAssignHard(m, dayIdx, otherShift);
+        });
+
+        if (replacements.length > 0) {
+          replacements.sort((a, b) =>
+            (this.staffWorkLoad.get(a.id) || 0) - (this.staffWorkLoad.get(b.id) || 0)
+          );
+          const replacement = replacements[0];
+
+          this.removeStats(otherStaffId, otherShift, dayIdx + 1);
+          otherAssigned[pos] = replacement.id;
+          this.updateStats(replacement.id, otherShift, dayIdx + 1);
+          this.pruneDomainsAfterAssign(
+            { dayIdx, shiftIdx: otherShift, position: pos },
+            replacement.id,
+            domains
+          );
+
+          this.assignSlot(slot, otherStaffId);
+          this.pruneDomainsAfterAssign(slot, otherStaffId, domains);
           return true;
         }
       }
+    }
 
-      this.unassignSlot(bestSlot);
+    for (let nearDay = Math.max(0, dayIdx - 3); nearDay <= Math.min(this.daysInMonth - 1, dayIdx + 3); nearDay++) {
+      if (nearDay === dayIdx) continue;
+
+      for (let s = 0; s < numShifts; s++) {
+        const nearAssigned = this.schedule[nearDay].shifts[s];
+
+        for (let pos = 0; pos < nearAssigned.length; pos++) {
+          const candidateId = nearAssigned[pos];
+          if (!candidateId) continue;
+
+          const candidateMember = this.staffLookup.get(candidateId)!;
+          if (!this.canAssignHard(candidateMember, dayIdx, shiftIdx)) continue;
+
+          const replacements = this.staff.filter(m =>
+            m.id !== candidateId && this.canAssignHard(m, nearDay, s)
+          );
+
+          if (replacements.length > 0) {
+            replacements.sort((a, b) =>
+              (this.staffWorkLoad.get(a.id) || 0) - (this.staffWorkLoad.get(b.id) || 0)
+            );
+            const replacement = replacements[0];
+
+            this.removeStats(candidateId, s, nearDay + 1);
+            nearAssigned[pos] = replacement.id;
+            this.updateStats(replacement.id, s, nearDay + 1);
+            this.pruneDomainsAfterAssign(
+              { dayIdx: nearDay, shiftIdx: s, position: pos },
+              replacement.id,
+              domains
+            );
+
+            this.assignSlot(slot, candidateId);
+            this.pruneDomainsAfterAssign(slot, candidateId, domains);
+            return true;
+          }
+        }
+      }
     }
 
     return false;
   }
 
-  private forwardCheckScoped(assignedDayIdx: number, domains: Map<string, string[]>, slotsByDay: Map<number, Slot[]>): boolean {
-    for (let d = assignedDayIdx - 1; d <= assignedDayIdx + 1; d++) {
-      const daySlots = slotsByDay.get(d);
-      if (!daySlots) continue;
-
-      for (const slot of daySlots) {
-        if (this.getSlotValue(slot) !== null) continue;
-
-        const key = this.slotKey(slot);
-        const domain = domains.get(key)!;
-
-        let hasValid = false;
-        for (const staffId of domain) {
-          const member = this.staffLookup.get(staffId)!;
-          if (this.canAssignCSP(member, slot.dayIdx, slot.shiftIdx)) {
-            hasValid = true;
-            break;
-          }
-        }
-
-        if (!hasValid) return false;
-      }
-    }
-    return true;
-  }
-
-  private canAssignCSP(member: StaffMember, dayIdx: number, shiftIdx: number): boolean {
+  private canAssignHard(member: StaffMember, dayIdx: number, shiftIdx: number): boolean {
     const currentLoad = this.staffWorkLoad.get(member.id) || 0;
     if (currentLoad >= member.maxShifts) return false;
 
@@ -532,6 +633,129 @@ export class ShiftOptimizer {
     return true;
   }
 
+  private buildPartialResult(): OptimizerResult {
+    this.resetState();
+    this.initializeSchedule();
+
+    this.greedyFill();
+
+    this.localRepair(2000);
+
+    const unfilledSlots = this.findUnfilledSlots();
+    const metrics = this.calculateMetrics();
+
+    return {
+      schedule: JSON.parse(JSON.stringify(this.schedule)),
+      metrics,
+      isPartial: true,
+      unfilledSlots,
+      feasibilityWarning: this.feasibilityMsg || undefined,
+    };
+  }
+
+  private greedyFill() {
+    for (let dayIdx = 0; dayIdx < this.daysInMonth; dayIdx++) {
+      for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
+        const required = this.config.staffPerShift[shiftIdx];
+        const assigned = this.schedule[dayIdx].shifts[shiftIdx];
+
+        while (assigned.length < required) {
+          const candidates = this.staff.filter(s => {
+            return this.canAssignHard(s, dayIdx, shiftIdx);
+          });
+
+          if (candidates.length === 0) {
+            const softCandidates = this.staff.filter(s => {
+              const date = dayIdx + 1;
+              if (s.blocked.some(b => b.date === date && (b.shift === -1 || b.shift === shiftIdx))) return false;
+              const daySchedule = this.schedule[dayIdx];
+              for (let si = 0; si < daySchedule.shifts.length; si++) {
+                if (daySchedule.shifts[si].includes(s.id)) return false;
+              }
+              return true;
+            });
+
+            if (softCandidates.length > 0) {
+              softCandidates.sort((a, b) =>
+                (this.staffWorkLoad.get(a.id) || 0) - (this.staffWorkLoad.get(b.id) || 0)
+              );
+              const chosen = softCandidates[0];
+              assigned.push(chosen.id);
+              this.updateStats(chosen.id, shiftIdx, dayIdx + 1);
+            } else {
+              assigned.push("");
+            }
+            continue;
+          }
+
+          candidates.sort((a, b) => {
+            const loadA = this.staffWorkLoad.get(a.id) || 0;
+            const loadB = this.staffWorkLoad.get(b.id) || 0;
+            return loadA - loadB;
+          });
+
+          const chosen = candidates[0];
+          assigned.push(chosen.id);
+          this.updateStats(chosen.id, shiftIdx, dayIdx + 1);
+        }
+      }
+    }
+  }
+
+  private findUnfilledSlots(): UnfilledSlot[] {
+    const unfilled: UnfilledSlot[] = [];
+    for (let dayIdx = 0; dayIdx < this.daysInMonth; dayIdx++) {
+      for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
+        const required = this.config.staffPerShift[shiftIdx];
+        const assigned = this.schedule[dayIdx].shifts[shiftIdx].filter(id => id !== "");
+        if (assigned.length < required) {
+          unfilled.push({
+            date: dayIdx + 1,
+            shiftIdx,
+            shiftName: this.config.shiftNames[shiftIdx],
+            required,
+            assigned: assigned.length,
+          });
+        }
+      }
+    }
+    return unfilled;
+  }
+
+  private buildSlots(): Slot[] {
+    const slots: Slot[] = [];
+    for (let dayIdx = 0; dayIdx < this.daysInMonth; dayIdx++) {
+      for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
+        const required = this.config.staffPerShift[shiftIdx];
+        for (let pos = 0; pos < required; pos++) {
+          slots.push({ dayIdx, shiftIdx, position: pos });
+        }
+      }
+    }
+    return slots;
+  }
+
+  private slotKey(slot: Slot): string {
+    return `${slot.dayIdx}-${slot.shiftIdx}-${slot.position}`;
+  }
+
+  private getSlotValue(slot: Slot): string | null {
+    const assigned = this.schedule[slot.dayIdx].shifts[slot.shiftIdx];
+    if (slot.position < assigned.length && assigned[slot.position]) {
+      return assigned[slot.position];
+    }
+    return null;
+  }
+
+  private assignSlot(slot: Slot, staffId: string) {
+    const shifts = this.schedule[slot.dayIdx].shifts[slot.shiftIdx];
+    while (shifts.length <= slot.position) {
+      shifts.push("");
+    }
+    shifts[slot.position] = staffId;
+    this.updateStats(staffId, slot.shiftIdx, slot.dayIdx + 1);
+  }
+
   private evaluateSolutionQuality(metrics: any): number {
     let score = metrics.range;
     for (const ps of metrics.perStaff) {
@@ -540,15 +764,6 @@ export class ShiftOptimizer {
       score += variance;
     }
     return score;
-  }
-
-  private shuffleArray<T>(arr: T[]): T[] {
-    const result = [...arr];
-    for (let i = result.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [result[i], result[j]] = [result[j], result[i]];
-    }
-    return result;
   }
 
   private resetState() {
@@ -699,6 +914,7 @@ export class ShiftOptimizer {
 
         const posA = Math.floor(Math.random() * assigned.length);
         const staffA = assigned[posA];
+        if (!staffA) continue;
 
         const prevShiftA = this.getStaffShiftOnDay(staffA, dayIdx - 1);
         const nextShiftA = this.getStaffShiftOnDay(staffA, dayIdx + 1);
@@ -713,7 +929,7 @@ export class ShiftOptimizer {
 
             const posB = Math.floor(Math.random() * assigned2.length);
             const staffB = assigned2[posB];
-            if (staffA === staffB) continue;
+            if (!staffB || staffA === staffB) continue;
 
             const alreadyOnDayA = this.getStaffShiftOnDay(staffB, dayIdx);
             if (alreadyOnDayA !== -1 && !(dayIdx === dayIdx2)) continue;
