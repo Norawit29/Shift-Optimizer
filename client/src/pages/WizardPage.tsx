@@ -13,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
   ArrowLeft, 
@@ -69,6 +70,8 @@ export default function WizardPage() {
   const [selectedVersion, setSelectedVersion] = useState(0);
   const [scheduleName, setScheduleName] = useState("My Schedule");
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [saveVersion, setSaveVersion] = useState(0);
   const [optimizeProgress, setOptimizeProgress] = useState(0);
   const result = results.length > 0 ? results[selectedVersion] : null;
   const [useCustomRange, setUseCustomRange] = useState(false);
@@ -272,8 +275,10 @@ export default function WizardPage() {
     })();
   };
 
-  const saveSchedule = async () => {
-    if (!result) return;
+  const saveSchedule = async (versionIdx?: number) => {
+    const vIdx = versionIdx ?? selectedVersion;
+    const r = results[vIdx];
+    if (!r) return;
     try {
       const saveConfig = {
         ...config,
@@ -287,13 +292,23 @@ export default function WizardPage() {
         year,
         config: saveConfig,
         staff,
-        result: result.schedule as any,
-        isPartial: result.isPartial || false,
-        unfilledSlots: result.unfilledSlots || [],
+        result: r.schedule as any,
+        isPartial: r.isPartial || false,
+        unfilledSlots: r.unfilledSlots || [],
         isPublished: false
       });
+      setShowSaveDialog(false);
       setLocation("/history");
     } catch (error) {
+    }
+  };
+
+  const handleSaveClick = () => {
+    if (results.length > 1) {
+      setSaveVersion(selectedVersion);
+      setShowSaveDialog(true);
+    } else {
+      saveSchedule(0);
     }
   };
 
@@ -340,7 +355,7 @@ export default function WizardPage() {
           
           <div className="flex items-center gap-2">
             {step === 4 && (
-              <Button onClick={saveSchedule} disabled={createMutation.isPending} className="bg-green-600 hover:bg-green-700" data-testid="button-save-schedule">
+              <Button onClick={handleSaveClick} disabled={createMutation.isPending} className="bg-green-600 hover:bg-green-700" data-testid="button-save-schedule">
                 {createMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin"/> : <Save className="w-4 h-4 mr-2" />}
                 {t.saveSchedule}
               </Button>
@@ -1256,6 +1271,69 @@ export default function WizardPage() {
           </div>
         )}
       </main>
+
+      <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t.saveVersionTitle}</DialogTitle>
+            <DialogDescription>{t.saveVersionDesc}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            {results.map((r, idx) => {
+              const totalAssigned = r.metrics.perStaff.reduce((sum, s) => sum + s.total, 0);
+              const unfilledCount = r.unfilledSlots?.reduce((sum, u) => sum + (u.required - u.assigned), 0) || 0;
+              const totalRequired = totalAssigned + unfilledCount;
+              const isSaveSelected = idx === saveVersion;
+              const maxShift = Math.max(...r.metrics.perStaff.map(s => s.total));
+              const minShift = Math.min(...r.metrics.perStaff.map(s => s.total));
+              return (
+                <Card
+                  key={idx}
+                  className={`cursor-pointer transition-all ${
+                    isSaveSelected
+                      ? "border-primary border-2 bg-primary/5 dark:bg-primary/10"
+                      : "hover-elevate"
+                  }`}
+                  onClick={() => setSaveVersion(idx)}
+                  data-testid={`save-version-${idx}`}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-bold text-lg">{t.version} {idx + 1}</span>
+                      {isSaveSelected && <Check className="w-5 h-5 text-primary" />}
+                    </div>
+                    <div className="flex flex-wrap gap-4 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">{t.coverage}: </span>
+                        <span className="font-medium">{totalAssigned}/{totalRequired}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Min-Max: </span>
+                        <span className="font-medium">{minShift} - {maxShift}</span>
+                      </div>
+                      {r.unfilledSlots && r.unfilledSlots.length > 0 && (
+                        <div>
+                          <span className="text-muted-foreground">Unfilled: </span>
+                          <span className="font-medium text-amber-600 dark:text-amber-400">{unfilledCount}</span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+          <Button
+            onClick={() => saveSchedule(saveVersion)}
+            disabled={createMutation.isPending}
+            className="w-full bg-green-600 hover:bg-green-700"
+            data-testid="button-confirm-save"
+          >
+            {createMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+            {t.confirmSave} ({t.version} {saveVersion + 1})
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
