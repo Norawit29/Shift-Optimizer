@@ -46,7 +46,7 @@ Key pages:
 - `HistoryPage` — Lists all saved schedules
 - `ScheduleDetailsPage` — View a specific saved schedule with table and stats
 
-The shift optimization algorithm runs **client-side** in `client/src/lib/optimizer.ts`. It's a deterministic constraint-based solver (not AI/ML), filling shifts greedily while respecting hard constraints (blocked dates, consecutive shift rules, max shifts per person) and then doing local repair for fairness.
+The shift optimization algorithm runs **client-side** in `client/src/lib/optimizer.ts` using **Mixed Integer Programming (MIP)** via the HiGHS solver (WASM). The optimizer builds an LP model with binary decision variables `x[staff][day][shift]`, hard constraints (blocked dates, one-shift-per-day, consecutive rules, max shifts, staffing caps), and a weighted multi-objective function that prioritizes coverage (weight 1000), workload fairness (weight 5), per-shift-type balance (weight 2), and holiday balance (weight 3 when enabled). The WASM file is served from `client/public/highs.wasm`. The `optimize()` method is async (WASM loading). Time limit: 30 seconds, MIP gap: 1%.
 
 ### Backend (`server/`)
 

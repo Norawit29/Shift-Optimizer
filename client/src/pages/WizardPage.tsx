@@ -220,7 +220,7 @@ export default function WizardPage() {
 
   const runOptimizer = () => {
     setIsOptimizing(true);
-    setTimeout(() => {
+    (async () => {
       try {
         let holStaff = config.holidayStaffPerShift;
         if (config.separateHolidayConfig && holStaff) {
@@ -235,7 +235,7 @@ export default function WizardPage() {
           holidayStaffPerShift: config.separateHolidayConfig ? holStaff : undefined,
         };
         const optimizer = new ShiftOptimizer(optimizerConfig, staff, month, year);
-        const res = optimizer.optimize();
+        const res = await optimizer.optimize();
         setResult(res);
         setStep(4);
         if (res.isPartial && res.unfilledSlots && res.unfilledSlots.length > 0) {
@@ -256,7 +256,7 @@ export default function WizardPage() {
       } finally {
         setIsOptimizing(false);
       }
-    }, 500);
+    })();
   };
 
   const saveSchedule = async () => {
