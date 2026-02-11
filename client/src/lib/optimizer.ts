@@ -395,6 +395,37 @@ export class ShiftOptimizer {
     const cIdx = { val: 0 };
     this.writeCommonConstraints(lines, varMap, cIdx);
 
+    {
+      const allXVars = Array.from(varMap.keys());
+      if (allXVars.length > 0 && phase1Targets.totalCoverage > 0) {
+        const coverageTerms = allXVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+        lines.push(`  c${cIdx.val++}:`);
+        lines.push(writeTerms(coverageTerms, 10));
+        lines.push(`  >= ${phase1Targets.totalCoverage}`);
+      }
+    }
+
+    for (let d = 0; d < D; d++) {
+      const required = this.getStaffPerShiftForDay(d + 1);
+      for (let s = 0; s < S; s++) {
+        if (required[s] === 0) continue;
+        const slotKey = `${d}_${s}`;
+        const p1Coverage = phase1Targets.slotCoverage.get(slotKey) || 0;
+        if (p1Coverage <= 0) continue;
+        const shiftVars: string[] = [];
+        for (let i = 0; i < N; i++) {
+          const v = this.vn(i, d, s);
+          if (varMap.has(v)) shiftVars.push(v);
+        }
+        if (shiftVars.length > 0) {
+          const terms = shiftVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+          lines.push(`  c${cIdx.val++}:`);
+          lines.push(writeTerms(terms, 10));
+          lines.push(`  >= ${p1Coverage}`);
+        }
+      }
+    }
+
     for (let i = 0; i < N; i++) {
       const staffVars: string[] = [];
       for (let d = 0; d < D; d++) {
@@ -650,6 +681,89 @@ export class ShiftOptimizer {
     return unfilled;
   }
 
+  private greedyFillUnfilled(schedule: DaySchedule[]): number {
+    const S = this.config.shiftNames.length;
+    const D = this.daysInMonth;
+
+    const staffTotals = new Map<string, number>();
+    const staffDayAssigned = new Map<string, Set<number>>();
+    for (const member of this.staff) {
+      staffTotals.set(member.id, 0);
+      staffDayAssigned.set(member.id, new Set<number>());
+    }
+    for (let d = 0; d < D; d++) {
+      for (let s = 0; s < S; s++) {
+        for (const staffId of schedule[d].shifts[s]) {
+          if (!staffId) continue;
+          staffTotals.set(staffId, (staffTotals.get(staffId) || 0) + 1);
+          staffDayAssigned.get(staffId)?.add(d);
+        }
+      }
+    }
+
+    let filled = 0;
+    for (let d = 0; d < D; d++) {
+      const required = this.getStaffPerShiftForDay(d + 1);
+      for (let s = 0; s < S; s++) {
+        if (required[s] === 0) continue;
+        const arr = schedule[d].shifts[s];
+        for (let pos = 0; pos < arr.length; pos++) {
+          if (arr[pos] !== "") continue;
+
+          const candidates: { idx: number; id: string; total: number }[] = [];
+          for (let i = 0; i < this.staff.length; i++) {
+            const member = this.staff[i];
+            const currentTotal = staffTotals.get(member.id) || 0;
+            if (currentTotal >= member.maxShifts) continue;
+            if (this.isBlocked(i, d, s)) continue;
+
+            const maxPerDay = this.config.shiftsPerDay || S;
+            const dayShifts = staffDayAssigned.get(member.id);
+            if (dayShifts && dayShifts.has(d)) {
+              let dayCount = 0;
+              for (let ss = 0; ss < S; ss++) {
+                if (schedule[d].shifts[ss].includes(member.id)) dayCount++;
+              }
+              if (dayCount >= maxPerDay) continue;
+            }
+
+            let violatesConsecutive = false;
+            for (const rule of this.config.consecutiveRules) {
+              if (rule.to === s && d > 0) {
+                if (schedule[d - 1].shifts[rule.from]?.includes(member.id)) {
+                  violatesConsecutive = true;
+                  break;
+                }
+              }
+              if (rule.from === s && d < D - 1) {
+                if (schedule[d + 1].shifts[rule.to]?.includes(member.id)) {
+                  violatesConsecutive = true;
+                  break;
+                }
+              }
+            }
+            if (violatesConsecutive) continue;
+
+            if (arr.includes(member.id)) continue;
+
+            candidates.push({ idx: i, id: member.id, total: currentTotal });
+          }
+
+          if (candidates.length > 0) {
+            candidates.sort((a, b) => a.total - b.total);
+            const chosen = candidates[0];
+            arr[pos] = chosen.id;
+            staffTotals.set(chosen.id, chosen.total + 1);
+            staffDayAssigned.get(chosen.id)?.add(d);
+            filled++;
+          }
+        }
+      }
+    }
+
+    return filled;
+  }
+
   private makeEmptyResult(warning: string): OptimizerResult {
     const emptySchedule = this.buildEmptySchedule();
     return {
@@ -760,11 +874,23 @@ export class ShiftOptimizer {
     }
 
     const schedule = this.extractSchedule(finalSolution, varMap);
+
+    let unfilledBefore = this.findUnfilledSlots(schedule);
+    const coverageBefore = totalRequired - unfilledBefore.reduce((sum, u) => sum + (u.required - u.assigned), 0);
+    console.log(`[OPT] Solver result (Phase ${usedPhase}): coverage ${coverageBefore}/${totalRequired}, unfilled slots: ${unfilledBefore.length}`);
+
+    if (unfilledBefore.length > 0) {
+      const greedyFilled = this.greedyFillUnfilled(schedule);
+      if (greedyFilled > 0) {
+        console.log(`[OPT] Greedy post-fill: filled ${greedyFilled} additional slot(s)`);
+      }
+    }
+
     const metrics = this.calculateMetricsFromSchedule(schedule);
     const unfilledSlots = this.findUnfilledSlots(schedule);
 
     const finalCoverage = metrics.perStaff.reduce((sum: number, s: any) => sum + s.total, 0);
-    console.log(`[OPT] Final result (Phase ${usedPhase}): coverage ${finalCoverage}/${totalRequired}, unfilled slots: ${unfilledSlots.length}`);
+    console.log(`[OPT] Final result: coverage ${finalCoverage}/${totalRequired}, unfilled slots: ${unfilledSlots.length}`);
     if (unfilledSlots.length > 0) {
       console.log(`[OPT] Unfilled: ${unfilledSlots.slice(0, 10).map(u => `Day${u.date}-${u.shiftName}(${u.assigned}/${u.required})`).join(', ')}${unfilledSlots.length > 10 ? '...' : ''}`);
     }
