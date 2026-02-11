@@ -372,15 +372,6 @@ export class ShiftOptimizer {
     const cIdx = { val: 0 };
     this.writeCommonConstraints(lines, varMap, cIdx);
 
-    const allXVars: string[] = [];
-    varMap.forEach((_info, vName) => allXVars.push(vName));
-    if (allXVars.length > 0) {
-      const floorTerms = allXVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
-      lines.push(`  c${cIdx.val++}:`);
-      lines.push(writeTerms(floorTerms, 10));
-      lines.push(`  >= ${phase1Targets.totalCoverage}`);
-    }
-
     for (let i = 0; i < N; i++) {
       const staffVars: string[] = [];
       for (let d = 0; d < D; d++) {
@@ -389,19 +380,16 @@ export class ShiftOptimizer {
           if (varMap.has(v)) staffVars.push(v);
         }
       }
-      if (staffVars.length > 0) {
-        const terms1 = staffVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
-        terms1.push(`- dw_${i}`);
-        lines.push(`  c${cIdx.val++}:`);
-        lines.push(writeTerms(terms1, 10));
-        lines.push(`  <= ${fmt(avgWorkload)}`);
+      if (staffVars.length === 0) continue;
 
-        const terms2 = staffVars.map(v => `- ${v}`);
-        terms2.push(`- dw_${i}`);
-        lines.push(`  c${cIdx.val++}:`);
-        lines.push(writeTerms(terms2, 10));
-        lines.push(`  <= ${fmt(-avgWorkload)}`);
-      }
+      const defTerms = staffVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+      defTerms.push(`- tw_${i}`);
+      lines.push(`  c${cIdx.val++}:`);
+      lines.push(writeTerms(defTerms, 10));
+      lines.push(`  = 0`);
+
+      lines.push(`  c${cIdx.val++}: tw_${i} - dw_${i} <= ${fmt(avgWorkload)}`);
+      lines.push(`  c${cIdx.val++}: - tw_${i} - dw_${i} <= ${fmt(-avgWorkload)}`);
     }
 
     for (let i = 0; i < N; i++) {
@@ -414,19 +402,16 @@ export class ShiftOptimizer {
           const v = this.vn(i, d, s);
           if (varMap.has(v)) shiftVars.push(v);
         }
-        if (shiftVars.length > 0) {
-          const terms1 = shiftVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
-          terms1.push(`- ds_${i}_${s}`);
-          lines.push(`  c${cIdx.val++}:`);
-          lines.push(writeTerms(terms1, 10));
-          lines.push(`  <= ${fmt(target)}`);
+        if (shiftVars.length === 0) continue;
 
-          const terms2 = shiftVars.map(v => `- ${v}`);
-          terms2.push(`- ds_${i}_${s}`);
-          lines.push(`  c${cIdx.val++}:`);
-          lines.push(writeTerms(terms2, 10));
-          lines.push(`  <= ${fmt(-target)}`);
-        }
+        const defTerms = shiftVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+        defTerms.push(`- ts_${i}_${s}`);
+        lines.push(`  c${cIdx.val++}:`);
+        lines.push(writeTerms(defTerms, 10));
+        lines.push(`  = 0`);
+
+        lines.push(`  c${cIdx.val++}: ts_${i}_${s} - ds_${i}_${s} <= ${fmt(target)}`);
+        lines.push(`  c${cIdx.val++}: - ts_${i}_${s} - ds_${i}_${s} <= ${fmt(-target)}`);
       }
     }
 
@@ -440,35 +425,35 @@ export class ShiftOptimizer {
             if (varMap.has(v)) holVars.push(v);
           }
         }
-        if (holVars.length > 0) {
-          const terms1 = holVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
-          terms1.push(`- dh_${i}`);
-          lines.push(`  c${cIdx.val++}:`);
-          lines.push(writeTerms(terms1, 10));
-          lines.push(`  <= ${fmt(avgHoliday)}`);
+        if (holVars.length === 0) continue;
 
-          const terms2 = holVars.map(v => `- ${v}`);
-          terms2.push(`- dh_${i}`);
-          lines.push(`  c${cIdx.val++}:`);
-          lines.push(writeTerms(terms2, 10));
-          lines.push(`  <= ${fmt(-avgHoliday)}`);
-        }
+        const defTerms = holVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+        defTerms.push(`- th_${i}`);
+        lines.push(`  c${cIdx.val++}:`);
+        lines.push(writeTerms(defTerms, 10));
+        lines.push(`  = 0`);
+
+        lines.push(`  c${cIdx.val++}: th_${i} - dh_${i} <= ${fmt(avgHoliday)}`);
+        lines.push(`  c${cIdx.val++}: - th_${i} - dh_${i} <= ${fmt(-avgHoliday)}`);
       }
     }
 
     lines.push("Bounds");
     for (let i = 0; i < N; i++) {
+      lines.push(`  tw_${i} >= 0`);
       lines.push(`  dw_${i} >= 0`);
     }
     for (let i = 0; i < N; i++) {
       for (let s = 0; s < S; s++) {
         if (shiftTargets[s] > 0) {
+          lines.push(`  ts_${i}_${s} >= 0`);
           lines.push(`  ds_${i}_${s} >= 0`);
         }
       }
     }
     if (enableHolidayBalance && avgHoliday > 0) {
       for (let i = 0; i < N; i++) {
+        lines.push(`  th_${i} >= 0`);
         lines.push(`  dh_${i} >= 0`);
       }
     }
