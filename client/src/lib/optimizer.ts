@@ -725,6 +725,17 @@ export class ShiftOptimizer {
       "Solve error", "Empty", "Not Set", "Primal infeasible or unbounded", "Unbounded"
     ];
 
+    let totalRequired = 0;
+    for (let d = 0; d < this.daysInMonth; d++) {
+      const req = this.getStaffPerShiftForDay(d + 1);
+      for (let s = 0; s < this.config.shiftNames.length; s++) {
+        totalRequired += req[s];
+      }
+    }
+    const totalMaxShifts = this.staff.reduce((sum, s) => sum + s.maxShifts, 0);
+    console.log(`[OPT] Setup: ${this.staff.length} staff, ${this.daysInMonth} days, ${this.config.shiftNames.length} shifts`);
+    console.log(`[OPT] Total required slots: ${totalRequired}, Total staff capacity (maxShifts): ${totalMaxShifts}, Variables: ${varMap.size}`);
+
     const { model: phase1Model } = this.buildPhase1Model(varMap, binaryVars);
     let phase1Solution: any;
     try {
@@ -734,15 +745,31 @@ export class ShiftOptimizer {
         mip_rel_gap: 0.01,
       });
     } catch (err: any) {
-      console.error("Phase 1 solver error:", err);
+      console.error("[OPT] Phase 1 solver CRASH:", err);
       return this.makeEmptyResult(`Solver crashed during coverage optimization: ${err?.message || "Unknown error"}.`);
     }
 
+    console.log(`[OPT] Phase 1 status: ${phase1Solution.Status}, ObjectiveValue: ${phase1Solution.ObjectiveValue}`);
+
     if (failStatuses.includes(phase1Solution.Status) || !phase1Solution.Columns) {
+      console.error(`[OPT] Phase 1 FAILED: ${phase1Solution.Status}`);
       return this.makeEmptyResult(feasibilityMsg || `Phase 1 solver status: ${phase1Solution.Status}.`);
     }
 
     const phase1Targets = this.extractPhase1Targets(phase1Solution, varMap);
+    const phase1Unfilled = totalRequired - phase1Targets.totalCoverage;
+    console.log(`[OPT] Phase 1 coverage: ${phase1Targets.totalCoverage}/${totalRequired} (unfilled: ${phase1Unfilled})`);
+    console.log(`[OPT] Phase 1 per-shift totals: ${phase1Targets.perShift.join(', ')}`);
+
+    const staffLoads: number[] = new Array(this.staff.length).fill(0);
+    const columns1 = phase1Solution.Columns || {};
+    varMap.forEach((info, varName) => {
+      const col = columns1[varName];
+      if (col && Math.round(col.Primal) === 1) {
+        staffLoads[info.staff]++;
+      }
+    });
+    console.log(`[OPT] Phase 1 staff loads: ${staffLoads.map((l, i) => `${this.staff[i].name}:${l}/${this.staff[i].maxShifts}`).join(', ')}`);
 
     if (phase1Targets.totalCoverage === 0) {
       return this.makeEmptyResult("No assignments possible with current constraints.");
@@ -750,6 +777,7 @@ export class ShiftOptimizer {
 
     const phase2Model = this.buildPhase2Model(varMap, binaryVars, phase1Targets);
     let finalSolution: any;
+    let usedPhase = 2;
     try {
       const phase2Solution = solver.solve(phase2Model, {
         time_limit: 15.0,
@@ -757,20 +785,30 @@ export class ShiftOptimizer {
         mip_rel_gap: 0.01,
       });
 
+      console.log(`[OPT] Phase 2 status: ${phase2Solution.Status}, ObjectiveValue: ${phase2Solution.ObjectiveValue}`);
+
       if (failStatuses.includes(phase2Solution.Status) || !phase2Solution.Columns) {
-        console.warn("Phase 2 failed, using Phase 1 result. Status:", phase2Solution.Status);
+        console.warn(`[OPT] Phase 2 FAILED (${phase2Solution.Status}), falling back to Phase 1`);
         finalSolution = phase1Solution;
+        usedPhase = 1;
       } else {
         finalSolution = phase2Solution;
       }
     } catch (err: any) {
-      console.error("Phase 2 solver error, using Phase 1 result:", err);
+      console.error("[OPT] Phase 2 solver CRASH, falling back to Phase 1:", err);
       finalSolution = phase1Solution;
+      usedPhase = 1;
     }
 
     const schedule = this.extractSchedule(finalSolution, varMap);
     const metrics = this.calculateMetricsFromSchedule(schedule);
     const unfilledSlots = this.findUnfilledSlots(schedule);
+
+    const finalCoverage = metrics.perStaff.reduce((sum: number, s: any) => sum + s.total, 0);
+    console.log(`[OPT] Final result (Phase ${usedPhase}): coverage ${finalCoverage}/${totalRequired}, unfilled slots: ${unfilledSlots.length}`);
+    if (unfilledSlots.length > 0) {
+      console.log(`[OPT] Unfilled: ${unfilledSlots.slice(0, 10).map(u => `Day${u.date}-${u.shiftName}(${u.assigned}/${u.required})`).join(', ')}${unfilledSlots.length > 10 ? '...' : ''}`);
+    }
 
     const result: OptimizerResult = {
       schedule,
