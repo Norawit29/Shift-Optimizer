@@ -92,6 +92,8 @@ export class ShiftOptimizer {
   }
 
   private checkFeasibility(): string | null {
+    const warnings: string[] = [];
+
     for (let day = 1; day <= this.daysInMonth; day++) {
       const dayStaffPerShift = this.getStaffPerShiftForDay(day);
       for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
@@ -102,9 +104,10 @@ export class ShiftOptimizer {
           if (!isBlocked) available++;
         }
         if (available < required) {
-          return `Day ${day}, Shift "${this.config.shiftNames[shiftIdx]}": ` +
-            `needs ${required} staff but only ${available} are available. ` +
-            `This is impossible to solve. Please add more staff or remove some blocked dates for this day.`;
+          warnings.push(
+            `Day ${day}, Shift "${this.config.shiftNames[shiftIdx]}": ` +
+            `needs ${required} staff but only ${available} available.`
+          );
         }
       }
     }
@@ -115,11 +118,12 @@ export class ShiftOptimizer {
       : weekdaySlots;
     const totalSlotsPerDay = Math.max(weekdaySlots, holidaySlots);
     if (totalSlotsPerDay > this.staff.length) {
-      return `Each day requires ${totalSlotsPerDay} staff slots but only ${this.staff.length} staff members exist. ` +
-        `Please add more staff or reduce staff per shift.`;
+      warnings.push(
+        `Each day requires ${totalSlotsPerDay} staff slots but only ${this.staff.length} staff members exist.`
+      );
     }
 
-    return null;
+    return warnings.length > 0 ? warnings.join(" ") : null;
   }
 
   private isBlocked(staffIdx: number, dayIdx: number, shiftIdx: number): boolean {
@@ -257,10 +261,33 @@ export class ShiftOptimizer {
     return lines.join("\n");
   }
 
+  private extractPhase1Targets(
+    phase1Solution: any,
+    varMap: Map<string, { staff: number; day: number; shift: number }>
+  ): { perShift: number[]; holidayTotal: number } {
+    const S = this.config.shiftNames.length;
+    const perShift = new Array(S).fill(0);
+    let holidayTotal = 0;
+    const columns = phase1Solution.Columns || {};
+
+    varMap.forEach((info, varName) => {
+      const col = columns[varName];
+      if (col && Math.round(col.Primal) === 1) {
+        perShift[info.shift]++;
+        if (this.isHoliday(info.day + 1)) {
+          holidayTotal++;
+        }
+      }
+    });
+
+    return { perShift, holidayTotal };
+  }
+
   private buildPhase2Model(
     varMap: Map<string, { staff: number; day: number; shift: number }>,
     binaryVars: string[],
-    optimalCoverage: number
+    optimalCoverage: number,
+    phase1Targets: { perShift: number[]; holidayTotal: number }
   ): string {
     const N = this.staff.length;
     const D = this.daysInMonth;
@@ -272,26 +299,8 @@ export class ShiftOptimizer {
     const HOLIDAY_W = enableHolidayBalance ? 0.6 : 0;
 
     const avgWorkload = optimalCoverage / N;
-
-    const shiftTargets: number[] = [];
-    for (let s = 0; s < S; s++) {
-      let totalSlots = 0;
-      for (let d = 0; d < D; d++) {
-        totalSlots += this.getStaffPerShiftForDay(d + 1)[s];
-      }
-      shiftTargets.push(totalSlots / N);
-    }
-
-    let avgHoliday = 0;
-    if (enableHolidayBalance) {
-      let totalHolSlots = 0;
-      for (let d = 0; d < D; d++) {
-        if (!this.isHoliday(d + 1)) continue;
-        const req = this.getStaffPerShiftForDay(d + 1);
-        for (let s = 0; s < S; s++) totalHolSlots += req[s];
-      }
-      avgHoliday = totalHolSlots / N;
-    }
+    const shiftTargets = phase1Targets.perShift.map(total => total / N);
+    const avgHoliday = enableHolidayBalance ? phase1Targets.holidayTotal / N : 0;
 
     const lines: string[] = [];
 
@@ -303,10 +312,12 @@ export class ShiftOptimizer {
     }
     for (let i = 0; i < N; i++) {
       for (let s = 0; s < S; s++) {
-        objParts.push(`+ ${SHIFT_W} ds_${i}_${s}`);
+        if (shiftTargets[s] > 0) {
+          objParts.push(`+ ${SHIFT_W} ds_${i}_${s}`);
+        }
       }
     }
-    if (enableHolidayBalance) {
+    if (enableHolidayBalance && avgHoliday > 0) {
       for (let i = 0; i < N; i++) {
         objParts.push(`+ ${HOLIDAY_W} dh_${i}`);
       }
@@ -342,19 +353,19 @@ export class ShiftOptimizer {
         lines.push(`  c${cIdx.val++}:`);
         lines.push(writeTerms(terms2, 10));
         lines.push(`  <= ${fmt(-avgWorkload)}`);
-      } else {
-        lines.push(`  c${cIdx.val++}: - dw_${i} <= ${fmt(-avgWorkload)}`);
       }
     }
 
     for (let i = 0; i < N; i++) {
       for (let s = 0; s < S; s++) {
+        const target = shiftTargets[s];
+        if (target === 0) continue;
+
         const shiftVars: string[] = [];
         for (let d = 0; d < D; d++) {
           const v = this.vn(i, d, s);
           if (varMap.has(v)) shiftVars.push(v);
         }
-        const target = shiftTargets[s];
         if (shiftVars.length > 0) {
           const terms1 = shiftVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
           terms1.push(`- ds_${i}_${s}`);
@@ -367,13 +378,11 @@ export class ShiftOptimizer {
           lines.push(`  c${cIdx.val++}:`);
           lines.push(writeTerms(terms2, 10));
           lines.push(`  <= ${fmt(-target)}`);
-        } else {
-          lines.push(`  c${cIdx.val++}: - ds_${i}_${s} <= ${fmt(-target)}`);
         }
       }
     }
 
-    if (enableHolidayBalance) {
+    if (enableHolidayBalance && avgHoliday > 0) {
       for (let i = 0; i < N; i++) {
         const holVars: string[] = [];
         for (let d = 0; d < D; d++) {
@@ -395,8 +404,6 @@ export class ShiftOptimizer {
           lines.push(`  c${cIdx.val++}:`);
           lines.push(writeTerms(terms2, 10));
           lines.push(`  <= ${fmt(-avgHoliday)}`);
-        } else {
-          lines.push(`  c${cIdx.val++}: - dh_${i} <= ${fmt(-avgHoliday)}`);
         }
       }
     }
@@ -407,10 +414,12 @@ export class ShiftOptimizer {
     }
     for (let i = 0; i < N; i++) {
       for (let s = 0; s < S; s++) {
-        lines.push(`  ds_${i}_${s} >= 0`);
+        if (shiftTargets[s] > 0) {
+          lines.push(`  ds_${i}_${s} >= 0`);
+        }
       }
     }
-    if (enableHolidayBalance) {
+    if (enableHolidayBalance && avgHoliday > 0) {
       for (let i = 0; i < N; i++) {
         lines.push(`  dh_${i} >= 0`);
       }
@@ -637,7 +646,8 @@ export class ShiftOptimizer {
       return this.makeEmptyResult("No assignments possible with current constraints.");
     }
 
-    const phase2Model = this.buildPhase2Model(varMap, binaryVars, optimalCoverage);
+    const phase1Targets = this.extractPhase1Targets(phase1Solution, varMap);
+    const phase2Model = this.buildPhase2Model(varMap, binaryVars, optimalCoverage, phase1Targets);
     let finalSolution: any;
     try {
       const phase2Solution = solver.solve(phase2Model, {

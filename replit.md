@@ -46,7 +46,11 @@ Key pages:
 - `HistoryPage` — Lists all saved schedules
 - `ScheduleDetailsPage` — View a specific saved schedule with table and stats
 
-The shift optimization algorithm runs **client-side** in `client/src/lib/optimizer.ts` using **Mixed Integer Programming (MIP)** via the HiGHS solver (WASM). The optimizer builds an LP model with binary decision variables `x[staff][day][shift]`, hard constraints (blocked dates, one-shift-per-day, consecutive rules, max shifts, staffing caps), and a weighted multi-objective function that prioritizes coverage (weight 1000), workload fairness (weight 5), per-shift-type balance (weight 2), and holiday balance (weight 3 when enabled). The WASM file is served from `client/public/highs.wasm`. The `optimize()` method is async (WASM loading). Time limit: 30 seconds, MIP gap: 1%.
+The shift optimization algorithm runs **client-side** in `client/src/lib/optimizer.ts` using **Mixed Integer Programming (MIP)** via the HiGHS solver (WASM). The optimizer uses a **2-phase approach**:
+- **Phase 1**: Maximizes total coverage (`Σ x[i,d,s]`) subject to hard constraints (blocked dates, one-shift-per-day, consecutive rules, max shifts, staffing caps). Produces optimal coverage value `C*`.
+- **Phase 2**: Minimizes fairness deviations subject to all Phase 1 constraints plus a coverage floor (`Σ x >= C*`). Uses **deviation variables** (`dev >= |actual - avg|`) for workload balance, per-shift-type balance, and holiday balance. Targets are computed from Phase 1 actual results, not theoretical maximums. Falls back to Phase 1 result if Phase 2 fails.
+
+This 2-phase design ensures coverage is never sacrificed for fairness. The WASM file is served from `client/public/highs.wasm`. Time limit: 15 seconds per phase, MIP gap: 1%.
 
 ### Backend (`server/`)
 
