@@ -211,6 +211,16 @@ export class ShiftOptimizer {
             lines.push(`  c${cIdx.val++}: ${v1} + ${v2} <= 1`);
           }
         }
+
+        if (rule.from < rule.to) {
+          for (let d = 0; d < D; d++) {
+            const v1 = this.vn(i, d, rule.from);
+            const v2 = this.vn(i, d, rule.to);
+            if (varMap.has(v1) && varMap.has(v2)) {
+              lines.push(`  c${cIdx.val++}: ${v1} + ${v2} <= 1`);
+            }
+          }
+        }
       }
     }
 
@@ -746,6 +756,16 @@ export class ShiftOptimizer {
                     break;
                   }
                 }
+                if (rule.from < rule.to) {
+                  if (rule.from === s && schedule[d].shifts[rule.to]?.includes(member.id)) {
+                    violatesConsecutive = true;
+                    break;
+                  }
+                  if (rule.to === s && schedule[d].shifts[rule.from]?.includes(member.id)) {
+                    violatesConsecutive = true;
+                    break;
+                  }
+                }
               }
               if (violatesConsecutive) continue;
 
@@ -836,6 +856,16 @@ export class ShiftOptimizer {
           if (rule.from === s && d < D - 1) {
             if (schedule[d + 1].shifts[rule.to]?.includes(member.id)) {
               consecutiveBlock = `works ${this.config.shiftNames[rule.to]} on Day${slot.date + 1}`;
+              break;
+            }
+          }
+          if (rule.from < rule.to) {
+            if (rule.from === s && schedule[d].shifts[rule.to]?.includes(member.id)) {
+              consecutiveBlock = `works ${this.config.shiftNames[rule.to]} same day`;
+              break;
+            }
+            if (rule.to === s && schedule[d].shifts[rule.from]?.includes(member.id)) {
+              consecutiveBlock = `works ${this.config.shiftNames[rule.from]} same day`;
               break;
             }
           }
