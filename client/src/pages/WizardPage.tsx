@@ -65,9 +65,12 @@ export default function WizardPage() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [config, setConfig] = useState<SchedulerConfig>(INITIAL_CONFIG);
   const [staff, setStaff] = useState<StaffMember[]>(INITIAL_STAFF);
-  const [result, setResult] = useState<OptimizerResult | null>(null);
+  const [results, setResults] = useState<OptimizerResult[]>([]);
+  const [selectedVersion, setSelectedVersion] = useState(0);
   const [scheduleName, setScheduleName] = useState("My Schedule");
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [optimizeProgress, setOptimizeProgress] = useState(0);
+  const result = results.length > 0 ? results[selectedVersion] : null;
   const [useCustomRange, setUseCustomRange] = useState(false);
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
@@ -220,6 +223,7 @@ export default function WizardPage() {
 
   const runOptimizer = () => {
     setIsOptimizing(true);
+    setOptimizeProgress(0);
     (async () => {
       try {
         let holStaff = config.holidayStaffPerShift;
@@ -234,11 +238,19 @@ export default function WizardPage() {
           customEndDate: useCustomRange ? customEndDate : undefined,
           holidayStaffPerShift: config.separateHolidayConfig ? holStaff : undefined,
         };
-        const optimizer = new ShiftOptimizer(optimizerConfig, staff, month, year);
-        const res = await optimizer.optimize();
-        setResult(res);
+        const allResults: OptimizerResult[] = [];
+        for (let v = 0; v < 3; v++) {
+          setOptimizeProgress(v + 1);
+          await new Promise(r => setTimeout(r, 50));
+          const optimizer = new ShiftOptimizer(optimizerConfig, staff, month, year);
+          const res = await optimizer.optimize();
+          allResults.push(res);
+        }
+        setResults(allResults);
+        setSelectedVersion(0);
         setStep(4);
-        if (res.isPartial && res.unfilledSlots && res.unfilledSlots.length > 0) {
+        const anyPartial = allResults.some(r => r.isPartial && r.unfilledSlots && r.unfilledSlots.length > 0);
+        if (anyPartial) {
           toast({ 
             title: t.partialScheduleWarning, 
             description: t.partialScheduleDesc, 
@@ -255,6 +267,7 @@ export default function WizardPage() {
         });
       } finally {
         setIsOptimizing(false);
+        setOptimizeProgress(0);
       }
     })();
   };
@@ -991,7 +1004,7 @@ export default function WizardPage() {
                  <Button size="lg" onClick={runOptimizer} disabled={isOptimizing} className="mt-4 w-full" data-testid="button-generate">
                    {isOptimizing ? (
                      <>
-                       <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t.optimizing}
+                       <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t.generatingVersions} ({optimizeProgress}/3)
                      </>
                    ) : (
                      <>{t.generateSchedule}</>
@@ -1023,10 +1036,62 @@ export default function WizardPage() {
                 <Button variant="outline" onClick={() => setStep(3)} data-testid="button-adjust-rules">
                   <Settings2 className="w-4 h-4 mr-2" /> {t.adjustRules}
                 </Button>
-                <Button variant="outline" onClick={runOptimizer} data-testid="button-regenerate">
-                  <History className="w-4 h-4 mr-2" /> {t.regenerate}
+                <Button variant="outline" onClick={runOptimizer} disabled={isOptimizing} data-testid="button-regenerate">
+                  {isOptimizing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <History className="w-4 h-4 mr-2" />}
+                  {t.regenerate}
                 </Button>
               </div>
+
+              {results.length > 1 && (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">{t.selectVersion}</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {results.map((r, idx) => {
+                      const totalAssigned = r.metrics.perStaff.reduce((sum, s) => sum + s.total, 0);
+                      const unfilledCount = r.unfilledSlots?.reduce((sum, u) => sum + (u.required - u.assigned), 0) || 0;
+                      const totalRequired = totalAssigned + unfilledCount;
+                      const isSelected = idx === selectedVersion;
+                      const maxShift = Math.max(...r.metrics.perStaff.map(s => s.total));
+                      const minShift = Math.min(...r.metrics.perStaff.map(s => s.total));
+                      return (
+                        <Card
+                          key={idx}
+                          className={`cursor-pointer transition-all ${
+                            isSelected 
+                              ? "border-primary border-2 bg-primary/5 dark:bg-primary/10" 
+                              : "hover-elevate"
+                          }`}
+                          onClick={() => setSelectedVersion(idx)}
+                          data-testid={`button-version-${idx}`}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-bold text-lg">{t.version} {idx + 1}</span>
+                              {isSelected && <Check className="w-5 h-5 text-primary" />}
+                            </div>
+                            <div className="space-y-1 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">{t.coverage}</span>
+                                <span className="font-medium">{totalAssigned}/{totalRequired}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Min-Max</span>
+                                <span className="font-medium">{minShift} - {maxShift}</span>
+                              </div>
+                              {r.unfilledSlots && r.unfilledSlots.length > 0 && (
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Unfilled</span>
+                                  <span className="font-medium text-amber-600 dark:text-amber-400">{unfilledCount}</span>
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               <Tabs defaultValue="calendar">
                 <TabsList className="mb-4">
