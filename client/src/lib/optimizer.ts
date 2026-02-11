@@ -345,6 +345,7 @@ export class ShiftOptimizer {
     const S = this.config.shiftNames.length;
     const enableHolidayBalance = this.config.balanceHolidays && this.holidayDays.size > 0;
 
+    const COVERAGE_W = 1000;
     const WORKLOAD_W = 1.0;
     const SHIFT_W = 0.4;
     const HOLIDAY_W = enableHolidayBalance ? 0.6 : 0;
@@ -354,10 +355,22 @@ export class ShiftOptimizer {
     const avgHoliday = enableHolidayBalance ? phase1Targets.holidayTotal / N : 0;
 
     const lines: string[] = [];
+    const slackVars: string[] = [];
+
+    for (let d = 0; d < D; d++) {
+      const required = this.getStaffPerShiftForDay(d + 1);
+      for (let s = 0; s < S; s++) {
+        if (required[s] === 0) continue;
+        slackVars.push(`u2_${d}_${s}`);
+      }
+    }
 
     lines.push("Minimize");
     lines.push("  obj:");
     const objParts: string[] = [];
+    for (const uVar of slackVars) {
+      objParts.push(`+ ${COVERAGE_W} ${uVar}`);
+    }
     for (let i = 0; i < N; i++) {
       objParts.push(`+ ${WORKLOAD_W} dw_${i}`);
     }
@@ -377,7 +390,29 @@ export class ShiftOptimizer {
 
     lines.push("Subject To");
     const cIdx = { val: 0 };
-    this.writeCommonConstraints(lines, varMap, cIdx);
+    this.writeCommonConstraints(lines, varMap, cIdx, { skipStaffingCap: true });
+
+    for (let d = 0; d < D; d++) {
+      const required = this.getStaffPerShiftForDay(d + 1);
+      for (let s = 0; s < S; s++) {
+        if (required[s] === 0) continue;
+        const uVar = `u2_${d}_${s}`;
+        const shiftVars: string[] = [];
+        for (let i = 0; i < N; i++) {
+          const v = this.vn(i, d, s);
+          if (varMap.has(v)) shiftVars.push(v);
+        }
+        if (shiftVars.length > 0) {
+          const terms = shiftVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+          terms.push(`+ ${uVar}`);
+          lines.push(`  c${cIdx.val++}:`);
+          lines.push(writeTerms(terms, 10));
+          lines.push(`  = ${required[s]}`);
+        } else {
+          lines.push(`  c${cIdx.val++}: ${uVar} = ${required[s]}`);
+        }
+      }
+    }
 
     for (let d = 0; d < D; d++) {
       for (let s = 0; s < S; s++) {
@@ -473,6 +508,9 @@ export class ShiftOptimizer {
     }
 
     lines.push("Bounds");
+    for (const uVar of slackVars) {
+      lines.push(`  ${uVar} >= 0`);
+    }
     for (let i = 0; i < N; i++) {
       lines.push(`  dw_${i} >= 0`);
     }
