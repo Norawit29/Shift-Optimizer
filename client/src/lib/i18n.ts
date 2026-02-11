@@ -145,6 +145,13 @@ const translations = {
     scheduleView: "Schedule View",
     scheduleNotFound: "Schedule not found",
 
+    // Quick Export
+    quickExport: "Quick Export",
+    quickExportDesc: "Generate and export to Excel — no database needed",
+    exportVersionTitle: "Choose version to export",
+    exportVersionDesc: "Select which version you want to export to Excel",
+    exportThisVersion: "Export this version",
+
     // Toasts
     scheduleGenerated: "Schedule Generated",
     optimizationComplete: "Optimization complete!",
@@ -306,6 +313,13 @@ const translations = {
     exportExcel: "ส่งออก Excel",
     scheduleView: "มุมมองตารางเวร",
     scheduleNotFound: "ไม่พบตารางเวร",
+
+    // Quick Export
+    quickExport: "ส่งออกด่วน",
+    quickExportDesc: "สร้างและส่งออก Excel — ไม่ต้องใช้ฐานข้อมูล",
+    exportVersionTitle: "เลือกเวอร์ชันที่จะส่งออก",
+    exportVersionDesc: "เลือกเวอร์ชันที่ต้องการส่งออกเป็น Excel",
+    exportThisVersion: "ส่งออกเวอร์ชันนี้",
 
     // Toasts
     scheduleGenerated: "สร้างตารางเวรแล้ว",
