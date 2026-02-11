@@ -253,12 +253,12 @@ export class ShiftOptimizer {
     lines.push("Minimize");
     lines.push("  obj:");
     const objParts = slackVars.map((v, idx) => {
-      const w = fmt(1 + (Math.random() - 0.5) * 0.001);
+      const w = fmt(1 + (Math.random() - 0.5) * 0.01);
       return idx === 0 ? `${w} ${v}` : `+ ${w} ${v}`;
     });
     const xVars = Array.from(varMap.keys());
     for (const xv of xVars) {
-      const n = (Math.random() - 0.5) * 0.0001;
+      const n = (Math.random() - 0.5) * 0.001;
       objParts.push(n >= 0 ? `+ ${fmt(n)} ${xv}` : `- ${fmt(-n)} ${xv}`);
     }
     lines.push(writeTerms(objParts, 10));
@@ -366,22 +366,28 @@ export class ShiftOptimizer {
     lines.push("  obj:");
     const objParts: string[] = [];
     for (let i = 0; i < N; i++) {
-      const w = fmt(WORKLOAD_W + (Math.random() - 0.5) * 0.001);
+      const w = fmt(WORKLOAD_W + (Math.random() - 0.5) * 0.6);
       objParts.push(i === 0 ? `${w} dw_${i}` : `+ ${w} dw_${i}`);
     }
     for (let i = 0; i < N; i++) {
       for (let s = 0; s < S; s++) {
         if (staffShiftTargets[s][i] > 0) {
-          const w = fmt(SHIFT_W + (Math.random() - 0.5) * 0.001);
+          const w = fmt(SHIFT_W + (Math.random() - 0.5) * 0.3);
           objParts.push(`+ ${w} ds_${i}_${s}`);
         }
       }
     }
     if (enableHolidayBalance && staffHolidayTargets.some(t => t > 0)) {
       for (let i = 0; i < N; i++) {
-        const w = fmt(HOLIDAY_W + (Math.random() - 0.5) * 0.001);
+        const w = fmt(HOLIDAY_W + (Math.random() - 0.5) * 0.4);
         objParts.push(`+ ${w} dh_${i}`);
       }
+    }
+    const maxNoiseVars = Math.min(binaryVars.length, 300);
+    const shuffled = [...binaryVars].sort(() => Math.random() - 0.5);
+    for (let j = 0; j < maxNoiseVars; j++) {
+      const n = (Math.random() - 0.5) * 0.002;
+      objParts.push(n >= 0 ? `+ ${fmt(n)} ${shuffled[j]}` : `- ${fmt(-n)} ${shuffled[j]}`);
     }
     lines.push(writeTerms(objParts, 8));
 
