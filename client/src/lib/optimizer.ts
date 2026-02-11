@@ -115,9 +115,12 @@ export class ShiftOptimizer {
 
       this.dayByDayFill(attempt > 0);
 
-      this.gapFillRepair(3000);
+      this.aggressiveFill();
+
       this.localRepair(5000);
       this.circadianRepair(3000);
+
+      this.aggressiveFill();
 
       const unfilledCount = this.countUnfilled();
       const metrics = this.calculateMetrics();
@@ -364,9 +367,10 @@ export class ShiftOptimizer {
 
     this.dayByDayFill(false);
 
-    this.gapFillRepair(3000);
+    this.aggressiveFill();
     this.localRepair(2000);
     this.circadianRepair(2000);
+    this.aggressiveFill();
 
     const unfilledSlots = this.findUnfilledSlots();
     const metrics = this.calculateMetrics();
@@ -741,10 +745,13 @@ export class ShiftOptimizer {
     return true;
   }
 
-  private gapFillRepair(maxIter: number) {
-    for (let iter = 0; iter < maxIter; iter++) {
+  private aggressiveFill(): void {
+    const maxPasses = 100;
+    let prevUnfilled = this.countUnfilled();
+    if (prevUnfilled === 0) return;
+
+    for (let pass = 0; pass < maxPasses; pass++) {
       if (this.isTimedOut()) break;
-      let filledAny = false;
 
       for (let dayIdx = 0; dayIdx < this.daysInMonth; dayIdx++) {
         for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
@@ -767,18 +774,22 @@ export class ShiftOptimizer {
               });
               arr[pos] = candidates[0].id;
               this.updateStats(candidates[0].id, shiftIdx, dayIdx + 1);
-              filledAny = true;
               continue;
             }
 
             if (this.trySwapToFillGap(dayIdx, shiftIdx, pos)) {
-              filledAny = true;
+              continue;
             }
+
+            this.tryChainSwapToFillGap(dayIdx, shiftIdx, pos);
           }
         }
       }
 
-      if (!filledAny) break;
+      const currentUnfilled = this.countUnfilled();
+      if (currentUnfilled === 0) break;
+      if (currentUnfilled >= prevUnfilled) break;
+      prevUnfilled = currentUnfilled;
     }
   }
 
@@ -817,7 +828,7 @@ export class ShiftOptimizer {
       }
     }
 
-    for (let nearDay = Math.max(0, gapDayIdx - 5); nearDay <= Math.min(this.daysInMonth - 1, gapDayIdx + 5); nearDay++) {
+    for (let nearDay = 0; nearDay < this.daysInMonth; nearDay++) {
       if (nearDay === gapDayIdx) continue;
 
       for (let s = 0; s < numShifts; s++) {
@@ -846,6 +857,137 @@ export class ShiftOptimizer {
             this.updateStats(candidateId, gapShiftIdx, gapDayIdx + 1);
             return true;
           }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  private tryChainSwapToFillGap(gapDayIdx: number, gapShiftIdx: number, gapPos: number): boolean {
+    const numShifts = this.config.shiftNames.length;
+
+    for (const member of this.staff) {
+      const load = this.staffWorkLoad.get(member.id) || 0;
+      if (load >= member.maxShifts) continue;
+      if (member.blocked.some(b => b.date === gapDayIdx + 1 && (b.shift === -1 || b.shift === gapShiftIdx))) continue;
+
+      let alreadyOnDay = false;
+      for (let s = 0; s < numShifts; s++) {
+        if (this.schedule[gapDayIdx].shifts[s].includes(member.id)) { alreadyOnDay = true; break; }
+      }
+      if (alreadyOnDay) continue;
+
+      let blockedByConsecutive = false;
+      let blockerDayIdx = -1;
+      let blockerShiftIdx = -1;
+
+      if (gapDayIdx > 0) {
+        for (const rule of this.config.consecutiveRules) {
+          if (rule.to === gapShiftIdx && this.schedule[gapDayIdx - 1].shifts[rule.from].includes(member.id)) {
+            blockedByConsecutive = true;
+            blockerDayIdx = gapDayIdx - 1;
+            blockerShiftIdx = rule.from;
+            break;
+          }
+        }
+      }
+      if (!blockedByConsecutive && gapDayIdx < this.daysInMonth - 1) {
+        for (const rule of this.config.consecutiveRules) {
+          if (rule.from === gapShiftIdx && this.schedule[gapDayIdx + 1].shifts[rule.to].includes(member.id)) {
+            blockedByConsecutive = true;
+            blockerDayIdx = gapDayIdx + 1;
+            blockerShiftIdx = rule.to;
+            break;
+          }
+        }
+      }
+
+      if (!blockedByConsecutive) continue;
+
+      const blockerArr = this.schedule[blockerDayIdx].shifts[blockerShiftIdx];
+      const blockerPos = blockerArr.indexOf(member.id);
+      if (blockerPos === -1) continue;
+
+      for (const replacement of this.staff) {
+        if (replacement.id === member.id) continue;
+        if (!this.canAssignHard(replacement, blockerDayIdx, blockerShiftIdx)) continue;
+
+        this.removeStats(member.id, blockerShiftIdx, blockerDayIdx + 1);
+        blockerArr[blockerPos] = replacement.id;
+        this.updateStats(replacement.id, blockerShiftIdx, blockerDayIdx + 1);
+
+        if (this.canAssignHard(member, gapDayIdx, gapShiftIdx)) {
+          this.schedule[gapDayIdx].shifts[gapShiftIdx][gapPos] = member.id;
+          this.updateStats(member.id, gapShiftIdx, gapDayIdx + 1);
+          return true;
+        }
+
+        this.removeStats(replacement.id, blockerShiftIdx, blockerDayIdx + 1);
+        blockerArr[blockerPos] = member.id;
+        this.updateStats(member.id, blockerShiftIdx, blockerDayIdx + 1);
+      }
+    }
+
+    for (let srcDay = 0; srcDay < this.daysInMonth; srcDay++) {
+      if (srcDay === gapDayIdx) continue;
+
+      for (let srcShift = 0; srcShift < numShifts; srcShift++) {
+        const srcArr = this.schedule[srcDay].shifts[srcShift];
+        const srcRequired = this.getStaffPerShiftForDay(srcDay + 1)[srcShift];
+
+        for (let srcPos = 0; srcPos < srcArr.length; srcPos++) {
+          const personA = srcArr[srcPos];
+          if (!personA) continue;
+
+          const memberA = this.staffLookup.get(personA)!;
+          if (!this.canMoveToSlot(memberA, gapDayIdx, gapShiftIdx)) continue;
+
+          const srcFilled = srcArr.filter(id => id !== "").length;
+          if (srcFilled <= srcRequired) {
+            const replacements = this.staff.filter(m => m.id !== personA && this.canAssignHard(m, srcDay, srcShift));
+            if (replacements.length === 0) {
+              for (let otherShift = 0; otherShift < numShifts; otherShift++) {
+                if (otherShift === srcShift) continue;
+                const otherArr = this.schedule[srcDay].shifts[otherShift];
+                for (let oPos = 0; oPos < otherArr.length; oPos++) {
+                  const personB = otherArr[oPos];
+                  if (!personB || personB === personA) continue;
+                  const memberB = this.staffLookup.get(personB)!;
+                  if (memberB.blocked.some(b => b.date === srcDay + 1 && (b.shift === -1 || b.shift === srcShift))) continue;
+                  if (!this.checkConsecutiveRulesForSwap(memberB, srcDay, srcShift)) continue;
+
+                  const replForOther = this.staff.filter(m =>
+                    m.id !== personA && m.id !== personB && this.canAssignHard(m, srcDay, otherShift)
+                  );
+                  if (replForOther.length > 0) {
+                    this.removeStats(personA, srcShift, srcDay + 1);
+                    srcArr[srcPos] = personB;
+                    this.removeStats(personB, otherShift, srcDay + 1);
+                    this.updateStats(personB, srcShift, srcDay + 1);
+                    otherArr[oPos] = replForOther[0].id;
+                    this.updateStats(replForOther[0].id, otherShift, srcDay + 1);
+
+                    this.schedule[gapDayIdx].shifts[gapShiftIdx][gapPos] = personA;
+                    this.updateStats(personA, gapShiftIdx, gapDayIdx + 1);
+                    return true;
+                  }
+                }
+              }
+              continue;
+            }
+            replacements.sort((a, b) => (this.staffWorkLoad.get(a.id)||0) - (this.staffWorkLoad.get(b.id)||0));
+            this.removeStats(personA, srcShift, srcDay + 1);
+            srcArr[srcPos] = replacements[0].id;
+            this.updateStats(replacements[0].id, srcShift, srcDay + 1);
+          } else {
+            this.removeStats(personA, srcShift, srcDay + 1);
+            srcArr[srcPos] = "";
+          }
+
+          this.schedule[gapDayIdx].shifts[gapShiftIdx][gapPos] = personA;
+          this.updateStats(personA, gapShiftIdx, gapDayIdx + 1);
+          return true;
         }
       }
     }
