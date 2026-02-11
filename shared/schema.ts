@@ -11,6 +11,9 @@ export interface SchedulerConfig {
   consecutiveRules: { from: number; to: number }[];
   balanceHolidays?: boolean;
   holidays?: number[];
+  useCustomRange?: boolean;
+  customStartDate?: string;
+  customEndDate?: string;
 }
 
 export interface StaffMember {
