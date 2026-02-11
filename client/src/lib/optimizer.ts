@@ -1,23 +1,16 @@
 import type { StaffMember, SchedulerConfig, DaySchedule, OptimizerResult, UnfilledSlot } from "@shared/schema";
 import { getDaysInMonth, differenceInCalendarDays, addDays, parseISO } from "date-fns";
 
-let solverInstance: any = null;
-let solverLoading: Promise<any> | null = null;
+let highsModule: any = null;
 
-async function getSolver(): Promise<any> {
-  if (solverInstance) return solverInstance;
-  if (solverLoading) return solverLoading;
-
-  solverLoading = (async () => {
-    const highs_loader = (await import("highs")).default;
-    const solver = await highs_loader({
-      locateFile: (file: string) => `/${file}`
-    });
-    solverInstance = solver;
-    return solver;
-  })();
-
-  return solverLoading;
+async function createSolver(): Promise<any> {
+  if (!highsModule) {
+    highsModule = (await import("highs")).default;
+  }
+  const solver = await highsModule({
+    locateFile: (file: string) => `/${file}`
+  });
+  return solver;
 }
 
 function writeTerms(terms: string[], perLine: number = 10): string {
@@ -671,7 +664,7 @@ export class ShiftOptimizer {
       return this.makeEmptyResult(feasibilityMsg || "No eligible assignments found.");
     }
 
-    const solver = await getSolver();
+    const solver = await createSolver();
 
     const failStatuses = [
       "Infeasible", "Model error", "Load error", "Presolve error",
@@ -733,7 +726,8 @@ export class ShiftOptimizer {
     let finalSolution: any;
     let usedPhase = 2;
     try {
-      const phase2Solution = solver.solve(phase2Model, {
+      const solver2 = await createSolver();
+      const phase2Solution = solver2.solve(phase2Model, {
         time_limit: 15.0,
         presolve: "on",
         mip_rel_gap: 0.01,
