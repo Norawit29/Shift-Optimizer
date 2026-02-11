@@ -8,6 +8,10 @@ import type {
 
 import { getDaysInMonth } from "date-fns";
 
+/* =========================
+   Solver Loader
+========================= */
+
 let solverInstance: any = null;
 
 async function getSolver(): Promise<any> {
@@ -18,6 +22,10 @@ async function getSolver(): Promise<any> {
   });
   return solverInstance;
 }
+
+/* =========================
+   Optimizer
+========================= */
 
 export class ShiftOptimizer {
   private staff: StaffMember[];
@@ -35,6 +43,10 @@ export class ShiftOptimizer {
     this.daysInMonth = getDaysInMonth(new Date(year, month - 1));
   }
 
+  /* =========================
+     Helpers
+  ========================= */
+
   private x(i: number, d: number, s: number) {
     return `x_${i}_${d}_${s}`;
   }
@@ -47,6 +59,10 @@ export class ShiftOptimizer {
     return this.config.staffPerShift[s] ?? 0;
   }
 
+  /* =========================
+     Main Optimize
+  ========================= */
+
   async optimize(): Promise<OptimizerResult> {
     const solver = await getSolver();
 
@@ -55,6 +71,11 @@ export class ShiftOptimizer {
     const S = this.config.shiftNames.length;
 
     const lines: string[] = [];
+
+    /* =========================
+       Objective
+       Minimize unfilled slots
+    ========================= */
 
     const BIG = 1000;
 
@@ -72,9 +93,14 @@ export class ShiftOptimizer {
 
     lines.push("  " + obj.join(" "));
 
+    /* =========================
+       Constraints
+    ========================= */
+
     lines.push("Subject To");
     let c = 0;
 
+    /* --- Slot coverage with slack --- */
     for (let d = 0; d < D; d++) {
       for (let s = 0; s < S; s++) {
         const req = this.required(d, s);
@@ -90,6 +116,7 @@ export class ShiftOptimizer {
       }
     }
 
+    /* --- One shift per staff per day --- */
     for (let i = 0; i < N; i++) {
       for (let d = 0; d < D; d++) {
         const terms: string[] = [];
@@ -100,6 +127,7 @@ export class ShiftOptimizer {
       }
     }
 
+    /* --- Max shifts per staff --- */
     for (let i = 0; i < N; i++) {
       const max = this.staff[i].maxShifts;
       const terms: string[] = [];
@@ -111,6 +139,10 @@ export class ShiftOptimizer {
       lines.push(` c${c++}: ${terms.join(" ")} <= ${max}`);
     }
 
+    /* =========================
+       Bounds
+    ========================= */
+
     lines.push("Bounds");
 
     for (let d = 0; d < D; d++) {
@@ -120,6 +152,10 @@ export class ShiftOptimizer {
         }
       }
     }
+
+    /* =========================
+       Binary Variables
+    ========================= */
 
     lines.push("Binary");
 
@@ -133,11 +169,19 @@ export class ShiftOptimizer {
 
     lines.push("End");
 
+    /* =========================
+       Solve
+    ========================= */
+
     const model = lines.join("\n");
     const solution = solver.solve(model, {
       time_limit: 20,
       presolve: "on"
     });
+
+    /* =========================
+       Build Schedule
+    ========================= */
 
     const schedule: DaySchedule[] = [];
     for (let d = 0; d < D; d++) {
@@ -161,6 +205,10 @@ export class ShiftOptimizer {
         }
       }
     }
+
+    /* =========================
+       Unfilled Slots
+    ========================= */
 
     const unfilled: UnfilledSlot[] = [];
 
