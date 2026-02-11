@@ -252,7 +252,15 @@ export class ShiftOptimizer {
 
     lines.push("Minimize");
     lines.push("  obj:");
-    const objParts = slackVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+    const objParts = slackVars.map((v, idx) => {
+      const w = fmt(1 + (Math.random() - 0.5) * 0.001);
+      return idx === 0 ? `${w} ${v}` : `+ ${w} ${v}`;
+    });
+    const xVars = Array.from(varMap.keys());
+    for (const xv of xVars) {
+      const n = (Math.random() - 0.5) * 0.0001;
+      objParts.push(n >= 0 ? `+ ${fmt(n)} ${xv}` : `- ${fmt(-n)} ${xv}`);
+    }
     lines.push(writeTerms(objParts, 10));
 
     lines.push("Subject To");
@@ -353,19 +361,26 @@ export class ShiftOptimizer {
     lines.push("  obj:");
     const objParts: string[] = [];
     for (let i = 0; i < N; i++) {
-      objParts.push(i === 0 ? `${WORKLOAD_W} dw_${i}` : `+ ${WORKLOAD_W} dw_${i}`);
+      const w = fmt(WORKLOAD_W + (Math.random() - 0.5) * 0.001);
+      objParts.push(i === 0 ? `${w} dw_${i}` : `+ ${w} dw_${i}`);
     }
     for (let i = 0; i < N; i++) {
       for (let s = 0; s < S; s++) {
         if (shiftTargets[s] > 0) {
-          objParts.push(`+ ${SHIFT_W} ds_${i}_${s}`);
+          const w = fmt(SHIFT_W + (Math.random() - 0.5) * 0.001);
+          objParts.push(`+ ${w} ds_${i}_${s}`);
         }
       }
     }
     if (enableHolidayBalance && avgHoliday > 0) {
       for (let i = 0; i < N; i++) {
-        objParts.push(`+ ${HOLIDAY_W} dh_${i}`);
+        const w = fmt(HOLIDAY_W + (Math.random() - 0.5) * 0.001);
+        objParts.push(`+ ${w} dh_${i}`);
       }
+    }
+    for (const xv of binaryVars) {
+      const n = (Math.random() - 0.5) * 0.0001;
+      objParts.push(n >= 0 ? `+ ${fmt(n)} ${xv}` : `- ${fmt(-n)} ${xv}`);
     }
     lines.push(writeTerms(objParts, 8));
 
