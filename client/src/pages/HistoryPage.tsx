@@ -15,10 +15,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useLanguage } from "@/context/LanguageContext";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 export default function HistoryPage() {
   const { data: schedules, isLoading } = useSchedules();
   const deleteMutation = useDeleteSchedule();
+  const { t } = useLanguage();
 
   if (isLoading) {
     return (
@@ -38,18 +41,19 @@ export default function HistoryPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-display font-bold">Saved Schedules</h1>
-            <p className="text-muted-foreground">Manage your past rosters</p>
+            <h1 className="text-3xl font-display font-bold">{t.savedSchedules}</h1>
+            <p className="text-muted-foreground">{t.managePastRosters}</p>
           </div>
+          <LanguageToggle />
         </div>
 
         {!schedules?.length ? (
           <div className="text-center py-20 bg-white dark:bg-zinc-900 rounded-3xl border border-dashed">
             <Calendar className="mx-auto h-12 w-12 text-muted-foreground mb-4 opacity-50" />
-            <h3 className="text-lg font-medium">No schedules found</h3>
-            <p className="text-muted-foreground mb-6">Create your first roster to see it here.</p>
+            <h3 className="text-lg font-medium">{t.noSchedulesFound}</h3>
+            <p className="text-muted-foreground mb-6">{t.createFirstRoster}</p>
             <Link href="/create">
-              <Button>Create Schedule</Button>
+              <Button>{t.createSchedule}</Button>
             </Link>
           </div>
         ) : (
@@ -64,7 +68,7 @@ export default function HistoryPage() {
                     </div>
                   </div>
                   <CardDescription>
-                    Created {format(new Date(schedule.createdAt!), "MMM d, yyyy")}
+                    {t.created} {format(new Date(schedule.createdAt!), "MMM d, yyyy")}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -72,7 +76,7 @@ export default function HistoryPage() {
                     <Link href={`/schedule/${schedule.id}`} className="flex-1">
                       <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                         <Eye className="mr-2 h-4 w-4" />
-                        View
+                        {t.view}
                       </Button>
                     </Link>
 
@@ -84,18 +88,18 @@ export default function HistoryPage() {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                          <AlertDialogTitle>{t.areYouSure}</AlertDialogTitle>
                           <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the schedule.
+                            {t.deleteConfirm}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
                           <AlertDialogAction 
                             onClick={() => deleteMutation.mutate(schedule.id)}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                           >
-                            Delete
+                            {t.delete}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>

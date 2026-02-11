@@ -36,6 +36,8 @@ import { useToast } from "@/hooks/use-toast";
 import { nanoid } from "nanoid";
 import { Link, useLocation } from "wouter";
 import { getDaysInMonth, format, setDate } from "date-fns";
+import { useLanguage } from "@/context/LanguageContext";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June", 
@@ -70,6 +72,7 @@ export default function WizardPage() {
   const createMutation = useCreateSchedule();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { t, dayNames } = useLanguage();
 
   const daysInMonth = useMemo(() => getDaysInMonth(new Date(year, month - 1)), [month, year]);
 
@@ -173,10 +176,10 @@ export default function WizardPage() {
         const res = optimizer.optimize();
         setResult(res);
         setStep(4);
-        toast({ title: "Schedule Generated", description: "Optimization complete!" });
+        toast({ title: t.scheduleGenerated, description: t.optimizationComplete });
       } catch (e: any) {
         toast({ 
-          title: "Optimization Failed", 
+          title: t.optimizationFailed, 
           description: e.message || "Could not satisfy all constraints. Try adding more staff or loosening rules.", 
           variant: "destructive" 
         });
@@ -229,8 +232,9 @@ export default function WizardPage() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-xl font-display text-primary">Scheduler Wizard</span>
-              <Badge variant="outline" className="ml-2">Step {step}/4</Badge>
+              <span className="font-bold text-xl font-display text-primary">{t.schedulerWizard}</span>
+              <Badge variant="outline" className="ml-2">{t.step} {step}/4</Badge>
+              <LanguageToggle />
             </div>
           </div>
           
@@ -238,7 +242,7 @@ export default function WizardPage() {
             {step === 4 && (
               <Button onClick={saveSchedule} disabled={createMutation.isPending} className="bg-green-600 hover:bg-green-700" data-testid="button-save-schedule">
                 {createMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin"/> : <Save className="w-4 h-4 mr-2" />}
-                Save Schedule
+                {t.saveSchedule}
               </Button>
             )}
           </div>
@@ -257,14 +261,14 @@ export default function WizardPage() {
         {/* STEP 1: CONFIGURATION */}
         <WizardStep 
           isActive={step === 1} 
-          title="Basic Configuration" 
-          description="Set up the timeline and shift structure for your roster."
+          title={t.basicConfig} 
+          description={t.basicConfigDesc}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800">
               <CardContent className="p-6 space-y-6">
                 <div className="space-y-4">
-                  <Label className="text-base font-semibold">Shifts per Day</Label>
+                  <Label className="text-base font-semibold">{t.shiftsPerDay}</Label>
                   <div className="flex items-center gap-3">
                     <Button 
                       variant="outline" 
@@ -277,7 +281,7 @@ export default function WizardPage() {
                     </Button>
                     <div className="flex-1 text-center">
                       <span className="text-3xl font-bold text-primary" data-testid="text-shifts-count">{config.shiftsPerDay}</span>
-                      <p className="text-xs text-muted-foreground mt-1">shift{config.shiftsPerDay !== 1 ? 's' : ''} per day</p>
+                      <p className="text-xs text-muted-foreground mt-1">{config.shiftsPerDay !== 1 ? t.shiftsPerDayPlural : t.shiftPerDay}</p>
                     </div>
                     <Button 
                       variant="outline" 
@@ -294,21 +298,21 @@ export default function WizardPage() {
                 <Separator />
 
                 <div className="space-y-4">
-                  <Label className="text-base font-semibold">Timeline</Label>
+                  <Label className="text-base font-semibold">{t.timeline}</Label>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Month</Label>
+                      <Label>{t.monthLabel}</Label>
                       <Select value={month.toString()} onValueChange={(v) => setMonth(parseInt(v))}>
                         <SelectTrigger data-testid="select-month"><SelectValue /></SelectTrigger>
                         <SelectContent position="popper" sideOffset={4} className="bg-white dark:bg-slate-900">
-                          {MONTHS.map((m, i) => (
+                          {t.months.map((m, i) => (
                             <SelectItem key={i} value={(i + 1).toString()}>{m}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>Year</Label>
+                      <Label>{t.yearLabel}</Label>
                       <Input type="number" value={year} onChange={e => setYear(parseInt(e.target.value))} data-testid="input-year" />
                     </div>
                   </div>
@@ -318,16 +322,16 @@ export default function WizardPage() {
 
             <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800">
               <CardContent className="p-6 space-y-6">
-                <Label className="text-base font-semibold">Shift Details</Label>
+                <Label className="text-base font-semibold">{t.shiftDetails}</Label>
                 <div className="space-y-4">
                   {config.shiftNames.map((name, i) => (
                     <div key={i} className="flex gap-4 items-end bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg">
                       <div className="flex-1 space-y-2">
-                        <Label>Name</Label>
+                        <Label>{t.nameLabel}</Label>
                         <Input value={name} onChange={e => updateShiftName(i, e.target.value)} data-testid={`input-shift-name-${i}`} />
                       </div>
                       <div className="w-24 space-y-2">
-                        <Label>Staff Req.</Label>
+                        <Label>{t.staffReq}</Label>
                         <Input 
                           type="number" 
                           min={1} 
@@ -347,17 +351,17 @@ export default function WizardPage() {
         {/* STEP 2: STAFF + BLOCKED DATES */}
         <WizardStep 
           isActive={step === 2} 
-          title="Staff & Availability" 
-          description="Add your team members and mark their unavailable dates on the calendar."
+          title={t.staffAvailability} 
+          description={t.staffAvailabilityDesc}
         >
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800 lg:col-span-1">
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between gap-2">
-                    <Label className="text-base font-semibold">Staff ({staff.length})</Label>
+                    <Label className="text-base font-semibold">{t.staff} ({staff.length})</Label>
                     <Button onClick={addStaff} variant="outline" size="sm" className="border-dashed" data-testid="button-add-staff">
-                      <Plus className="w-4 h-4 mr-1" /> Add
+                      <Plus className="w-4 h-4 mr-1" /> {t.add}
                     </Button>
                   </div>
                   
@@ -387,7 +391,7 @@ export default function WizardPage() {
                               <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground px-1">
                                 <span>Max: {s.maxShifts}</span>
                                 {blockedCount > 0 && (
-                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{blockedCount} blocked</Badge>
+                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{blockedCount} {t.blocked}</Badge>
                                 )}
                               </div>
                             </div>
@@ -405,7 +409,7 @@ export default function WizardPage() {
                           {isSelected && (
                             <div className="mt-3 pt-3 border-t space-y-2" onClick={e => e.stopPropagation()}>
                               <div className="flex items-center justify-between gap-2">
-                                <Label className="text-xs text-muted-foreground">Max Shifts</Label>
+                                <Label className="text-xs text-muted-foreground">{t.maxShifts}</Label>
                                 <Input 
                                   type="number" 
                                   className="w-16 h-7 text-right text-sm"
@@ -430,14 +434,14 @@ export default function WizardPage() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <div>
-                        <h3 className="font-semibold text-lg">{selectedStaffMember.name}'s Availability</h3>
+                        <h3 className="font-semibold text-lg">{selectedStaffMember.name} - {t.availability}</h3>
                         <p className="text-sm text-muted-foreground">
-                          Click dates to block/unblock. Blocked dates appear in red.
+                          {t.clickDatesToBlock}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant="secondary" className="text-xs">
-                          {selectedStaffMember.blocked?.length || 0} blocked
+                          {selectedStaffMember.blocked?.length || 0} {t.blocked}
                         </Badge>
                         {(selectedStaffMember.blocked?.length || 0) > 0 && (
                           <Button 
@@ -446,7 +450,7 @@ export default function WizardPage() {
                             onClick={() => updateStaff(selectedStaffId!, "blocked", [])}
                             data-testid="button-clear-blocks"
                           >
-                            Clear All
+                            {t.clearAll}
                           </Button>
                         )}
                       </div>
@@ -454,7 +458,7 @@ export default function WizardPage() {
 
                     <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4">
                       <div className="grid grid-cols-7 gap-1 mb-2">
-                        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
+                        {dayNames.map(d => (
                           <div key={d} className="text-center text-xs font-medium text-muted-foreground py-1">{d}</div>
                         ))}
                       </div>
@@ -494,8 +498,8 @@ export default function WizardPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-sm font-semibold">Block specific shifts</Label>
-                      <p className="text-xs text-muted-foreground">Click a shift badge to toggle blocking that specific shift on a date.</p>
+                      <Label className="text-sm font-semibold">{t.blockSpecificShifts}</Label>
+                      <p className="text-xs text-muted-foreground">{t.blockSpecificShiftsDesc}</p>
                       <div className="max-h-[200px] overflow-y-auto space-y-1 pr-1">
                         {selectedStaffMember.blocked?.filter(b => b.shift === -1).map((b) => {
                           const currentDate = setDate(baseDate, b.date);
@@ -503,7 +507,7 @@ export default function WizardPage() {
                             <div key={`full-${b.date}`} className="flex items-center justify-between gap-2 p-2 bg-red-50 dark:bg-red-900/20 rounded-md border border-red-200 dark:border-red-800">
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium">{format(currentDate, "MMM d")} ({format(currentDate, "EEE")})</span>
-                                <Badge variant="destructive" className="text-[10px]">All Day</Badge>
+                                <Badge variant="destructive" className="text-[10px]">{t.allDay}</Badge>
                               </div>
                               <div className="flex items-center gap-1">
                                 {config.shiftNames.map((shiftName, sIdx) => (
@@ -582,7 +586,7 @@ export default function WizardPage() {
                         }
 
                         {(!selectedStaffMember.blocked || selectedStaffMember.blocked.length === 0) && (
-                          <p className="text-sm text-center text-muted-foreground py-4 italic">No blocked dates. Click calendar dates above to add.</p>
+                          <p className="text-sm text-center text-muted-foreground py-4 italic">{t.noBlockedDates}</p>
                         )}
                       </div>
                     </div>
@@ -592,9 +596,9 @@ export default function WizardPage() {
                     <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
                       <CalendarIcon className="h-8 w-8 text-primary" />
                     </div>
-                    <h3 className="text-lg font-semibold mb-2">Select a Staff Member</h3>
+                    <h3 className="text-lg font-semibold mb-2">{t.selectStaffMember}</h3>
                     <p className="text-muted-foreground max-w-sm">
-                      Click on a staff member from the list to view and edit their availability calendar.
+                      {t.selectStaffMemberDesc}
                     </p>
                   </div>
                 )}
@@ -606,8 +610,8 @@ export default function WizardPage() {
         {/* STEP 3: CONSTRAINTS */}
         <WizardStep 
           isActive={step === 3} 
-          title="Rules & Constraints" 
-          description="Define fairness rules and consecutive shift patterns."
+          title={t.rulesConstraints} 
+          description={t.rulesConstraintsDesc}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-6">
@@ -617,19 +621,19 @@ export default function WizardPage() {
                     <div className="p-2 bg-orange-100 dark:bg-orange-900/20 rounded-lg">
                       <Settings2 className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                     </div>
-                    <h3 className="font-semibold text-lg">Consecutive Shift Rules</h3>
+                    <h3 className="font-semibold text-lg">{t.consecutiveShiftRules}</h3>
                   </div>
                   
                   <p className="text-sm text-muted-foreground mb-4">
-                    Prevent staff from working specific shift combinations on consecutive days (e.g., Night followed by Morning).
+                    {t.consecutiveDesc}
                   </p>
 
                   <div className="space-y-2">
                     {config.consecutiveRules.map((rule, idx) => (
                       <div key={idx} className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border flex-wrap">
-                        <span className="text-red-500 font-bold">NO</span>
+                        <span className="text-red-500 font-bold">{t.no}</span>
                         <Badge variant="outline">{config.shiftNames[rule.from]}</Badge>
-                        <span className="text-muted-foreground text-sm">followed by</span>
+                        <span className="text-muted-foreground text-sm">{t.followedBy}</span>
                         <Badge variant="outline">{config.shiftNames[rule.to]}</Badge>
                         <Button variant="ghost" size="sm" className="ml-auto h-6 w-6 p-0" onClick={() => {
                            const newRules = config.consecutiveRules.filter((_, i) => i !== idx);
@@ -649,13 +653,13 @@ export default function WizardPage() {
                          });
                        }}>
                          <SelectTrigger className="w-full" data-testid="select-add-rule">
-                           <SelectValue placeholder="Add new rule..." />
+                           <SelectValue placeholder={t.addNewRule} />
                          </SelectTrigger>
                          <SelectContent position="popper" sideOffset={4} className="bg-white dark:bg-slate-900">
                            {config.shiftNames.map((name1, i) => (
                              config.shiftNames.map((name2, j) => (
                                <SelectItem key={`${i}-${j}`} value={`${i},${j}`}>
-                                 Block {name1} followed by {name2}
+                                 {t.blockRule} {name1} {t.followedBy} {name2}
                                </SelectItem>
                              ))
                            ))}
@@ -672,7 +676,7 @@ export default function WizardPage() {
                     <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
                       <CalendarDays className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                     </div>
-                    <h3 className="font-semibold text-lg">Holiday / Weekend Balancing</h3>
+                    <h3 className="font-semibold text-lg">{t.holidayWeekendBalancing}</h3>
                   </div>
 
                   <div className="flex items-start gap-3">
@@ -684,10 +688,10 @@ export default function WizardPage() {
                     />
                     <div>
                       <label htmlFor="balance-holidays" className="text-sm font-medium cursor-pointer leading-none">
-                        Balance weekend/holiday shifts separately
+                        {t.balanceWeekendHoliday}
                       </label>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Distribute holiday and weekend shifts fairly across all staff, tracked separately from weekday shifts.
+                        {t.balanceDesc}
                       </p>
                     </div>
                   </div>
@@ -695,13 +699,13 @@ export default function WizardPage() {
                   {config.balanceHolidays && (
                     <div className="space-y-3 pt-2">
                       <Separator />
-                      <Label className="text-sm font-semibold">Custom Holidays</Label>
+                      <Label className="text-sm font-semibold">{t.customHolidays}</Label>
                       <p className="text-xs text-muted-foreground">
-                        Click dates to mark as holidays. Saturdays and Sundays are automatically included.
+                        {t.clickHolidays}
                       </p>
                       <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4">
                         <div className="grid grid-cols-7 gap-1 mb-2">
-                          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
+                          {dayNames.map(d => (
                             <div key={d} className="text-center text-xs font-medium text-muted-foreground py-1">{d}</div>
                           ))}
                         </div>
@@ -747,7 +751,7 @@ export default function WizardPage() {
                       {(config.holidays || []).length > 0 && (
                         <div className="flex items-center justify-between gap-2 flex-wrap">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs text-muted-foreground">Custom holidays:</span>
+                            <span className="text-xs text-muted-foreground">{t.customHolidaysLabel}</span>
                             {(config.holidays || []).sort((a, b) => a - b).map(d => (
                               <Badge key={d} variant="secondary" className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
                                 {format(setDate(baseDate, d), "MMM d")}
@@ -766,16 +770,16 @@ export default function WizardPage() {
                             onClick={() => setConfig({...config, holidays: []})}
                             data-testid="button-clear-holidays"
                           >
-                            Clear All
+                            {t.clearAll}
                           </Button>
                         </div>
                       )}
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant="outline" className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border-purple-200 dark:border-purple-800">
-                          Sat/Sun = auto holiday
+                          {t.satSunAuto}
                         </Badge>
                         <Badge variant="outline" className="text-xs bg-purple-500 text-white border-purple-400">
-                          Custom holiday
+                          {t.customHolidayLabel}
                         </Badge>
                       </div>
                     </div>
@@ -789,17 +793,17 @@ export default function WizardPage() {
                  <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 mb-4">
                    <PlayCircle className="h-10 w-10 text-primary" />
                  </div>
-                 <h3 className="text-xl font-bold">Ready to Optimize?</h3>
+                 <h3 className="text-xl font-bold">{t.readyToOptimize}</h3>
                  <p className="text-muted-foreground max-w-xs mx-auto">
-                   Our algorithm will attempt to find the fairest distribution of shifts while respecting all your constraints.
+                   {t.optimizeDesc}
                  </p>
                  <Button size="lg" onClick={runOptimizer} disabled={isOptimizing} className="mt-4 w-full" data-testid="button-generate">
                    {isOptimizing ? (
                      <>
-                       <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Optimizing...
+                       <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t.optimizing}
                      </>
                    ) : (
-                     <>Generate Schedule</>
+                     <>{t.generateSchedule}</>
                    )}
                  </Button>
                </div>
@@ -811,13 +815,13 @@ export default function WizardPage() {
         {step === 4 && result && (
           <WizardStep 
             isActive={true} 
-            title="Generated Schedule"
+            title={t.generatedSchedule}
             className="max-w-6xl"
           >
             <div className="space-y-8">
               <div className="flex items-center gap-4 bg-white dark:bg-zinc-900 p-4 rounded-xl border flex-wrap">
                 <div className="flex-1 min-w-[200px]">
-                  <Label>Schedule Name</Label>
+                  <Label>{t.scheduleName}</Label>
                   <Input 
                     value={scheduleName} 
                     onChange={e => setScheduleName(e.target.value)} 
@@ -826,18 +830,18 @@ export default function WizardPage() {
                   />
                 </div>
                 <Button variant="outline" onClick={() => setStep(3)} data-testid="button-adjust-rules">
-                  <Settings2 className="w-4 h-4 mr-2" /> Adjust Rules
+                  <Settings2 className="w-4 h-4 mr-2" /> {t.adjustRules}
                 </Button>
                 <Button variant="outline" onClick={runOptimizer} data-testid="button-regenerate">
-                  <History className="w-4 h-4 mr-2" /> Regenerate
+                  <History className="w-4 h-4 mr-2" /> {t.regenerate}
                 </Button>
               </div>
 
               <Tabs defaultValue="calendar">
                 <TabsList className="mb-4">
-                  <TabsTrigger value="calendar" data-testid="tab-calendar"><CalendarIcon className="w-4 h-4 mr-2" />Calendar View</TabsTrigger>
-                  <TabsTrigger value="summary" data-testid="tab-summary"><Check className="w-4 h-4 mr-2" />Summary</TabsTrigger>
-                  <TabsTrigger value="stats" data-testid="tab-stats"><Activity className="w-4 h-4 mr-2" />Statistics</TabsTrigger>
+                  <TabsTrigger value="calendar" data-testid="tab-calendar"><CalendarIcon className="w-4 h-4 mr-2" />{t.calendarView}</TabsTrigger>
+                  <TabsTrigger value="summary" data-testid="tab-summary"><Check className="w-4 h-4 mr-2" />{t.summary}</TabsTrigger>
+                  <TabsTrigger value="stats" data-testid="tab-stats"><Activity className="w-4 h-4 mr-2" />{t.statistics}</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="calendar" className="mt-0">
@@ -854,15 +858,15 @@ export default function WizardPage() {
                   <Card className="shadow-md">
                     <CardContent className="p-6 space-y-6">
                       <div className="overflow-x-auto">
-                        <h3 className="font-semibold text-base mb-3">Overall Summary</h3>
+                        <h3 className="font-semibold text-base mb-3">{t.overallSummary}</h3>
                         <table className="w-full text-sm border-collapse" data-testid="table-summary-overall">
                           <thead>
                             <tr className="border-b bg-slate-50 dark:bg-slate-900">
-                              <th className="p-3 text-left font-semibold">Staff Name</th>
+                              <th className="p-3 text-left font-semibold">{t.staffName}</th>
                               {config.shiftNames.map((name, i) => (
                                 <th key={i} className="p-3 text-center font-semibold">{name}</th>
                               ))}
-                              <th className="p-3 text-center font-semibold text-primary">Total</th>
+                              <th className="p-3 text-center font-semibold text-primary">{t.total}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -884,18 +888,18 @@ export default function WizardPage() {
                           <Separator />
                           <div className="overflow-x-auto">
                             <h3 className="font-semibold text-base mb-1">
-                              <Badge variant="secondary" className="mr-2 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">Holiday/Weekend</Badge>
-                              Shift Breakdown
+                              <Badge variant="secondary" className="mr-2 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">{t.holidayWeekend}</Badge>
+                              {t.shiftBreakdown}
                             </h3>
-                            <p className="text-xs text-muted-foreground mb-3">Includes Saturdays, Sundays, and custom holidays</p>
+                            <p className="text-xs text-muted-foreground mb-3">{t.includesSatSun}</p>
                             <table className="w-full text-sm border-collapse" data-testid="table-summary-holiday">
                               <thead>
                                 <tr className="border-b bg-purple-50 dark:bg-purple-900/10">
-                                  <th className="p-3 text-left font-semibold">Staff Name</th>
+                                  <th className="p-3 text-left font-semibold">{t.staffName}</th>
                                   {config.shiftNames.map((name, i) => (
                                     <th key={i} className="p-3 text-center font-semibold">{name}</th>
                                   ))}
-                                  <th className="p-3 text-center font-semibold text-purple-600 dark:text-purple-400">Total</th>
+                                  <th className="p-3 text-center font-semibold text-purple-600 dark:text-purple-400">{t.total}</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -915,18 +919,18 @@ export default function WizardPage() {
                           <Separator />
                           <div className="overflow-x-auto">
                             <h3 className="font-semibold text-base mb-1">
-                              <Badge variant="secondary" className="mr-2">Weekday</Badge>
-                              Shift Breakdown
+                              <Badge variant="secondary" className="mr-2">{t.weekday}</Badge>
+                              {t.shiftBreakdown}
                             </h3>
-                            <p className="text-xs text-muted-foreground mb-3">Monday to Friday (excluding custom holidays)</p>
+                            <p className="text-xs text-muted-foreground mb-3">{t.excludesHolidays}</p>
                             <table className="w-full text-sm border-collapse" data-testid="table-summary-weekday">
                               <thead>
                                 <tr className="border-b bg-slate-50 dark:bg-slate-900">
-                                  <th className="p-3 text-left font-semibold">Staff Name</th>
+                                  <th className="p-3 text-left font-semibold">{t.staffName}</th>
                                   {config.shiftNames.map((name, i) => (
                                     <th key={i} className="p-3 text-center font-semibold">{name}</th>
                                   ))}
-                                  <th className="p-3 text-center font-semibold text-primary">Total</th>
+                                  <th className="p-3 text-center font-semibold text-primary">{t.total}</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -973,7 +977,7 @@ export default function WizardPage() {
               <div className="flex gap-2">
                 {step < 3 ? (
                   <Button onClick={handleNext} className="px-8 rounded-full shadow-lg shadow-primary/25" data-testid="button-next-step">
-                    Next Step <ArrowRight className="ml-2 h-4 w-4" />
+                    {t.nextStep} <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 ) : (
                   <div className="opacity-0 pointer-events-none">

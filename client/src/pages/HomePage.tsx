@@ -1,11 +1,20 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Calendar, Plus, History, Activity } from "lucide-react";
+import { Plus, History, Activity } from "lucide-react";
 import { motion } from "framer-motion";
+import { useLanguage } from "@/context/LanguageContext";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 export default function HomePage() {
+  const { t } = useLanguage();
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4 overflow-hidden relative">
+      {/* Language Toggle */}
+      <div className="absolute top-4 right-4 z-10">
+        <LanguageToggle />
+      </div>
+
       {/* Background decoration */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
         <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-blue-100/50 dark:bg-blue-900/20 rounded-full blur-3xl" />
@@ -21,19 +30,18 @@ export default function HomePage() {
         <div className="space-y-4">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white dark:bg-zinc-900 border shadow-sm text-sm font-medium text-primary mb-4">
             <Activity className="w-4 h-4" />
-            <span>Hospital Shift Scheduler v1.0</span>
+            <span>{t.appName}</span>
           </div>
           
           <h1 className="text-5xl md:text-7xl font-display font-bold text-slate-900 dark:text-white leading-tight">
-            Fair Schedules, <br />
+            {t.heroTitle1} <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">
-              Happier Staff.
+              {t.heroTitle2}
             </span>
           </h1>
           
           <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-            Automate your duty roster creation with our AI-powered constraint solver. 
-            Ensure fairness, handle requests, and save hours of manual work.
+            {t.heroDesc}
           </p>
         </div>
 
@@ -41,14 +49,14 @@ export default function HomePage() {
           <Link href="/create" className="w-full sm:w-auto">
             <Button size="lg" className="w-full sm:w-auto h-14 px-8 text-lg rounded-2xl shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all hover:-translate-y-1">
               <Plus className="mr-2 h-5 w-5" />
-              Create New Schedule
+              {t.createNewSchedule}
             </Button>
           </Link>
           
           <Link href="/history" className="w-full sm:w-auto">
             <Button variant="outline" size="lg" className="w-full sm:w-auto h-14 px-8 text-lg rounded-2xl border-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
               <History className="mr-2 h-5 w-5" />
-              View History
+              {t.viewHistory}
             </Button>
           </Link>
         </div>
@@ -56,9 +64,9 @@ export default function HomePage() {
         {/* Feature grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-16 text-left">
           {[
-            { title: "Fair Distribution", desc: "Automatically balances shifts across all available staff members." },
-            { title: "Smart Constraints", desc: "Respects rest periods, consecutive shift rules, and blocked dates." },
-            { title: "Instant Export", desc: "Generate a clean, printable view of the monthly roster in seconds." }
+            { title: t.featureFairTitle, desc: t.featureFairDesc },
+            { title: t.featureSmartTitle, desc: t.featureSmartDesc },
+            { title: t.featureExportTitle, desc: t.featureExportDesc }
           ].map((feature, i) => (
             <motion.div 
               key={i}

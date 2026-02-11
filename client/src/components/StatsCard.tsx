@@ -2,6 +2,7 @@ import { type OptimizerResult, type SchedulerConfig } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { Users, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface StatsCardProps {
   result: OptimizerResult;
@@ -10,16 +11,15 @@ interface StatsCardProps {
 
 export function StatsCard({ result, config }: StatsCardProps) {
   const { metrics } = result;
+  const { t } = useLanguage();
 
-  // Prepare data for chart
   const data = metrics.perStaff.map(s => ({
     name: s.name,
     shifts: s.total,
     ...s.byShift.reduce((acc, count, i) => ({ ...acc, [config.shiftNames[i]]: count }), {})
-  })).sort((a, b) => b.shifts - a.shifts); // Sort by busiest
+  })).sort((a, b) => b.shifts - a.shifts);
 
-  // Calculate fairness rating
-  const fairnessScore = Math.max(0, 100 - (metrics.range * 10)); // Simple heuristic
+  const fairnessScore = Math.max(0, 100 - (metrics.range * 10));
   let statusColor = "text-green-500";
   if (fairnessScore < 70) statusColor = "text-yellow-500";
   if (fairnessScore < 50) statusColor = "text-red-500";
@@ -28,7 +28,7 @@ export function StatsCard({ result, config }: StatsCardProps) {
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <Card className="md:col-span-2 shadow-md">
         <CardHeader>
-          <CardTitle className="text-lg">Workload Distribution</CardTitle>
+          <CardTitle className="text-lg">{t.workloadDistribution}</CardTitle>
         </CardHeader>
         <CardContent className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
@@ -52,24 +52,24 @@ export function StatsCard({ result, config }: StatsCardProps) {
       <div className="space-y-6">
         <Card className="shadow-md">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Fairness Score</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t.fairnessScore}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-end gap-2">
               <span className={`text-4xl font-bold font-display ${statusColor}`}>{fairnessScore}%</span>
               <span className="text-sm text-muted-foreground mb-1">
-                (Range: {metrics.range})
+                ({t.range}: {metrics.range})
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              Lower range means fairer distribution.
+              {t.lowerRangeFairer}
             </p>
           </CardContent>
         </Card>
 
         <Card className="shadow-md">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Status</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t.status}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
@@ -77,8 +77,8 @@ export function StatsCard({ result, config }: StatsCardProps) {
                 <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <p className="font-semibold">Optimized</p>
-                <p className="text-xs text-muted-foreground">Rules respected</p>
+                <p className="font-semibold">{t.optimized}</p>
+                <p className="text-xs text-muted-foreground">{t.rulesRespected}</p>
               </div>
             </div>
             
@@ -88,8 +88,8 @@ export function StatsCard({ result, config }: StatsCardProps) {
                   <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
                 </div>
                 <div>
-                  <p className="font-semibold">Imbalanced</p>
-                  <p className="text-xs text-muted-foreground">Some staff have significantly more shifts</p>
+                  <p className="font-semibold">{t.imbalanced}</p>
+                  <p className="text-xs text-muted-foreground">{t.someStaffMore}</p>
                 </div>
               </div>
             )}
@@ -99,8 +99,8 @@ export function StatsCard({ result, config }: StatsCardProps) {
                 <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="font-semibold">{metrics.perStaff.length} Staff</p>
-                <p className="text-xs text-muted-foreground">Active members</p>
+                <p className="font-semibold">{metrics.perStaff.length} {t.staff}</p>
+                <p className="text-xs text-muted-foreground">{t.activeMembers}</p>
               </div>
             </div>
           </CardContent>

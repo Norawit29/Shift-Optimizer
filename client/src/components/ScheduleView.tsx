@@ -12,6 +12,7 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface ScheduleViewProps {
   schedule: DaySchedule[];
@@ -23,6 +24,7 @@ interface ScheduleViewProps {
 
 export function ScheduleView({ schedule, config, staff, month, year }: ScheduleViewProps) {
   const getStaffName = (id: string) => staff.find(s => s.id === id)?.name || "Unknown";
+  const { t } = useLanguage();
 
   const baseDate = new Date(year, month - 1, 1);
   const holidays = new Set(config.holidays || []);
@@ -35,8 +37,8 @@ export function ScheduleView({ schedule, config, staff, month, year }: ScheduleV
             <Table>
               <TableHeader className="bg-muted/50 sticky top-0 z-10">
                 <TableRow>
-                  <TableHead className="w-[100px] font-bold">Date</TableHead>
-                  <TableHead className="w-[100px]">Day</TableHead>
+                  <TableHead className="w-[100px] font-bold">{t.date}</TableHead>
+                  <TableHead className="w-[100px]">{t.day}</TableHead>
                   {config.shiftNames.map((shift, idx) => (
                     <TableHead key={idx} className="text-center font-bold text-primary">
                       {shift}

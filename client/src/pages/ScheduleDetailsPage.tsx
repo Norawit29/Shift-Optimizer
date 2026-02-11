@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { format, setDate } from "date-fns";
 import * as XLSX from "xlsx";
 import type { DaySchedule, SchedulerConfig, StaffMember } from "@shared/schema";
+import { useLanguage } from "@/context/LanguageContext";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 function exportToExcel(
   name: string,
@@ -15,7 +17,8 @@ function exportToExcel(
   year: number,
   result: DaySchedule[],
   config: SchedulerConfig,
-  staff: StaffMember[]
+  staff: StaffMember[],
+  labels: { date: string; day: string; staffName: string; total: string; summary: string; schedule: string }
 ) {
   const baseDate = new Date(year, month - 1, 1);
   const getStaffName = (id: string) => staff.find(s => s.id === id)?.name || "Unknown";
@@ -23,8 +26,8 @@ function exportToExcel(
   const rows = result.map((day) => {
     const currentDate = setDate(baseDate, day.date);
     const row: Record<string, string> = {
-      "Date": format(currentDate, "MMM d"),
-      "Day": format(currentDate, "EEEE"),
+      [labels.date]: format(currentDate, "MMM d"),
+      [labels.day]: format(currentDate, "EEEE"),
     };
     config.shiftNames.forEach((shiftName, shiftIdx) => {
       const names = day.shifts[shiftIdx]?.map(id => getStaffName(String(id))) || [];
@@ -41,10 +44,10 @@ function exportToExcel(
   ];
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Schedule");
+  XLSX.utils.book_append_sheet(wb, ws, labels.schedule);
 
   const summaryRows = staff.map(s => {
-    const row: Record<string, string | number> = { "Staff": s.name };
+    const row: Record<string, string | number> = { [labels.staffName]: s.name };
     let total = 0;
     config.shiftNames.forEach((shiftName, shiftIdx) => {
       const count = result.reduce((acc, day) =>
@@ -52,7 +55,7 @@ function exportToExcel(
       row[shiftName] = count;
       total += count;
     });
-    row["Total"] = total;
+    row[labels.total] = total;
     return row;
   });
 
@@ -62,7 +65,7 @@ function exportToExcel(
     ...config.shiftNames.map(() => ({ wch: 12 })),
     { wch: 8 },
   ];
-  XLSX.utils.book_append_sheet(wb, ws2, "Summary");
+  XLSX.utils.book_append_sheet(wb, ws2, labels.summary);
 
   const filename = `${name.replace(/[^a-zA-Z0-9]/g, "_")}_${month}_${year}.xlsx`;
   XLSX.writeFile(wb, filename);
@@ -72,6 +75,7 @@ export default function ScheduleDetailsPage() {
   const [, params] = useRoute("/schedule/:id");
   const id = parseInt(params?.id || "0");
   const { data: schedule, isLoading } = useSchedule(id);
+  const { t } = useLanguage();
 
   if (isLoading) {
     return (
@@ -82,7 +86,7 @@ export default function ScheduleDetailsPage() {
   }
 
   if (!schedule || !schedule.result) {
-    return <div>Schedule not found</div>;
+    return <div>{t.scheduleNotFound}</div>;
   }
 
   const resultAsDaySchedule: DaySchedule[] = schedule.result.map(day => ({
@@ -104,25 +108,26 @@ export default function ScheduleDetailsPage() {
               <h1 className="text-3xl font-display font-bold" data-testid="text-schedule-name">{schedule.name}</h1>
               <div className="flex items-center gap-2 text-muted-foreground">
                 <span>{schedule.month}/{schedule.year}</span>
-                <Badge variant="secondary">Saved</Badge>
+                <Badge variant="secondary">{t.saved}</Badge>
               </div>
             </div>
           </div>
           
           <div className="flex items-center gap-2">
+            <LanguageToggle />
             <Button
-              onClick={() => exportToExcel(schedule.name, schedule.month, schedule.year, resultAsDaySchedule, schedule.config, schedule.staff)}
+              onClick={() => exportToExcel(schedule.name, schedule.month, schedule.year, resultAsDaySchedule, schedule.config, schedule.staff, { date: t.date, day: t.day, staffName: t.staffName, total: t.total, summary: t.summary, schedule: t.scheduleView })}
               variant="default"
               data-testid="button-export-excel"
             >
-              <FileSpreadsheet className="mr-2 h-4 w-4" /> Export Excel
+              <FileSpreadsheet className="mr-2 h-4 w-4" /> {t.exportExcel}
             </Button>
           </div>
         </div>
 
         <Tabs defaultValue="view" className="w-full">
           <TabsList>
-            <TabsTrigger value="view" data-testid="tab-schedule-view">Schedule View</TabsTrigger>
+            <TabsTrigger value="view" data-testid="tab-schedule-view">{t.scheduleView}</TabsTrigger>
           </TabsList>
           
           <TabsContent value="view" className="mt-6">
