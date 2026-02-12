@@ -746,8 +746,8 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
             </DialogContent>
           </Dialog>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800 lg:col-span-1">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800 lg:col-span-2">
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -822,7 +822,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                           <Input 
                             type="number"
                             min={1}
-                            className="w-14 h-6 text-xs text-center shrink-0"
+                            className="w-16 h-6 text-xs text-center shrink-0"
                             value={s.maxShifts}
                             onClick={e => e.stopPropagation()}
                             onChange={e => { e.stopPropagation(); updateStaff(s.id, "maxShifts", parseInt(e.target.value) || 1); }}
@@ -843,7 +843,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               </CardContent>
             </Card>
 
-            <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800 lg:col-span-2">
+            <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800 lg:col-span-3">
               <CardContent className="p-6">
                 {selectedStaffMember ? (
                   <div className="space-y-4">
