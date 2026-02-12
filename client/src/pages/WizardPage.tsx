@@ -762,19 +762,21 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 p-2.5 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
-                    <Label className="text-xs text-muted-foreground whitespace-nowrap">{t.setAllMaxShifts}:</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      className="w-16 h-7 text-sm text-right"
-                      value={globalMaxShifts}
-                      onChange={e => setGlobalMaxShifts(Math.max(1, parseInt(e.target.value) || 1))}
-                      data-testid="input-global-max-shifts"
-                    />
-                    <Button variant="outline" size="sm" onClick={applyGlobalMaxShifts} data-testid="button-apply-all-max">
-                      {t.applyToAll}
-                    </Button>
+                  <div className="p-2.5 bg-slate-50 dark:bg-slate-900/50 rounded-lg space-y-2">
+                    <Label className="text-xs text-muted-foreground">{t.setAllMaxShifts}</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min={1}
+                        className="flex-1 h-7 text-sm text-right"
+                        value={globalMaxShifts}
+                        onChange={e => setGlobalMaxShifts(Math.max(1, parseInt(e.target.value) || 1))}
+                        data-testid="input-global-max-shifts"
+                      />
+                      <Button variant="outline" size="sm" onClick={applyGlobalMaxShifts} className="shrink-0" data-testid="button-apply-all-max">
+                        {t.applyToAll}
+                      </Button>
+                    </div>
                   </div>
 
                   {staff.length > 0 && (
