@@ -69,7 +69,7 @@ function exportToExcel(
   result: DaySchedule[],
   config: SchedulerConfig,
   staff: StaffMember[],
-  labels: { date: string; day: string; staffName: string; total: string; summary: string; schedule: string }
+  labels: { date: string; day: string; staffName: string; total: string; summary: string; schedule: string; staffSchedule: string }
 ) {
   const isCustomRange = config.useCustomRange && config.customStartDate;
   const baseDate = isCustomRange
@@ -142,6 +142,53 @@ function exportToExcel(
     { wch: 8 },
   ];
   XLSX.utils.book_append_sheet(wb, ws2, labels.summary);
+
+  const shiftAbbrevs = config.shiftNames.map(n => {
+    const upper = n.trim().toUpperCase();
+    if (upper.startsWith("MOR") || upper === "M" || upper === "เช้า") return "M";
+    if (upper.startsWith("AFT") || upper.startsWith("EVE") || upper === "E" || upper === "A" || upper === "บ่าย") return "E";
+    if (upper.startsWith("NIG") || upper === "N" || upper === "ดึก" || upper === "กลางคืน") return "N";
+    return n.charAt(0).toUpperCase();
+  });
+
+  const dateHeaders = result.map((day) => {
+    const d = getDateForIdx(day.date);
+    return format(d, "d MMM");
+  });
+
+  const staffMatrixHeaders = [labels.staffName, ...dateHeaders, ...config.shiftNames, labels.total];
+
+  const staffMatrixRows = staff.map(s => {
+    const row: string[] = [s.name];
+    let grandTotal = 0;
+    const shiftTotals = config.shiftNames.map(() => 0);
+
+    result.forEach((day) => {
+      const dayShifts: string[] = [];
+      config.shiftNames.forEach((_, shiftIdx) => {
+        const assigned = day.shifts[shiftIdx]?.map(String) || [];
+        if (assigned.includes(s.id)) {
+          dayShifts.push(shiftAbbrevs[shiftIdx]);
+          shiftTotals[shiftIdx]++;
+          grandTotal++;
+        }
+      });
+      row.push(dayShifts.join("/"));
+    });
+
+    shiftTotals.forEach(ct => row.push(String(ct)));
+    row.push(String(grandTotal));
+    return row;
+  });
+
+  const ws3 = XLSX.utils.aoa_to_sheet([staffMatrixHeaders, ...staffMatrixRows]);
+  ws3["!cols"] = [
+    { wch: 20 },
+    ...dateHeaders.map(() => ({ wch: 8 })),
+    ...config.shiftNames.map(() => ({ wch: 10 })),
+    { wch: 8 },
+  ];
+  XLSX.utils.book_append_sheet(wb, ws3, labels.staffSchedule);
 
   const rangeLabel = isCustomRange
     ? `${config.customStartDate}_to_${config.customEndDate}`
@@ -431,7 +478,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     };
     exportToExcel(
       scheduleName, month, year, r.schedule, exConfig, staff,
-      { date: t.date, day: t.day, staffName: t.staffName, total: t.total, summary: t.summary, schedule: t.scheduleView }
+      { date: t.date, day: t.day, staffName: t.staffName, total: t.total, summary: t.summary, schedule: t.scheduleView, staffSchedule: t.staffSchedule }
     );
     setShowSaveDialog(false);
   };

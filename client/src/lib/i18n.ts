@@ -157,6 +157,7 @@ const translations = {
     // ScheduleDetailsPage
     exportExcel: "Export Excel",
     scheduleView: "Schedule View",
+    staffSchedule: "Staff Schedule",
     scheduleNotFound: "Schedule not found",
 
     // Quick Export
@@ -340,6 +341,7 @@ const translations = {
     // ScheduleDetailsPage
     exportExcel: "ส่งออก Excel",
     scheduleView: "มุมมองตารางเวร",
+    staffSchedule: "ตารางเวรรายบุคคล",
     scheduleNotFound: "ไม่พบตารางเวร",
 
     // Quick Export
