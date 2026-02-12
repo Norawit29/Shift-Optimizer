@@ -40,7 +40,7 @@ import { Link, useLocation } from "wouter";
 import { getDaysInMonth, format, setDate, parseISO, differenceInCalendarDays, addDays } from "date-fns";
 import { useLanguage } from "@/context/LanguageContext";
 import { LanguageToggle } from "@/components/LanguageToggle";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June", 
@@ -62,7 +62,18 @@ const INITIAL_STAFF: StaffMember[] = [
   { id: "5", name: "Dr. Grey", maxShifts: 20, blocked: [] },
 ];
 
-function exportToExcel(
+const SHIFT_COLORS = [
+  "B3D9FF", "B3FFB3", "D9B3FF", "FFE0B3", "FFB3B3",
+];
+
+function blendColors(c1: string, c2: string): string {
+  const r = Math.round((parseInt(c1.slice(0, 2), 16) + parseInt(c2.slice(0, 2), 16)) / 2);
+  const g = Math.round((parseInt(c1.slice(2, 4), 16) + parseInt(c2.slice(2, 4), 16)) / 2);
+  const b = Math.round((parseInt(c1.slice(4, 6), 16) + parseInt(c2.slice(4, 6), 16)) / 2);
+  return r.toString(16).padStart(2, "0") + g.toString(16).padStart(2, "0") + b.toString(16).padStart(2, "0");
+}
+
+async function exportToExcel(
   name: string,
   month: number,
   year: number,
@@ -81,6 +92,8 @@ function exportToExcel(
     return setDate(baseDate, dayIndex);
   };
 
+  const wb = new ExcelJS.Workbook();
+
   const maxPerShift: number[] = config.shiftNames.map((_, shiftIdx) => {
     let max = config.staffPerShift[shiftIdx] || 1;
     for (const day of result) {
@@ -90,109 +103,117 @@ function exportToExcel(
     return max;
   });
 
-  const headers: string[] = [labels.date, labels.day];
+  const schedHeaders: string[] = [labels.date, labels.day];
   config.shiftNames.forEach((shiftName, shiftIdx) => {
     for (let p = 0; p < maxPerShift[shiftIdx]; p++) {
-      headers.push(maxPerShift[shiftIdx] === 1 ? shiftName : `${shiftName} ${p + 1}`);
+      schedHeaders.push(maxPerShift[shiftIdx] === 1 ? shiftName : `${shiftName} ${p + 1}`);
     }
   });
 
-  const rows = result.map((day) => {
+  const ws1 = wb.addWorksheet(labels.schedule);
+  ws1.addRow(schedHeaders);
+  result.forEach((day) => {
     const currentDate = getDateForIdx(day.date);
-    const row: string[] = [
-      format(currentDate, "MMM d"),
-      format(currentDate, "EEEE"),
-    ];
+    const row: string[] = [format(currentDate, "MMM d"), format(currentDate, "EEEE")];
     config.shiftNames.forEach((_, shiftIdx) => {
       const names = day.shifts[shiftIdx]?.map(id => getStaffName(String(id))) || [];
       for (let p = 0; p < maxPerShift[shiftIdx]; p++) {
         row.push(names[p] || "");
       }
     });
-    return row;
+    ws1.addRow(row);
   });
+  ws1.getColumn(1).width = 8;
+  ws1.getColumn(2).width = 12;
+  for (let i = 3; i <= schedHeaders.length; i++) ws1.getColumn(i).width = 18;
+  ws1.getRow(1).font = { bold: true };
 
-  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-  ws["!cols"] = [
-    { wch: 8 },
-    { wch: 12 },
-    ...headers.slice(2).map(() => ({ wch: 18 })),
-  ];
-
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, labels.schedule);
-
-  const summaryRows = staff.map(s => {
-    const row: Record<string, string | number> = { [labels.staffName]: s.name };
+  const ws2 = wb.addWorksheet(labels.summary);
+  const summaryHeaders = [labels.staffName, ...config.shiftNames, labels.total];
+  ws2.addRow(summaryHeaders);
+  staff.forEach(s => {
+    const row: (string | number)[] = [s.name];
     let total = 0;
-    config.shiftNames.forEach((shiftName, shiftIdx) => {
+    config.shiftNames.forEach((_, shiftIdx) => {
       const count = result.reduce((acc, day) =>
         acc + (day.shifts[shiftIdx]?.map(String).includes(s.id) ? 1 : 0), 0);
-      row[shiftName] = count;
+      row.push(count);
       total += count;
     });
-    row[labels.total] = total;
-    return row;
+    row.push(total);
+    ws2.addRow(row);
+  });
+  ws2.getColumn(1).width = 20;
+  for (let i = 2; i <= config.shiftNames.length + 1; i++) ws2.getColumn(i).width = 12;
+  ws2.getColumn(config.shiftNames.length + 2).width = 8;
+  ws2.getRow(1).font = { bold: true };
+
+  const dateHeaders = result.map((day) => format(getDateForIdx(day.date), "d MMM"));
+  const ws3 = wb.addWorksheet(labels.staffSchedule);
+  const matrixHeaders = [labels.staffName, ...dateHeaders, ...config.shiftNames, labels.total];
+  const headerRow = ws3.addRow(matrixHeaders);
+  headerRow.font = { bold: true };
+  headerRow.eachCell(cell => {
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE0E0E0" } };
   });
 
-  const ws2 = XLSX.utils.json_to_sheet(summaryRows);
-  ws2["!cols"] = [
-    { wch: 20 },
-    ...config.shiftNames.map(() => ({ wch: 12 })),
-    { wch: 8 },
-  ];
-  XLSX.utils.book_append_sheet(wb, ws2, labels.summary);
+  const shiftColors = config.shiftNames.map((_, i) => SHIFT_COLORS[i % SHIFT_COLORS.length]);
 
-  const shiftAbbrevs = config.shiftNames.map(n => {
-    const trimmed = n.trim();
-    if (!trimmed) return "?";
-    return trimmed.charAt(0).toUpperCase();
-  });
-
-  const dateHeaders = result.map((day) => {
-    const d = getDateForIdx(day.date);
-    return format(d, "d MMM");
-  });
-
-  const staffMatrixHeaders = [labels.staffName, ...dateHeaders, ...config.shiftNames, labels.total];
-
-  const staffMatrixRows = staff.map(s => {
-    const row: string[] = [s.name];
+  staff.forEach(s => {
+    const rowValues: (string | number)[] = [s.name];
     let grandTotal = 0;
     const shiftTotals = config.shiftNames.map(() => 0);
+    const dayCellInfo: { shiftIndices: number[] }[] = [];
 
     result.forEach((day) => {
-      const dayShifts: string[] = [];
+      const matchedShifts: number[] = [];
       config.shiftNames.forEach((_, shiftIdx) => {
         const assigned = day.shifts[shiftIdx]?.map(String) || [];
         if (assigned.includes(s.id)) {
-          dayShifts.push(shiftAbbrevs[shiftIdx]);
+          matchedShifts.push(shiftIdx);
           shiftTotals[shiftIdx]++;
           grandTotal++;
         }
       });
-      row.push(dayShifts.join("/"));
+      const cellText = matchedShifts.map(si => config.shiftNames[si]).join("/");
+      rowValues.push(cellText);
+      dayCellInfo.push({ shiftIndices: matchedShifts });
     });
 
-    shiftTotals.forEach(ct => row.push(String(ct)));
-    row.push(String(grandTotal));
-    return row;
+    shiftTotals.forEach(ct => rowValues.push(ct));
+    rowValues.push(grandTotal);
+
+    const excelRow = ws3.addRow(rowValues);
+
+    dayCellInfo.forEach((info, colOffset) => {
+      if (info.shiftIndices.length === 0) return;
+      const cell = excelRow.getCell(colOffset + 2);
+      let bgColor: string;
+      if (info.shiftIndices.length === 1) {
+        bgColor = shiftColors[info.shiftIndices[0]];
+      } else {
+        bgColor = info.shiftIndices.reduce((acc, si) => blendColors(acc, shiftColors[si]), shiftColors[info.shiftIndices[0]]);
+      }
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF" + bgColor } };
+    });
   });
 
-  const ws3 = XLSX.utils.aoa_to_sheet([staffMatrixHeaders, ...staffMatrixRows]);
-  ws3["!cols"] = [
-    { wch: 20 },
-    ...dateHeaders.map(() => ({ wch: 8 })),
-    ...config.shiftNames.map(() => ({ wch: 10 })),
-    { wch: 8 },
-  ];
-  XLSX.utils.book_append_sheet(wb, ws3, labels.staffSchedule);
+  ws3.getColumn(1).width = 20;
+  for (let i = 2; i <= dateHeaders.length + 1; i++) ws3.getColumn(i).width = 10;
+  for (let i = dateHeaders.length + 2; i <= dateHeaders.length + 1 + config.shiftNames.length; i++) ws3.getColumn(i).width = 12;
+  ws3.getColumn(matrixHeaders.length).width = 8;
 
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
   const rangeLabel = isCustomRange
     ? `${config.customStartDate}_to_${config.customEndDate}`
     : `${month}_${year}`;
-  const filename = `${name.replace(/[^a-zA-Z0-9]/g, "_")}_${rangeLabel}.xlsx`;
-  XLSX.writeFile(wb, filename);
+  a.download = `${name.replace(/[^a-zA-Z0-9]/g, "_")}_${rangeLabel}.xlsx`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export default function WizardPage(props: { exportOnly?: boolean } & Record<string, any>) {
@@ -465,7 +486,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     }
   };
 
-  const doExcelExport = (versionIdx: number) => {
+  const doExcelExport = async (versionIdx: number) => {
     const r = results[versionIdx];
     if (!r) return;
     const exConfig = {
@@ -474,7 +495,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
       customStartDate: useCustomRange ? customStartDate : undefined,
       customEndDate: useCustomRange ? customEndDate : undefined,
     };
-    exportToExcel(
+    await exportToExcel(
       scheduleName, month, year, r.schedule, exConfig, staff,
       { date: t.date, day: t.day, staffName: t.staffName, total: t.total, summary: t.summary, schedule: t.scheduleView, staffSchedule: t.staffSchedule }
     );
