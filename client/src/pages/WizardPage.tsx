@@ -81,24 +81,42 @@ function exportToExcel(
     return setDate(baseDate, dayIndex);
   };
 
+  const maxPerShift: number[] = config.shiftNames.map((_, shiftIdx) => {
+    let max = config.staffPerShift[shiftIdx] || 1;
+    for (const day of result) {
+      const count = day.shifts[shiftIdx]?.length || 0;
+      if (count > max) max = count;
+    }
+    return max;
+  });
+
+  const headers: string[] = [labels.date, labels.day];
+  config.shiftNames.forEach((shiftName, shiftIdx) => {
+    for (let p = 0; p < maxPerShift[shiftIdx]; p++) {
+      headers.push(maxPerShift[shiftIdx] === 1 ? shiftName : `${shiftName} ${p + 1}`);
+    }
+  });
+
   const rows = result.map((day) => {
     const currentDate = getDateForIdx(day.date);
-    const row: Record<string, string> = {
-      [labels.date]: format(currentDate, "MMM d"),
-      [labels.day]: format(currentDate, "EEEE"),
-    };
-    config.shiftNames.forEach((shiftName, shiftIdx) => {
+    const row: string[] = [
+      format(currentDate, "MMM d"),
+      format(currentDate, "EEEE"),
+    ];
+    config.shiftNames.forEach((_, shiftIdx) => {
       const names = day.shifts[shiftIdx]?.map(id => getStaffName(String(id))) || [];
-      row[shiftName] = names.join(", ");
+      for (let p = 0; p < maxPerShift[shiftIdx]; p++) {
+        row.push(names[p] || "");
+      }
     });
     return row;
   });
 
-  const ws = XLSX.utils.json_to_sheet(rows);
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
   ws["!cols"] = [
     { wch: 8 },
     { wch: 12 },
-    ...config.shiftNames.map(() => ({ wch: 35 })),
+    ...headers.slice(2).map(() => ({ wch: 18 })),
   ];
 
   const wb = XLSX.utils.book_new();
