@@ -816,28 +816,26 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                               data-testid={`input-staff-name-${s.id}`}
                             />
                           </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
+                          <div className="flex items-center gap-1 shrink-0">
                             {blockedCount > 0 && (
                               <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{blockedCount}</Badge>
                             )}
                             <Input 
                               type="number"
                               min={1}
-                              className="w-14 h-6 text-xs text-right"
+                              className="w-16 h-6 text-xs text-center"
                               value={s.maxShifts}
                               onClick={e => e.stopPropagation()}
                               onChange={e => { e.stopPropagation(); updateStaff(s.id, "maxShifts", parseInt(e.target.value) || 1); }}
                               data-testid={`input-max-shifts-${s.id}`}
                             />
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              className="invisible group-hover:visible h-6 w-6 text-muted-foreground"
+                            <button
+                              className="invisible group-hover:visible h-5 w-5 inline-flex items-center justify-center text-muted-foreground rounded-sm"
                               onClick={(e) => { e.stopPropagation(); removeStaff(s.id); }}
                               data-testid={`button-remove-staff-${s.id}`}
                             >
                               <X className="w-3 h-3" />
-                            </Button>
+                            </button>
                           </div>
                         </div>
                       );
