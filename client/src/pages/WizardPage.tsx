@@ -139,6 +139,12 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const [year, setYear] = useState(new Date().getFullYear());
   const [config, setConfig] = useState<SchedulerConfig>(INITIAL_CONFIG);
   const [staff, setStaff] = useState<StaffMember[]>(INITIAL_STAFF);
+  const [showBulkAdd, setShowBulkAdd] = useState(false);
+  const [bulkCount, setBulkCount] = useState(10);
+  const [bulkPrefix, setBulkPrefix] = useState("");
+  const [bulkStartNum, setBulkStartNum] = useState(1);
+  const [bulkMaxShifts, setBulkMaxShifts] = useState(20);
+  const [globalMaxShifts, setGlobalMaxShifts] = useState(20);
   const [results, setResults] = useState<OptimizerResult[]>([]);
   const [selectedVersion, setSelectedVersion] = useState(0);
   const [scheduleName, setScheduleName] = useState("My Schedule");
@@ -163,7 +169,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const createMutation = useCreateSchedule();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const { t, dayNames } = useLanguage();
+  const { t, dayNames, lang } = useLanguage();
 
   const daysInMonth = useMemo(() => {
     if (useCustomRange && customStartDate && customEndDate) {
@@ -249,6 +255,26 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     }
     
     setStaff([...staff, { id: nanoid(), name, maxShifts: 20, blocked: [] }]);
+  };
+
+  const addBulkStaff = () => {
+    const prefix = bulkPrefix.trim() || (lang === "th" ? "บุคลากร" : "Staff");
+    const newStaff: StaffMember[] = [];
+    for (let i = 0; i < bulkCount; i++) {
+      newStaff.push({
+        id: nanoid(),
+        name: `${prefix} ${bulkStartNum + i}`,
+        maxShifts: bulkMaxShifts,
+        blocked: [],
+      });
+    }
+    setStaff([...staff, ...newStaff]);
+    setShowBulkAdd(false);
+    setBulkStartNum(bulkStartNum + bulkCount);
+  };
+
+  const applyGlobalMaxShifts = () => {
+    setStaff(staff.map(s => ({ ...s, maxShifts: globalMaxShifts })));
   };
 
   const removeStaff = (id: string) => {
@@ -660,72 +686,157 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           title={t.staffAvailability} 
           description={t.staffAvailabilityDesc}
         >
+          <Dialog open={showBulkAdd} onOpenChange={setShowBulkAdd}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>{t.addMultipleTitle}</DialogTitle>
+                <DialogDescription>{t.addMultipleDesc}</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 pt-2">
+                <div className="space-y-2">
+                  <Label>{t.numberOfStaff}</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={200}
+                    value={bulkCount}
+                    onChange={e => setBulkCount(Math.min(200, Math.max(1, parseInt(e.target.value) || 1)))}
+                    data-testid="input-bulk-count"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t.namePrefix}</Label>
+                  <Input
+                    placeholder={t.namePrefixPlaceholder}
+                    value={bulkPrefix}
+                    onChange={e => setBulkPrefix(e.target.value)}
+                    data-testid="input-bulk-prefix"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>{t.startNumbering}</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={bulkStartNum}
+                      onChange={e => setBulkStartNum(Math.max(1, parseInt(e.target.value) || 1))}
+                      data-testid="input-bulk-start-num"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t.defaultMaxShifts}</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={bulkMaxShifts}
+                      onChange={e => setBulkMaxShifts(Math.max(1, parseInt(e.target.value) || 1))}
+                      data-testid="input-bulk-max-shifts"
+                    />
+                  </div>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 text-sm text-muted-foreground">
+                  {bulkPrefix.trim() || (lang === "th" ? "บุคลากร" : "Staff")} {bulkStartNum} — {bulkPrefix.trim() || (lang === "th" ? "บุคลากร" : "Staff")} {bulkStartNum + bulkCount - 1}
+                </div>
+                <Button onClick={addBulkStaff} className="w-full" data-testid="button-bulk-add-confirm">
+                  <Users className="w-4 h-4 mr-2" />
+                  {t.addStaffBtn} ({bulkCount})
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800 lg:col-span-1">
               <CardContent className="p-6">
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
                     <Label className="text-base font-semibold">{t.staff} ({staff.length})</Label>
-                    <Button onClick={addStaff} variant="outline" size="sm" className="border-dashed" data-testid="button-add-staff">
-                      <Plus className="w-4 h-4 mr-1" /> {t.add}
+                    <div className="flex items-center gap-1.5">
+                      <Button onClick={addStaff} variant="outline" size="sm" className="border-dashed" data-testid="button-add-staff">
+                        <Plus className="w-4 h-4 mr-1" /> {t.add}
+                      </Button>
+                      <Button onClick={() => setShowBulkAdd(true)} variant="outline" size="sm" data-testid="button-add-multiple">
+                        <Users className="w-4 h-4 mr-1" /> {t.addMultiple}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 p-2.5 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
+                    <Label className="text-xs text-muted-foreground whitespace-nowrap">{t.setAllMaxShifts}:</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      className="w-16 h-7 text-sm text-right"
+                      value={globalMaxShifts}
+                      onChange={e => setGlobalMaxShifts(Math.max(1, parseInt(e.target.value) || 1))}
+                      data-testid="input-global-max-shifts"
+                    />
+                    <Button variant="outline" size="sm" onClick={applyGlobalMaxShifts} data-testid="button-apply-all-max">
+                      {t.applyToAll}
                     </Button>
                   </div>
+
+                  {staff.length > 0 && (
+                    <div className="flex justify-end">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive text-xs"
+                        onClick={() => { if (window.confirm(t.removeAllConfirm)) { setStaff([]); setSelectedStaffId(null); } }}
+                        data-testid="button-remove-all-staff"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 mr-1" /> {t.removeAll}
+                      </Button>
+                    </div>
+                  )}
                   
-                  <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+                  <div className="space-y-1 max-h-[420px] overflow-y-auto pr-1">
                     {staff.map((s) => {
                       const blockedCount = s.blocked?.length || 0;
                       const isSelected = selectedStaffId === s.id;
                       return (
                         <div 
                           key={s.id} 
-                          className={`relative group rounded-lg p-3 cursor-pointer transition-colors border ${isSelected ? 'border-primary bg-primary/5 dark:bg-primary/10' : 'border-transparent bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
+                          className={`group flex items-center gap-2 rounded-md px-2 py-1.5 cursor-pointer transition-colors ${isSelected ? 'bg-primary/10 dark:bg-primary/15 ring-1 ring-primary/30' : 'hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
                           onClick={() => setSelectedStaffId(isSelected ? null : s.id)}
                           data-testid={`staff-card-${s.id}`}
                         >
-                          <div className="flex items-center gap-3">
-                            <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
-                              {s.name.charAt(0)}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <Input 
-                                value={s.name} 
-                                onChange={e => { e.stopPropagation(); updateStaff(s.id, "name", e.target.value); }}
-                                onClick={e => { e.stopPropagation(); setSelectedStaffId(s.id); }}
-                                className="font-semibold h-7 text-sm border-transparent hover:border-input focus:border-input px-1"
-                                data-testid={`input-staff-name-${s.id}`}
-                              />
-                              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground px-1">
-                                <span>Max: {s.maxShifts}</span>
-                                {blockedCount > 0 && (
-                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{blockedCount} {t.blocked}</Badge>
-                                )}
-                              </div>
-                            </div>
+                          <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">
+                            {s.name.charAt(0)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <Input 
+                              value={s.name} 
+                              onChange={e => { e.stopPropagation(); updateStaff(s.id, "name", e.target.value); }}
+                              onClick={e => { e.stopPropagation(); setSelectedStaffId(s.id); }}
+                              className="font-medium h-6 text-sm border-transparent hover:border-input focus:border-input px-1"
+                              data-testid={`input-staff-name-${s.id}`}
+                            />
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {blockedCount > 0 && (
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{blockedCount}</Badge>
+                            )}
+                            <Input 
+                              type="number"
+                              min={1}
+                              className="w-14 h-6 text-xs text-right"
+                              value={s.maxShifts}
+                              onClick={e => e.stopPropagation()}
+                              onChange={e => { e.stopPropagation(); updateStaff(s.id, "maxShifts", parseInt(e.target.value) || 1); }}
+                              data-testid={`input-max-shifts-${s.id}`}
+                            />
                             <Button 
                               variant="ghost" 
                               size="icon"
-                              className="opacity-0 group-hover:opacity-100 h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
+                              className="invisible group-hover:visible h-6 w-6 text-muted-foreground"
                               onClick={(e) => { e.stopPropagation(); removeStaff(s.id); }}
                               data-testid={`button-remove-staff-${s.id}`}
                             >
-                              <X className="w-3.5 h-3.5" />
+                              <X className="w-3 h-3" />
                             </Button>
                           </div>
-
-                          {isSelected && (
-                            <div className="mt-3 pt-3 border-t space-y-2" onClick={e => e.stopPropagation()}>
-                              <div className="flex items-center justify-between gap-2">
-                                <Label className="text-xs text-muted-foreground">{t.maxShifts}</Label>
-                                <Input 
-                                  type="number" 
-                                  className="w-16 h-7 text-right text-sm"
-                                  value={s.maxShifts}
-                                  onChange={e => updateStaff(s.id, "maxShifts", parseInt(e.target.value) || 1)}
-                                  data-testid={`input-max-shifts-${s.id}`}
-                                />
-                              </div>
-                            </div>
-                          )}
                         </div>
                       );
                     })}
