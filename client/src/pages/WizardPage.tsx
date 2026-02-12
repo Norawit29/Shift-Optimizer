@@ -1068,7 +1068,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     ))}
                     
                     <div className="flex items-center gap-2 pt-2">
-                       <Select onValueChange={(val) => {
+                       <Select key={config.consecutiveRules.length} onValueChange={(val) => {
                          const [from, to] = val.split(',').map(Number);
                          setConfig({
                            ...config,
@@ -1079,13 +1079,17 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                            <SelectValue placeholder={t.addNewRule} />
                          </SelectTrigger>
                          <SelectContent position="popper" sideOffset={4} className="bg-white dark:bg-slate-900">
-                           {config.shiftNames.map((name1, i) => (
-                             config.shiftNames.map((name2, j) => (
-                               <SelectItem key={`${i}-${j}`} value={`${i},${j}`}>
-                                 {t.blockRule} {name1} {t.followedBy} {name2}
-                               </SelectItem>
-                             ))
-                           ))}
+                           {config.shiftNames.flatMap((name1, i) =>
+                             config.shiftNames.map((name2, j) => {
+                               const exists = config.consecutiveRules.some(r => r.from === i && r.to === j);
+                               if (exists) return null;
+                               return (
+                                 <SelectItem key={`${i}-${j}`} value={`${i},${j}`}>
+                                   {t.blockRule} {name1} {t.followedBy} {name2}
+                                 </SelectItem>
+                               );
+                             })
+                           ).filter(Boolean)}
                          </SelectContent>
                        </Select>
                     </div>
