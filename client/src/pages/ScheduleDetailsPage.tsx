@@ -75,11 +75,9 @@ function exportToExcel(
   XLSX.utils.book_append_sheet(wb, ws2, labels.summary);
 
   const shiftAbbrevs = config.shiftNames.map(n => {
-    const upper = n.trim().toUpperCase();
-    if (upper.startsWith("MOR") || upper === "M" || upper === "เช้า") return "M";
-    if (upper.startsWith("AFT") || upper.startsWith("EVE") || upper === "E" || upper === "A" || upper === "บ่าย") return "E";
-    if (upper.startsWith("NIG") || upper === "N" || upper === "ดึก" || upper === "กลางคืน") return "N";
-    return n.charAt(0).toUpperCase();
+    const trimmed = n.trim();
+    if (!trimmed) return "?";
+    return trimmed.charAt(0).toUpperCase();
   });
 
   const dateHeaders = result.map((day) => {
