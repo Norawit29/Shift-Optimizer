@@ -807,7 +807,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                           <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">
                             {s.name.charAt(0)}
                           </div>
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0 truncate">
                             <Input 
                               value={s.name} 
                               onChange={e => { e.stopPropagation(); updateStaff(s.id, "name", e.target.value); }}
@@ -816,27 +816,25 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                               data-testid={`input-staff-name-${s.id}`}
                             />
                           </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            {blockedCount > 0 && (
-                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{blockedCount}</Badge>
-                            )}
-                            <Input 
-                              type="number"
-                              min={1}
-                              className="w-16 h-6 text-xs text-center"
-                              value={s.maxShifts}
-                              onClick={e => e.stopPropagation()}
-                              onChange={e => { e.stopPropagation(); updateStaff(s.id, "maxShifts", parseInt(e.target.value) || 1); }}
-                              data-testid={`input-max-shifts-${s.id}`}
-                            />
-                            <button
-                              className="invisible group-hover:visible h-5 w-5 inline-flex items-center justify-center text-muted-foreground rounded-sm"
-                              onClick={(e) => { e.stopPropagation(); removeStaff(s.id); }}
-                              data-testid={`button-remove-staff-${s.id}`}
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
+                          {blockedCount > 0 && (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">{blockedCount}</Badge>
+                          )}
+                          <Input 
+                            type="number"
+                            min={1}
+                            className="w-14 h-6 text-xs text-center shrink-0"
+                            value={s.maxShifts}
+                            onClick={e => e.stopPropagation()}
+                            onChange={e => { e.stopPropagation(); updateStaff(s.id, "maxShifts", parseInt(e.target.value) || 1); }}
+                            data-testid={`input-max-shifts-${s.id}`}
+                          />
+                          <button
+                            className="invisible group-hover:visible h-5 w-5 inline-flex items-center justify-center text-muted-foreground rounded-sm shrink-0"
+                            onClick={(e) => { e.stopPropagation(); removeStaff(s.id); }}
+                            data-testid={`button-remove-staff-${s.id}`}
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
                         </div>
                       );
                     })}
