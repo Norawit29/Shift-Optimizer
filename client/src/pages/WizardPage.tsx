@@ -1688,26 +1688,35 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
       </Dialog>
 
       <Dialog open={showLoginPrompt} onOpenChange={setShowLoginPrompt}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{lang === "th" ? "เข้าสู่ระบบเพื่อบันทึกข้อมูล" : "Sign in to save your data"}</DialogTitle>
-            <DialogDescription>
-              {lang === "th"
-                ? "เข้าสู่ระบบด้วย Google เพื่อบันทึกรายชื่อสตาฟและการตั้งค่า คุณจะไม่ต้องกรอกใหม่ทุกครั้ง"
-                : "Sign in with Google to save your staff list and settings. You won't need to re-enter them next time."}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col items-center gap-4 py-4">
+        <DialogContent className="max-w-sm p-0 overflow-hidden">
+          <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent dark:from-primary/20 dark:via-primary/10 px-6 pt-6 pb-4 flex flex-col items-center text-center">
+            <div className="w-14 h-14 rounded-full bg-primary/15 dark:bg-primary/25 flex items-center justify-center mb-3">
+              <Save className="w-7 h-7 text-primary" />
+            </div>
+            <DialogHeader className="space-y-1.5">
+              <DialogTitle className="text-lg">
+                {lang === "th" ? "เข้าสู่ระบบเพื่อบันทึกข้อมูล" : "Sign in to save your data"}
+              </DialogTitle>
+              <DialogDescription className="text-sm leading-relaxed">
+                {lang === "th"
+                  ? "เข้าสู่ระบบด้วย Google เพื่อบันทึกรายชื่อสตาฟและการตั้งค่า คุณจะไม่ต้องกรอกใหม่ทุกครั้ง"
+                  : "Sign in with Google to save your staff list and settings. You won't need to re-enter them next time."}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="flex flex-col items-center gap-3 px-6 pb-6 pt-2">
             <GoogleSignInButton />
+            <Separator className="my-1" />
             <Button
               variant="ghost"
+              className="text-muted-foreground"
               onClick={() => {
                 setShowLoginPrompt(false);
                 setStep(s => Math.min(s + 1, 4));
               }}
               data-testid="button-skip-login"
             >
-              {lang === "th" ? "ข้ามไปก่อน" : "Skip for now"}
+              {lang === "th" ? "ข้ามไปก่อน" : "Skip for now"} <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
         </DialogContent>
