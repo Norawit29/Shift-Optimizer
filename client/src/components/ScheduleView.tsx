@@ -58,7 +58,7 @@ export function ScheduleView({ schedule, config, staff, month, year, unfilledSlo
               <p className="font-semibold text-red-800 dark:text-red-300" data-testid="text-partial-warning">{t.partialScheduleWarning}</p>
               <p className="text-sm text-red-700 dark:text-red-400">{t.partialScheduleDesc}</p>
               <div className="text-sm text-red-600 dark:text-red-400 space-y-1 mt-2">
-                <p className="font-medium">{t.unfilledSlots} ({unfilledSlots.reduce((sum, u) => sum + (u.required - u.assigned), 0)}):</p>
+                <p className="font-medium">Unfilled Shifts: {unfilledSlots.length} / Unfilled Slots: {unfilledSlots.reduce((sum, u) => sum + (u.required - u.assigned), 0)}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {unfilledSlots.map((slot, idx) => {
                     const slotDate = getDateForIndex(slot.date);
