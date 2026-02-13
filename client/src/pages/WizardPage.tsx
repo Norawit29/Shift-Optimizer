@@ -1,6 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useCreateSchedule } from "@/hooks/use-schedules";
 import { type StaffMember, type SchedulerConfig, type OptimizerResult, type DaySchedule } from "@shared/schema";
+import { useAuth } from "@/context/AuthContext";
+import { GoogleSignInButton, UserMenu } from "@/components/GoogleSignIn";
 import { ShiftOptimizer } from "@/lib/optimizer";
 import { WizardStep } from "@/components/WizardStep";
 import { ScheduleView } from "@/components/ScheduleView";
@@ -241,6 +243,10 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
 
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [presetLoaded, setPresetLoaded] = useState(false);
+  const { user } = useAuth();
+
   const handleModeSwitch = (mode: string) => {
     const newMode = mode === "custom";
     if (newMode !== useCustomRange) {
@@ -254,6 +260,43 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { t, dayNames, lang } = useLanguage();
+
+  useEffect(() => {
+    if (user && showLoginPrompt) {
+      setShowLoginPrompt(false);
+      setStep(s => Math.min(s + 1, 4));
+    }
+  }, [user, showLoginPrompt]);
+
+  useEffect(() => {
+    if (user && !presetLoaded) {
+      fetch("/api/presets")
+        .then(r => r.json())
+        .then(presets => {
+          if (presets.length > 0) {
+            const p = presets[0];
+            if (p.config) setConfig(p.config);
+            if (p.staff && p.staff.length > 0) {
+              setStaff(p.staff.map((s: StaffMember) => ({ ...s, blocked: [] })));
+            }
+            toast({ title: lang === "th" ? "โหลดข้อมูลสตาฟสำเร็จ" : "Staff data loaded", description: lang === "th" ? "ข้อมูลสตาฟและการตั้งค่าจากครั้งก่อนถูกโหลดแล้ว" : "Your saved staff and config have been loaded" });
+          }
+          setPresetLoaded(true);
+        })
+        .catch(() => setPresetLoaded(true));
+    }
+  }, [user, presetLoaded]);
+
+  const savePreset = useCallback(async () => {
+    if (!user) return;
+    try {
+      await fetch("/api/presets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: scheduleName, config, staff }),
+      });
+    } catch {}
+  }, [user, config, staff, scheduleName]);
 
   const daysInMonth = useMemo(() => {
     if (useCustomRange && customStartDate && customEndDate) {
@@ -270,7 +313,13 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     return getDaysInMonth(new Date(year, month - 1));
   }, [month, year, useCustomRange, customStartDate, customEndDate]);
 
-  const handleNext = () => setStep(s => Math.min(s + 1, 4));
+  const handleNext = () => {
+    if (step === 2 && !user) {
+      setShowLoginPrompt(true);
+      return;
+    }
+    setStep(s => Math.min(s + 1, 4));
+  };
   const handleBack = () => setStep(s => Math.max(s - 1, 1));
 
   const updateShiftName = (idx: number, name: string) => {
@@ -435,6 +484,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
         setResults(allResults);
         setSelectedVersion(0);
         setStep(4);
+        savePreset();
         const anyPartial = allResults.some(r => r.isPartial && r.unfilledSlots && r.unfilledSlots.length > 0);
         if (anyPartial) {
           toast({ 
@@ -551,6 +601,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               <span className="font-bold text-xl font-display text-primary">{t.schedulerWizard}</span>
               <Badge variant="outline" className="ml-2">{t.step} {step}/4</Badge>
               <LanguageToggle />
+              {user && <UserMenu />}
             </div>
           </div>
           
@@ -1633,6 +1684,32 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               : `${t.confirmSave} (${t.version} ${saveVersion + 1})`
             }
           </Button>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showLoginPrompt} onOpenChange={setShowLoginPrompt}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{lang === "th" ? "เข้าสู่ระบบเพื่อบันทึกข้อมูล" : "Sign in to save your data"}</DialogTitle>
+            <DialogDescription>
+              {lang === "th"
+                ? "เข้าสู่ระบบด้วย Google เพื่อบันทึกรายชื่อสตาฟและการตั้งค่า คุณจะไม่ต้องกรอกใหม่ทุกครั้ง"
+                : "Sign in with Google to save your staff list and settings. You won't need to re-enter them next time."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            <GoogleSignInButton />
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setShowLoginPrompt(false);
+                setStep(s => Math.min(s + 1, 4));
+              }}
+              data-testid="button-skip-login"
+            >
+              {lang === "th" ? "ข้ามไปก่อน" : "Skip for now"}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

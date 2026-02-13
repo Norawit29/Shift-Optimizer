@@ -1,5 +1,11 @@
 import type { Express } from "express";
 import type { Server } from "http";
+import { OAuth2Client } from "google-auth-library";
+import { db } from "./db";
+import { users, userPresets } from "@shared/schema";
+import { eq } from "drizzle-orm";
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export async function registerRoutes(
   httpServer: Server,
@@ -7,6 +13,140 @@ export async function registerRoutes(
 ): Promise<Server> {
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok" });
+  });
+
+  app.get("/api/auth/google-client-id", (_req, res) => {
+    res.json({ clientId: process.env.GOOGLE_CLIENT_ID || "" });
+  });
+
+  app.post("/api/auth/google", async (req, res) => {
+    try {
+      const { credential } = req.body;
+      if (!credential) {
+        return res.status(400).json({ message: "Missing credential" });
+      }
+
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+      if (!payload || !payload.sub || !payload.email) {
+        return res.status(400).json({ message: "Invalid token" });
+      }
+
+      let [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.googleId, payload.sub))
+        .limit(1);
+
+      if (!user) {
+        const [newUser] = await db
+          .insert(users)
+          .values({
+            googleId: payload.sub,
+            email: payload.email,
+            name: payload.name || payload.email,
+            picture: payload.picture || null,
+          })
+          .returning();
+        user = newUser;
+      }
+
+      req.session.userId = user.id;
+      res.json({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        picture: user.picture,
+      });
+    } catch (error) {
+      console.error("Google auth error:", error);
+      res.status(401).json({ message: "Authentication failed" });
+    }
+  });
+
+  app.get("/api/auth/me", async (req, res) => {
+    if (!req.session.userId) {
+      return res.json(null);
+    }
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, req.session.userId))
+      .limit(1);
+    if (!user) {
+      req.session.destroy(() => {});
+      return res.json(null);
+    }
+    res.json({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      picture: user.picture,
+    });
+  });
+
+  app.post("/api/auth/logout", (req, res) => {
+    req.session.destroy(() => {
+      res.json({ ok: true });
+    });
+  });
+
+  app.get("/api/presets", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    const presets = await db
+      .select()
+      .from(userPresets)
+      .where(eq(userPresets.userId, req.session.userId));
+    res.json(presets);
+  });
+
+  app.post("/api/presets", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    const { name, config, staff } = req.body;
+    if (!config || !staff) {
+      return res.status(400).json({ message: "Missing config or staff" });
+    }
+
+    const existing = await db
+      .select()
+      .from(userPresets)
+      .where(eq(userPresets.userId, req.session.userId));
+
+    if (existing.length > 0) {
+      const [updated] = await db
+        .update(userPresets)
+        .set({ name: name || "Default", config, staff, updatedAt: new Date() })
+        .where(eq(userPresets.id, existing[0].id))
+        .returning();
+      return res.json(updated);
+    }
+
+    const [preset] = await db
+      .insert(userPresets)
+      .values({
+        userId: req.session.userId,
+        name: name || "Default",
+        config,
+        staff,
+      })
+      .returning();
+    res.json(preset);
+  });
+
+  app.delete("/api/presets/:id", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    const id = parseInt(req.params.id);
+    await db.delete(userPresets).where(eq(userPresets.id, id));
+    res.json({ ok: true });
   });
 
   return httpServer;

@@ -4,15 +4,18 @@ import { Plus, Activity } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/context/LanguageContext";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { useAuth } from "@/context/AuthContext";
+import { GoogleSignInButton, UserMenu } from "@/components/GoogleSignIn";
 
 export default function HomePage() {
   const { t } = useLanguage();
+  const { user, loading } = useAuth();
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4 overflow-hidden relative">
-      {/* Language Toggle */}
-      <div className="absolute top-4 right-4 z-10">
+      <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
         <LanguageToggle />
+        {!loading && (user ? <UserMenu /> : <GoogleSignInButton />)}
       </div>
 
       {/* Background decoration */}

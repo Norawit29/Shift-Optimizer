@@ -61,6 +61,24 @@ export interface OptimizerResult {
 
 // === TABLE DEFINITIONS ===
 
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  googleId: text("google_id").notNull().unique(),
+  email: text("email").notNull(),
+  name: text("name").notNull(),
+  picture: text("picture"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const userPresets = pgTable("user_presets", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  name: text("name").notNull().default("Default"),
+  config: jsonb("config").$type<SchedulerConfig>().notNull(),
+  staff: jsonb("staff").$type<StaffMember[]>().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const schedules = pgTable("schedules", {
   id: serial("id").primaryKey(),
   name: text("name").notNull().default("Untitled Schedule"),
@@ -93,3 +111,6 @@ export const insertScheduleSchema = createInsertSchema(schedules).omit({
 
 export type Schedule = typeof schedules.$inferSelect;
 export type InsertSchedule = z.infer<typeof insertScheduleSchema>;
+
+export type User = typeof users.$inferSelect;
+export type UserPreset = typeof userPresets.$inferSelect;
