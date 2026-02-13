@@ -1351,25 +1351,51 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               </Card>
             </div>
 
-            <div className="flex items-center justify-center p-6">
-               <div className="text-center space-y-4">
-                 <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 mb-4">
-                   <PlayCircle className="h-10 w-10 text-primary" />
-                 </div>
-                 <h3 className="text-xl font-bold">{t.readyToOptimize}</h3>
-                 <p className="text-muted-foreground max-w-xs mx-auto">
-                   {t.optimizeDesc}
-                 </p>
-                 <Button size="lg" onClick={runOptimizer} disabled={isOptimizing} className="mt-4 w-full" data-testid="button-generate">
-                   {isOptimizing ? (
-                     <>
-                       <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t.generatingVersions} ({optimizeProgress}/3)
-                     </>
-                   ) : (
-                     <>{t.generateSchedule}</>
-                   )}
-                 </Button>
-               </div>
+            <div className="flex items-center justify-center p-8">
+              {isOptimizing ? (
+                <div className="text-center space-y-6 max-w-sm mx-auto">
+                  <div className="relative inline-flex items-center justify-center">
+                    <div className="absolute w-28 h-28 rounded-full border-4 border-primary/15 dark:border-primary/25" />
+                    <svg className="w-28 h-28 animate-spin" style={{ animationDuration: "2.5s" }} viewBox="0 0 112 112">
+                      <circle cx="56" cy="56" r="52" fill="none" stroke="hsl(var(--primary) / 0.3)" strokeWidth="4" strokeDasharray="220 110" strokeLinecap="round" />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-2xl font-bold text-primary">{optimizeProgress}/3</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-bold">{t.generatingVersions}...</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {lang === "th" ? "กำลังคำนวณเวอร์ชัน" : "Computing version"} {optimizeProgress} {lang === "th" ? "จาก" : "of"} 3
+                    </p>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                    <div
+                      className="h-full bg-primary rounded-full transition-all duration-700 ease-out"
+                      style={{ width: `${(optimizeProgress / 3) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center space-y-5 max-w-sm mx-auto">
+                  <div className="relative inline-flex items-center justify-center">
+                    <div className="absolute w-24 h-24 rounded-full bg-gradient-to-br from-primary/10 to-primary/5 dark:from-primary/20 dark:to-primary/10" />
+                    <div className="absolute w-20 h-20 rounded-full bg-gradient-to-br from-primary/15 to-primary/8 dark:from-primary/25 dark:to-primary/15" />
+                    <div className="relative w-16 h-16 rounded-full bg-primary/20 dark:bg-primary/30 flex items-center justify-center">
+                      <Activity className="h-8 w-8 text-primary" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-bold">{t.readyToOptimize}</h3>
+                    <p className="text-muted-foreground text-sm leading-relaxed">
+                      {t.optimizeDesc}
+                    </p>
+                  </div>
+                  <Button size="lg" onClick={runOptimizer} className="w-full rounded-full shadow-lg shadow-primary/20" data-testid="button-generate">
+                    <PlayCircle className="mr-2 h-5 w-5" /> {t.generateSchedule}
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </WizardStep>
