@@ -43,6 +43,7 @@ import { getDaysInMonth, format, setDate, parseISO, differenceInCalendarDays, ad
 import { useLanguage } from "@/context/LanguageContext";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import ExcelJS from "exceljs";
+import { FeedbackWidget } from "@/components/FeedbackWidget";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June", 
@@ -1604,6 +1605,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                 </TabsContent>
               </Tabs>
             </div>
+            <FeedbackWidget />
           </WizardStep>
         )}
 

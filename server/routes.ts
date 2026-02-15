@@ -2,7 +2,7 @@ import type { Express } from "express";
 import type { Server } from "http";
 import { OAuth2Client } from "google-auth-library";
 import { db } from "./db";
-import { users, userPresets } from "@shared/schema";
+import { users, userPresets, feedbacks } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -147,6 +147,27 @@ export async function registerRoutes(
     const id = parseInt(req.params.id);
     await db.delete(userPresets).where(eq(userPresets.id, id));
     res.json({ ok: true });
+  });
+
+  app.post("/api/feedback", async (req, res) => {
+    try {
+      const { rating, comment } = req.body;
+      if (!rating || rating < 1 || rating > 5) {
+        return res.status(400).json({ message: "Rating must be 1-5" });
+      }
+      const [fb] = await db
+        .insert(feedbacks)
+        .values({
+          userId: req.session.userId || null,
+          rating,
+          comment: comment || null,
+        })
+        .returning();
+      res.json(fb);
+    } catch (error) {
+      console.error("Feedback error:", error);
+      res.status(500).json({ message: "Failed to save feedback" });
+    }
   });
 
   return httpServer;

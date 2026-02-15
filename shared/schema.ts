@@ -101,6 +101,14 @@ export const schedules = pgTable("schedules", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const feedbacks = pgTable("feedbacks", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"),
+  rating: integer("rating").notNull(),
+  comment: text("comment"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // === SCHEMAS ===
 
 export const insertScheduleSchema = createInsertSchema(schedules).omit({ 
