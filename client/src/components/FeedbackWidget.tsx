@@ -69,7 +69,7 @@ export function FeedbackWidget() {
           side="top"
           align="end"
           sideOffset={12}
-          className="w-72 p-0 overflow-hidden"
+          className="w-72 p-0 overflow-hidden bg-background border shadow-xl"
         >
           {submitted ? (
             <div className="flex flex-col items-center justify-center py-8 px-4 gap-3">
