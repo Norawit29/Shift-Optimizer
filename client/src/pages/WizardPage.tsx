@@ -1605,9 +1605,10 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                 </TabsContent>
               </Tabs>
             </div>
-            <FeedbackWidget />
           </WizardStep>
         )}
+
+        {step === 4 && <FeedbackWidget />}
 
         {/* Navigation Footer */}
         {step < 4 && (

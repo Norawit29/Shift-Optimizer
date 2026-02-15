@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Star, MessageSquare, Send, Check } from "lucide-react";
+import { Star, MessageSquarePlus, Send, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/context/LanguageContext";
 import {
@@ -58,11 +58,11 @@ export function FeedbackWidget() {
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
-            className="rounded-full shadow-lg shadow-primary/25"
-            size="icon"
+            className="rounded-full shadow-lg shadow-primary/25 gap-2"
             data-testid="button-feedback-trigger"
           >
-            <MessageSquare className="h-5 w-5" />
+            <MessageSquarePlus className="h-4 w-4" />
+            <span className="text-sm">Feedback</span>
           </Button>
         </PopoverTrigger>
         <PopoverContent
@@ -84,7 +84,7 @@ export function FeedbackWidget() {
             <>
               <div className="bg-gradient-to-r from-primary/10 to-transparent dark:from-primary/20 px-4 py-3">
                 <p className="font-semibold text-sm">
-                  {lang === "th" ? "ให้คะแนนตารางเวร" : "Rate this schedule"}
+                  {lang === "th" ? "ให้คะแนนแอปนี้" : "Rate this app"}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {lang === "th" ? "ความคิดเห็นของคุณช่วยพัฒนาระบบ" : "Your feedback helps us improve"}
@@ -136,7 +136,7 @@ export function FeedbackWidget() {
                   data-testid="button-submit-feedback"
                 >
                   <Send className="h-4 w-4 mr-2" />
-                  {lang === "th" ? "ส่ง Feedback" : "Submit Feedback"}
+                  {lang === "th" ? "ส่ง Feedback" : "Submit"}
                 </Button>
               </div>
             </>
