@@ -270,22 +270,28 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   }, [user, showLoginPrompt]);
 
   useEffect(() => {
-    if (user && !presetLoaded) {
-      fetch("/api/presets")
-        .then(r => r.json())
-        .then(presets => {
-          if (presets.length > 0) {
-            const p = presets[0];
-            if (p.config) setConfig(p.config);
-            if (p.staff && p.staff.length > 0) {
-              setStaff(p.staff.map((s: StaffMember) => ({ ...s, blocked: [] })));
-            }
-            toast({ title: lang === "th" ? "โหลดข้อมูลสตาฟสำเร็จ" : "Staff data loaded", description: lang === "th" ? "ข้อมูลสตาฟและการตั้งค่าจากครั้งก่อนถูกโหลดแล้ว" : "Your saved staff and config have been loaded" });
-          }
-          setPresetLoaded(true);
-        })
-        .catch(() => setPresetLoaded(true));
+    if (!user) {
+      setPresetLoaded(false);
+      return;
     }
+    if (presetLoaded) return;
+    fetch("/api/presets")
+      .then(r => {
+        if (!r.ok) throw new Error("Not authenticated");
+        return r.json();
+      })
+      .then(presets => {
+        if (Array.isArray(presets) && presets.length > 0) {
+          const p = presets[0];
+          if (p.config) setConfig(p.config);
+          if (p.staff && p.staff.length > 0) {
+            setStaff(p.staff.map((s: StaffMember) => ({ ...s, blocked: [] })));
+          }
+          toast({ title: lang === "th" ? "โหลดข้อมูลสตาฟสำเร็จ" : "Staff data loaded", description: lang === "th" ? "ข้อมูลสตาฟและการตั้งค่าจากครั้งก่อนถูกโหลดแล้ว" : "Your saved staff and config have been loaded" });
+        }
+        setPresetLoaded(true);
+      })
+      .catch(() => {});
   }, [user, presetLoaded]);
 
   const savePreset = useCallback(async () => {
