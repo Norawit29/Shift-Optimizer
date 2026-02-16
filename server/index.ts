@@ -31,6 +31,8 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
+app.set("trust proxy", 1);
+
 const PgSession = connectPgSimple(session);
 app.use(
   session({
