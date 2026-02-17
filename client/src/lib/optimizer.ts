@@ -33,6 +33,7 @@ export class ShiftOptimizer {
   private daysInMonth: number;
   private rangeStartDate: Date | null = null;
   private holidayDays: Set<number>;
+  private softLevelConstraints: boolean;
 
   private getActualDate(dayIndex: number): Date {
     if (this.rangeStartDate) {
@@ -41,10 +42,11 @@ export class ShiftOptimizer {
     return new Date(this.year, this.month - 1, dayIndex);
   }
 
-  constructor(config: SchedulerConfig, staff: StaffMember[], month: number, year: number) {
+  constructor(config: SchedulerConfig, staff: StaffMember[], month: number, year: number, options?: { softLevelConstraints?: boolean }) {
     this.config = config;
     this.staff = staff;
     this.month = month;
+    this.softLevelConstraints = options?.softLevelConstraints ?? false;
     this.year = year;
 
     if (config.useCustomRange && config.customStartDate && config.customEndDate) {
@@ -174,7 +176,7 @@ export class ShiftOptimizer {
     lines: string[],
     varMap: Map<string, { staff: number; day: number; shift: number }>,
     cIdx: { val: number },
-    options?: { skipStaffingCap?: boolean }
+    options?: { skipStaffingCap?: boolean; levelSlackVars?: string[] }
   ): void {
     const N = this.staff.length;
     const D = this.daysInMonth;
@@ -258,6 +260,7 @@ export class ShiftOptimizer {
 
     if (this.config.staffLevels && this.config.staffLevels.length > 0 && this.config.minStaffPerLevel) {
       const numLevels = this.config.staffLevels.length;
+      const useSoft = this.softLevelConstraints && options?.levelSlackVars;
       for (let d = 0; d < D; d++) {
         const dayStaffPerShift = this.getStaffPerShiftForDay(d + 1);
         for (let s = 0; s < S; s++) {
@@ -272,10 +275,20 @@ export class ShiftOptimizer {
               if (varMap.has(v)) levelVars.push(v);
             }
             if (levelVars.length > 0) {
-              const terms = levelVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
-              lines.push(`  c${cIdx.val++}:`);
-              lines.push(writeTerms(terms, 10));
-              lines.push(`  >= ${minRequired}`);
+              if (useSoft) {
+                const slackVar = `lslk_${d}_${s}_${lvl}`;
+                options.levelSlackVars!.push(slackVar);
+                const terms = levelVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+                terms.push(`+ ${slackVar}`);
+                lines.push(`  c${cIdx.val++}:`);
+                lines.push(writeTerms(terms, 10));
+                lines.push(`  >= ${minRequired}`);
+              } else {
+                const terms = levelVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+                lines.push(`  c${cIdx.val++}:`);
+                lines.push(writeTerms(terms, 10));
+                lines.push(`  >= ${minRequired}`);
+              }
             }
           }
         }
@@ -286,12 +299,12 @@ export class ShiftOptimizer {
   private buildPhase1Model(
     varMap: Map<string, { staff: number; day: number; shift: number }>,
     binaryVars: string[]
-  ): { model: string; slackVars: string[] } {
+  ): { model: string; slackVars: string[]; levelSlackVars: string[] } {
     const N = this.staff.length;
     const D = this.daysInMonth;
     const S = this.config.shiftNames.length;
-    const lines: string[] = [];
     const slackVars: string[] = [];
+    const levelSlackVars: string[] = [];
 
     for (let d = 0; d < D; d++) {
       const required = this.getStaffPerShiftForDay(d + 1);
@@ -301,22 +314,9 @@ export class ShiftOptimizer {
       }
     }
 
-    lines.push("Minimize");
-    lines.push("  obj:");
-    const objParts = slackVars.map((v, idx) => {
-      const w = fmt(1 + (Math.random() - 0.5) * 0.01);
-      return idx === 0 ? `${w} ${v}` : `+ ${w} ${v}`;
-    });
-    const xVars = Array.from(varMap.keys());
-    for (const xv of xVars) {
-      const n = (Math.random() - 0.5) * 0.001;
-      objParts.push(n >= 0 ? `+ ${fmt(n)} ${xv}` : `- ${fmt(-n)} ${xv}`);
-    }
-    lines.push(writeTerms(objParts, 10));
-
-    lines.push("Subject To");
+    const constraintLines: string[] = [];
     const cIdx = { val: 0 };
-    this.writeCommonConstraints(lines, varMap, cIdx, { skipStaffingCap: true });
+    this.writeCommonConstraints(constraintLines, varMap, cIdx, { skipStaffingCap: true, levelSlackVars });
 
     for (let d = 0; d < D; d++) {
       const required = this.getStaffPerShiftForDay(d + 1);
@@ -331,18 +331,42 @@ export class ShiftOptimizer {
         if (shiftVars.length > 0) {
           const terms = shiftVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
           terms.push(`+ ${uVar}`);
-          lines.push(`  c${cIdx.val++}:`);
-          lines.push(writeTerms(terms, 10));
-          lines.push(`  = ${required[s]}`);
+          constraintLines.push(`  c${cIdx.val++}:`);
+          constraintLines.push(writeTerms(terms, 10));
+          constraintLines.push(`  = ${required[s]}`);
         } else {
-          lines.push(`  c${cIdx.val++}: ${uVar} = ${required[s]}`);
+          constraintLines.push(`  c${cIdx.val++}: ${uVar} = ${required[s]}`);
         }
       }
     }
 
+    const lines: string[] = [];
+    lines.push("Minimize");
+    lines.push("  obj:");
+    const objParts = slackVars.map((v, idx) => {
+      const w = fmt(1 + (Math.random() - 0.5) * 0.01);
+      return idx === 0 ? `${w} ${v}` : `+ ${w} ${v}`;
+    });
+    const xVars = Array.from(varMap.keys());
+    for (const xv of xVars) {
+      const n = (Math.random() - 0.5) * 0.001;
+      objParts.push(n >= 0 ? `+ ${fmt(n)} ${xv}` : `- ${fmt(-n)} ${xv}`);
+    }
+    for (const lv of levelSlackVars) {
+      const w = fmt(100 + (Math.random() - 0.5) * 0.1);
+      objParts.push(`+ ${w} ${lv}`);
+    }
+    lines.push(writeTerms(objParts, 10));
+
+    lines.push("Subject To");
+    lines.push(...constraintLines);
+
     lines.push("Bounds");
     for (const uVar of slackVars) {
       lines.push(`  ${uVar} >= 0`);
+    }
+    for (const lv of levelSlackVars) {
+      lines.push(`  ${lv} >= 0`);
     }
 
     lines.push("Binary");
@@ -351,7 +375,7 @@ export class ShiftOptimizer {
     }
 
     lines.push("End");
-    return { model: lines.join("\n"), slackVars };
+    return { model: lines.join("\n"), slackVars, levelSlackVars };
   }
 
   private extractPhase1Targets(
@@ -411,8 +435,112 @@ export class ShiftOptimizer {
       ? this.staff.map(s => phase1Targets.holidayTotal * (s.maxShifts / totalMaxShifts))
       : this.staff.map(() => 0);
 
-    const lines: string[] = [];
+    const levelSlackVars: string[] = [];
+    const constraintLines: string[] = [];
+    const cIdx = { val: 0 };
+    this.writeCommonConstraints(constraintLines, varMap, cIdx, { levelSlackVars });
 
+    {
+      const allXVars = Array.from(varMap.keys());
+      if (allXVars.length > 0 && phase1Targets.totalCoverage > 0) {
+        const coverageTerms = allXVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+        constraintLines.push(`  c${cIdx.val++}:`);
+        constraintLines.push(writeTerms(coverageTerms, 10));
+        constraintLines.push(`  >= ${phase1Targets.totalCoverage}`);
+      }
+    }
+
+    for (let d = 0; d < D; d++) {
+      const required = this.getStaffPerShiftForDay(d + 1);
+      for (let s = 0; s < S; s++) {
+        if (required[s] === 0) continue;
+        const slotKey = `${d}_${s}`;
+        const p1Coverage = phase1Targets.slotCoverage.get(slotKey) || 0;
+        if (p1Coverage <= 0) continue;
+        const shiftVars: string[] = [];
+        for (let i = 0; i < N; i++) {
+          const v = this.vn(i, d, s);
+          if (varMap.has(v)) shiftVars.push(v);
+        }
+        if (shiftVars.length > 0) {
+          const terms = shiftVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+          constraintLines.push(`  c${cIdx.val++}:`);
+          constraintLines.push(writeTerms(terms, 10));
+          constraintLines.push(`  >= ${p1Coverage}`);
+        }
+      }
+    }
+
+    for (let i = 0; i < N; i++) {
+      const staffVars: string[] = [];
+      for (let d = 0; d < D; d++) {
+        for (let s = 0; s < S; s++) {
+          const v = this.vn(i, d, s);
+          if (varMap.has(v)) staffVars.push(v);
+        }
+      }
+      if (staffVars.length === 0) continue;
+
+      const defTerms = staffVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+      defTerms.push(`- tw_${i}`);
+      constraintLines.push(`  c${cIdx.val++}:`);
+      constraintLines.push(writeTerms(defTerms, 10));
+      constraintLines.push(`  = 0`);
+
+      const wTarget = staffWorkloadTargets[i];
+      constraintLines.push(`  c${cIdx.val++}: tw_${i} - dw_${i} <= ${fmt(wTarget)}`);
+      constraintLines.push(`  c${cIdx.val++}: - tw_${i} - dw_${i} <= ${fmt(-wTarget)}`);
+    }
+
+    for (let i = 0; i < N; i++) {
+      for (let s = 0; s < S; s++) {
+        const target = staffShiftTargets[s][i];
+        if (target === 0) continue;
+
+        const shiftVars: string[] = [];
+        for (let d = 0; d < D; d++) {
+          const v = this.vn(i, d, s);
+          if (varMap.has(v)) shiftVars.push(v);
+        }
+        if (shiftVars.length === 0) continue;
+
+        const defTerms = shiftVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+        defTerms.push(`- ts_${i}_${s}`);
+        constraintLines.push(`  c${cIdx.val++}:`);
+        constraintLines.push(writeTerms(defTerms, 10));
+        constraintLines.push(`  = 0`);
+
+        constraintLines.push(`  c${cIdx.val++}: ts_${i}_${s} - ds_${i}_${s} <= ${fmt(target)}`);
+        constraintLines.push(`  c${cIdx.val++}: - ts_${i}_${s} - ds_${i}_${s} <= ${fmt(-target)}`);
+      }
+    }
+
+    if (enableHolidayBalance && staffHolidayTargets.some(t => t > 0)) {
+      for (let i = 0; i < N; i++) {
+        const hTarget = staffHolidayTargets[i];
+        if (hTarget === 0) continue;
+        const holVars: string[] = [];
+        for (let d = 0; d < D; d++) {
+          if (!this.isHoliday(d + 1)) continue;
+          for (let s = 0; s < S; s++) {
+            const v = this.vn(i, d, s);
+            if (varMap.has(v)) holVars.push(v);
+          }
+        }
+        if (holVars.length === 0) continue;
+
+        const defTerms = holVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+        defTerms.push(`- th_${i}`);
+        constraintLines.push(`  c${cIdx.val++}:`);
+        constraintLines.push(writeTerms(defTerms, 10));
+        constraintLines.push(`  = 0`);
+
+        constraintLines.push(`  c${cIdx.val++}: th_${i} - dh_${i} <= ${fmt(hTarget)}`);
+        constraintLines.push(`  c${cIdx.val++}: - th_${i} - dh_${i} <= ${fmt(-hTarget)}`);
+      }
+    }
+
+    const lines: string[] = [];
     lines.push("Minimize");
     lines.push("  obj:");
     const objParts: string[] = [];
@@ -440,111 +568,14 @@ export class ShiftOptimizer {
       const n = (Math.random() - 0.5) * 0.002;
       objParts.push(n >= 0 ? `+ ${fmt(n)} ${shuffled[j]}` : `- ${fmt(-n)} ${shuffled[j]}`);
     }
+    for (const lv of levelSlackVars) {
+      const w = fmt(100 + (Math.random() - 0.5) * 0.1);
+      objParts.push(`+ ${w} ${lv}`);
+    }
     lines.push(writeTerms(objParts, 8));
 
     lines.push("Subject To");
-    const cIdx = { val: 0 };
-    this.writeCommonConstraints(lines, varMap, cIdx);
-
-    {
-      const allXVars = Array.from(varMap.keys());
-      if (allXVars.length > 0 && phase1Targets.totalCoverage > 0) {
-        const coverageTerms = allXVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
-        lines.push(`  c${cIdx.val++}:`);
-        lines.push(writeTerms(coverageTerms, 10));
-        lines.push(`  >= ${phase1Targets.totalCoverage}`);
-      }
-    }
-
-    for (let d = 0; d < D; d++) {
-      const required = this.getStaffPerShiftForDay(d + 1);
-      for (let s = 0; s < S; s++) {
-        if (required[s] === 0) continue;
-        const slotKey = `${d}_${s}`;
-        const p1Coverage = phase1Targets.slotCoverage.get(slotKey) || 0;
-        if (p1Coverage <= 0) continue;
-        const shiftVars: string[] = [];
-        for (let i = 0; i < N; i++) {
-          const v = this.vn(i, d, s);
-          if (varMap.has(v)) shiftVars.push(v);
-        }
-        if (shiftVars.length > 0) {
-          const terms = shiftVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
-          lines.push(`  c${cIdx.val++}:`);
-          lines.push(writeTerms(terms, 10));
-          lines.push(`  >= ${p1Coverage}`);
-        }
-      }
-    }
-
-    for (let i = 0; i < N; i++) {
-      const staffVars: string[] = [];
-      for (let d = 0; d < D; d++) {
-        for (let s = 0; s < S; s++) {
-          const v = this.vn(i, d, s);
-          if (varMap.has(v)) staffVars.push(v);
-        }
-      }
-      if (staffVars.length === 0) continue;
-
-      const defTerms = staffVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
-      defTerms.push(`- tw_${i}`);
-      lines.push(`  c${cIdx.val++}:`);
-      lines.push(writeTerms(defTerms, 10));
-      lines.push(`  = 0`);
-
-      const wTarget = staffWorkloadTargets[i];
-      lines.push(`  c${cIdx.val++}: tw_${i} - dw_${i} <= ${fmt(wTarget)}`);
-      lines.push(`  c${cIdx.val++}: - tw_${i} - dw_${i} <= ${fmt(-wTarget)}`);
-    }
-
-    for (let i = 0; i < N; i++) {
-      for (let s = 0; s < S; s++) {
-        const target = staffShiftTargets[s][i];
-        if (target === 0) continue;
-
-        const shiftVars: string[] = [];
-        for (let d = 0; d < D; d++) {
-          const v = this.vn(i, d, s);
-          if (varMap.has(v)) shiftVars.push(v);
-        }
-        if (shiftVars.length === 0) continue;
-
-        const defTerms = shiftVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
-        defTerms.push(`- ts_${i}_${s}`);
-        lines.push(`  c${cIdx.val++}:`);
-        lines.push(writeTerms(defTerms, 10));
-        lines.push(`  = 0`);
-
-        lines.push(`  c${cIdx.val++}: ts_${i}_${s} - ds_${i}_${s} <= ${fmt(target)}`);
-        lines.push(`  c${cIdx.val++}: - ts_${i}_${s} - ds_${i}_${s} <= ${fmt(-target)}`);
-      }
-    }
-
-    if (enableHolidayBalance && staffHolidayTargets.some(t => t > 0)) {
-      for (let i = 0; i < N; i++) {
-        const hTarget = staffHolidayTargets[i];
-        if (hTarget === 0) continue;
-        const holVars: string[] = [];
-        for (let d = 0; d < D; d++) {
-          if (!this.isHoliday(d + 1)) continue;
-          for (let s = 0; s < S; s++) {
-            const v = this.vn(i, d, s);
-            if (varMap.has(v)) holVars.push(v);
-          }
-        }
-        if (holVars.length === 0) continue;
-
-        const defTerms = holVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
-        defTerms.push(`- th_${i}`);
-        lines.push(`  c${cIdx.val++}:`);
-        lines.push(writeTerms(defTerms, 10));
-        lines.push(`  = 0`);
-
-        lines.push(`  c${cIdx.val++}: th_${i} - dh_${i} <= ${fmt(hTarget)}`);
-        lines.push(`  c${cIdx.val++}: - th_${i} - dh_${i} <= ${fmt(-hTarget)}`);
-      }
-    }
+    lines.push(...constraintLines);
 
     lines.push("Bounds");
     for (let i = 0; i < N; i++) {
@@ -564,6 +595,9 @@ export class ShiftOptimizer {
         lines.push(`  th_${i} >= 0`);
         lines.push(`  dh_${i} >= 0`);
       }
+    }
+    for (const lv of levelSlackVars) {
+      lines.push(`  ${lv} >= 0`);
     }
 
     lines.push("Binary");

@@ -192,6 +192,13 @@ const translations = {
     minPerLevel: "Min. per Level",
     minPerLevelDesc: "Set minimum staff of each level required per shift",
     noLevelsConfigured: "No staff levels configured",
+    levelFeasibilityWarning: "Staff Level Capacity Warning",
+    levelFeasibilityDesc: "Some staff levels don't have enough capacity to meet the minimum requirements for every shift on every day:",
+    levelCapacityDetail: "{level}: needs {needed} slots but only {capacity} capacity available ({count} staff × {maxShifts} avg max shifts, minus {blocked} blocked)",
+    proceedWithSoftLevels: "Generate Anyway (Best Effort)",
+    cancelOptimization: "Go Back & Adjust",
+    softLevelNote: "The optimizer will try to meet level requirements as much as possible, but some slots may not have the required staff level.",
+    unmetLevelWarning: "Some shifts could not meet the minimum staff level requirements. Review the schedule for details.",
 
     // Language
     language: "Language",
@@ -387,6 +394,13 @@ const translations = {
     minPerLevel: "ขั้นต่ำต่อระดับ",
     minPerLevelDesc: "กำหนดจำนวนขั้นต่ำของบุคลากรแต่ละระดับที่ต้องมีในแต่ละเวร",
     noLevelsConfigured: "ยังไม่ได้กำหนดระดับบุคลากร",
+    levelFeasibilityWarning: "คำเตือน: ความจุระดับบุคลากรไม่เพียงพอ",
+    levelFeasibilityDesc: "บุคลากรบางระดับไม่มีความจุเพียงพอสำหรับทุกเวรทุกวัน:",
+    levelCapacityDetail: "{level}: ต้องการ {needed} ช่อง แต่มีความจุเพียง {capacity} ({count} คน × {maxShifts} เวรสูงสุดเฉลี่ย, ลบวันลา {blocked})",
+    proceedWithSoftLevels: "จัดเวรต่อ (พยายามให้ครบที่สุด)",
+    cancelOptimization: "กลับไปแก้ไข",
+    softLevelNote: "ระบบจะพยายามจัดระดับบุคลากรให้ครบตามที่กำหนดมากที่สุด แต่บางช่องอาจไม่ครบตามจำนวนขั้นต่ำ",
+    unmetLevelWarning: "บางเวรไม่สามารถจัดบุคลากรตามระดับขั้นต่ำได้ครบ กรุณาตรวจสอบตาราง",
 
     // Language
     language: "ภาษา",
