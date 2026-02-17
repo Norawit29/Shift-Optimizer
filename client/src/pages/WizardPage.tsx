@@ -163,7 +163,9 @@ async function exportToExcel(
 
   const dateHeaders = result.map((day) => format(getDateForIdx(day.date), "d MMM"));
   const ws3 = wb.addWorksheet(labels.staffSchedule);
-  const matrixHeaders = [labels.staffName, ...dateHeaders, ...config.shiftNames, labels.total];
+  const matrixHeaders = hasLevels
+    ? [labels.staffName, labels.level, ...dateHeaders, ...config.shiftNames, labels.total]
+    : [labels.staffName, ...dateHeaders, ...config.shiftNames, labels.total];
   const headerRow = ws3.addRow(matrixHeaders);
   headerRow.font = { bold: true };
   headerRow.eachCell(cell => {
@@ -171,9 +173,11 @@ async function exportToExcel(
   });
 
   const shiftColors = config.shiftNames.map((_, i) => SHIFT_COLORS[i % SHIFT_COLORS.length]);
+  const ws3ColOffset = hasLevels ? 1 : 0;
 
   staff.forEach(s => {
-    const rowValues: (string | number)[] = [s.name];
+    const levelLabel = hasLevels ? (config.staffLevels![(s.level ?? 0)] || "") : "";
+    const rowValues: (string | number)[] = hasLevels ? [s.name, levelLabel] : [s.name];
     let grandTotal = 0;
     const shiftTotals = config.shiftNames.map(() => 0);
     const dayCellInfo: { shiftIndices: number[] }[] = [];
@@ -198,9 +202,9 @@ async function exportToExcel(
 
     const excelRow = ws3.addRow(rowValues);
 
-    dayCellInfo.forEach((info, colOffset) => {
+    dayCellInfo.forEach((info, ci) => {
       if (info.shiftIndices.length === 0) return;
-      const cell = excelRow.getCell(colOffset + 2);
+      const cell = excelRow.getCell(ci + 2 + ws3ColOffset);
       let bgColor: string;
       if (info.shiftIndices.length === 1) {
         bgColor = shiftColors[info.shiftIndices[0]];
@@ -212,8 +216,9 @@ async function exportToExcel(
   });
 
   ws3.getColumn(1).width = 20;
-  for (let i = 2; i <= dateHeaders.length + 1; i++) ws3.getColumn(i).width = 10;
-  for (let i = dateHeaders.length + 2; i <= dateHeaders.length + 1 + config.shiftNames.length; i++) ws3.getColumn(i).width = 12;
+  if (hasLevels) ws3.getColumn(2).width = 14;
+  for (let i = 2 + ws3ColOffset; i <= dateHeaders.length + 1 + ws3ColOffset; i++) ws3.getColumn(i).width = 10;
+  for (let i = dateHeaders.length + 2 + ws3ColOffset; i <= dateHeaders.length + 1 + ws3ColOffset + config.shiftNames.length; i++) ws3.getColumn(i).width = 12;
   ws3.getColumn(matrixHeaders.length).width = 8;
 
   const buffer = await wb.xlsx.writeBuffer();
@@ -854,7 +859,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                       {useCustomRange && customStartDate && customEndDate && daysInMonth > 0 && (
                         <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
                           <p className="text-sm text-blue-700 dark:text-blue-300">
-                            {format(parseISO(customStartDate), "d MMM yyyy")} — {format(parseISO(customEndDate), "d MMM yyyy")} ({daysInMonth} {daysInMonth === 1 ? t.shiftPerDay.split(" ")[0] : t.day.toLowerCase() + "s"})
+                            {format(parseISO(customStartDate), "d MMM yyyy")} — {format(parseISO(customEndDate), "d MMM yyyy")} ({daysInMonth} {t.day})
                           </p>
                         </div>
                       )}
@@ -1170,9 +1175,6 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                           onClick={() => setSelectedStaffId(isSelected ? null : s.id)}
                           data-testid={`staff-card-${s.id}`}
                         >
-                          <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">
-                            {s.name.charAt(0)}
-                          </div>
                           <div className="min-w-[100px] flex-[2] truncate">
                             <Input 
                               value={s.name} 

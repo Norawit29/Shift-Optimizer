@@ -91,7 +91,9 @@ async function exportToExcel(
 
   const dateHeaders = result.map((day) => format(getDateForIdx(day.date), "d MMM"));
   const ws3 = wb.addWorksheet(labels.staffSchedule);
-  const matrixHeaders = [labels.staffName, ...dateHeaders, ...config.shiftNames, labels.total];
+  const matrixHeaders = hasLevels
+    ? [labels.staffName, labels.level, ...dateHeaders, ...config.shiftNames, labels.total]
+    : [labels.staffName, ...dateHeaders, ...config.shiftNames, labels.total];
   const headerRow = ws3.addRow(matrixHeaders);
   headerRow.font = { bold: true };
   headerRow.eachCell(cell => {
@@ -99,9 +101,11 @@ async function exportToExcel(
   });
 
   const shiftColorMap = config.shiftNames.map((_, i) => SHIFT_COLORS[i % SHIFT_COLORS.length]);
+  const ws3ColOffset = hasLevels ? 1 : 0;
 
   staff.forEach(s => {
-    const rowValues: (string | number)[] = [s.name];
+    const levelLabel = hasLevels ? (config.staffLevels![(s.level ?? 0)] || "") : "";
+    const rowValues: (string | number)[] = hasLevels ? [s.name, levelLabel] : [s.name];
     let grandTotal = 0;
     const shiftTotals = config.shiftNames.map(() => 0);
     const dayCellInfo: { shiftIndices: number[] }[] = [];
@@ -126,9 +130,9 @@ async function exportToExcel(
 
     const excelRow = ws3.addRow(rowValues);
 
-    dayCellInfo.forEach((info, colOffset) => {
+    dayCellInfo.forEach((info, ci) => {
       if (info.shiftIndices.length === 0) return;
-      const cell = excelRow.getCell(colOffset + 2);
+      const cell = excelRow.getCell(ci + 2 + ws3ColOffset);
       let bgColor: string;
       if (info.shiftIndices.length === 1) {
         bgColor = shiftColorMap[info.shiftIndices[0]];
@@ -140,8 +144,9 @@ async function exportToExcel(
   });
 
   ws3.getColumn(1).width = 20;
-  for (let i = 2; i <= dateHeaders.length + 1; i++) ws3.getColumn(i).width = 10;
-  for (let i = dateHeaders.length + 2; i <= dateHeaders.length + 1 + config.shiftNames.length; i++) ws3.getColumn(i).width = 12;
+  if (hasLevels) ws3.getColumn(2).width = 14;
+  for (let i = 2 + ws3ColOffset; i <= dateHeaders.length + 1 + ws3ColOffset; i++) ws3.getColumn(i).width = 10;
+  for (let i = dateHeaders.length + 2 + ws3ColOffset; i <= dateHeaders.length + 1 + ws3ColOffset + config.shiftNames.length; i++) ws3.getColumn(i).width = 12;
   ws3.getColumn(matrixHeaders.length).width = 8;
 
   const buffer = await wb.xlsx.writeBuffer();
