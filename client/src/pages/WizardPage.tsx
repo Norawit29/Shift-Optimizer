@@ -1114,7 +1114,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                           <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">
                             {s.name.charAt(0)}
                           </div>
-                          <div className="flex-1 min-w-0 truncate">
+                          <div className="min-w-[100px] flex-[2] truncate">
                             <Input 
                               value={s.name} 
                               onChange={e => { e.stopPropagation(); updateStaff(s.id, "name", e.target.value); }}
@@ -1129,7 +1129,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                               onValueChange={(v) => { updateStaff(s.id, "level", parseInt(v)); }}
                             >
                               <SelectTrigger
-                                className="w-24 h-6 text-[10px] shrink-0"
+                                className="w-20 h-6 text-[10px] shrink-0"
                                 onClick={e => e.stopPropagation()}
                                 data-testid={`select-staff-level-${s.id}`}
                               >
