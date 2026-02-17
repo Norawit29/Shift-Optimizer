@@ -182,6 +182,17 @@ const translations = {
     // Months
     months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
 
+    // Staff Levels
+    staffLevels: "Staff Levels",
+    staffLevelsDesc: "Define up to 3 staff levels (e.g., Nurse, Assistant, Worker)",
+    levelName: "Level Name",
+    addLevel: "Add Level",
+    removeLevel: "Remove",
+    level: "Level",
+    minPerLevel: "Min. per Level",
+    minPerLevelDesc: "Set minimum staff of each level required per shift",
+    noLevelsConfigured: "No staff levels configured",
+
     // Language
     language: "Language",
   },
@@ -365,6 +376,17 @@ const translations = {
 
     // Months
     months: ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"],
+
+    // Staff Levels
+    staffLevels: "ระดับบุคลากร",
+    staffLevelsDesc: "กำหนดระดับบุคลากรได้สูงสุด 3 ระดับ (เช่น พยาบาล, ผู้ช่วยพยาบาล, คนงาน)",
+    levelName: "ชื่อระดับ",
+    addLevel: "เพิ่มระดับ",
+    removeLevel: "ลบ",
+    level: "ระดับ",
+    minPerLevel: "ขั้นต่ำต่อระดับ",
+    minPerLevelDesc: "กำหนดจำนวนขั้นต่ำของบุคลากรแต่ละระดับที่ต้องมีในแต่ละเวร",
+    noLevelsConfigured: "ยังไม่ได้กำหนดระดับบุคลากร",
 
     // Language
     language: "ภาษา",

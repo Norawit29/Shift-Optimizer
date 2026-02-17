@@ -16,6 +16,8 @@ export interface SchedulerConfig {
   customEndDate?: string;
   separateHolidayConfig?: boolean;
   holidayStaffPerShift?: number[];
+  staffLevels?: string[];
+  minStaffPerLevel?: number[][];
 }
 
 export interface StaffMember {
@@ -23,6 +25,7 @@ export interface StaffMember {
   name: string;
   maxShifts: number;
   blocked: { date: number; shift: number }[];
+  level?: number;
 }
 
 export interface DaySchedule {

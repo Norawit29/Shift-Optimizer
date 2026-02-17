@@ -116,6 +116,21 @@ export class ShiftOptimizer {
       );
     }
 
+    if (this.config.staffLevels && this.config.minStaffPerLevel) {
+      for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
+        for (let lvl = 0; lvl < this.config.staffLevels.length; lvl++) {
+          const minReq = this.config.minStaffPerLevel[shiftIdx]?.[lvl] || 0;
+          if (minReq <= 0) continue;
+          const staffAtLevel = this.staff.filter(s => (s.level ?? 0) === lvl).length;
+          if (staffAtLevel < minReq) {
+            warnings.push(
+              `Shift "${this.config.shiftNames[shiftIdx]}": needs ${minReq} "${this.config.staffLevels[lvl]}" but only ${staffAtLevel} staff at that level.`
+            );
+          }
+        }
+      }
+    }
+
     return warnings.length > 0 ? warnings.join(" ") : null;
   }
 
@@ -238,6 +253,32 @@ export class ShiftOptimizer {
         lines.push(`  c${cIdx.val++}:`);
         lines.push(writeTerms(terms, 10));
         lines.push(`  <= ${maxShifts}`);
+      }
+    }
+
+    if (this.config.staffLevels && this.config.staffLevels.length > 0 && this.config.minStaffPerLevel) {
+      const numLevels = this.config.staffLevels.length;
+      for (let d = 0; d < D; d++) {
+        const dayStaffPerShift = this.getStaffPerShiftForDay(d + 1);
+        for (let s = 0; s < S; s++) {
+          if (dayStaffPerShift[s] === 0) continue;
+          for (let lvl = 0; lvl < numLevels; lvl++) {
+            const minRequired = this.config.minStaffPerLevel[s]?.[lvl] || 0;
+            if (minRequired <= 0) continue;
+            const levelVars: string[] = [];
+            for (let i = 0; i < N; i++) {
+              if ((this.staff[i].level ?? 0) !== lvl) continue;
+              const v = this.vn(i, d, s);
+              if (varMap.has(v)) levelVars.push(v);
+            }
+            if (levelVars.length > 0) {
+              const terms = levelVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+              lines.push(`  c${cIdx.val++}:`);
+              lines.push(writeTerms(terms, 10));
+              lines.push(`  >= ${minRequired}`);
+            }
+          }
+        }
       }
     }
   }
@@ -774,7 +815,26 @@ export class ShiftOptimizer {
             }
 
             if (candidates.length > 0) {
-              candidates.sort((a, b) => a.total - b.total);
+              if (this.config.staffLevels && this.config.minStaffPerLevel) {
+                const levelCounts: number[] = this.config.staffLevels.map(() => 0);
+                for (const id of arr) {
+                  if (!id) continue;
+                  const member = this.staff.find(m => m.id === id);
+                  if (member) levelCounts[member.level ?? 0]++;
+                }
+                const minReqs = this.config.minStaffPerLevel[s] || [];
+                candidates.sort((a, b) => {
+                  const aLevel = this.staff[a.idx].level ?? 0;
+                  const bLevel = this.staff[b.idx].level ?? 0;
+                  const aNeeded = (minReqs[aLevel] || 0) - levelCounts[aLevel];
+                  const bNeeded = (minReqs[bLevel] || 0) - levelCounts[bLevel];
+                  if (aNeeded > 0 && bNeeded <= 0) return -1;
+                  if (bNeeded > 0 && aNeeded <= 0) return 1;
+                  return a.total - b.total;
+                });
+              } else {
+                candidates.sort((a, b) => a.total - b.total);
+              }
               const chosen = candidates[0];
               arr[pos] = chosen.id;
               totals.set(chosen.id, chosen.total + 1);

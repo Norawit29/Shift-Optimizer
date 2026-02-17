@@ -26,6 +26,12 @@ interface ScheduleViewProps {
 
 export function ScheduleView({ schedule, config, staff, month, year, unfilledSlots }: ScheduleViewProps) {
   const getStaffName = (id: string) => staff.find(s => s.id === id)?.name || "Unknown";
+  const getStaffLevel = (id: string): string | null => {
+    if (!config.staffLevels || config.staffLevels.length === 0) return null;
+    const member = staff.find(s => s.id === id);
+    if (!member) return null;
+    return config.staffLevels[member.level ?? 0] || config.staffLevels[0] || null;
+  };
   const { t } = useLanguage();
 
   const isCustomRange = config.useCustomRange && config.customStartDate;
@@ -135,15 +141,21 @@ export function ScheduleView({ schedule, config, staff, month, year, unfilledSlo
                                 <span className="text-xs text-muted-foreground italic">-</span>
                               ) : (
                                 <>
-                                  {filledIds.length > 0 && filledIds.map(id => (
-                                    <Badge 
-                                      key={id} 
-                                      variant="secondary"
-                                      className="font-normal bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 border border-blue-100 dark:border-blue-800"
-                                    >
-                                      {getStaffName(id)}
-                                    </Badge>
-                                  ))}
+                                  {filledIds.length > 0 && filledIds.map(id => {
+                                    const levelLabel = getStaffLevel(id);
+                                    return (
+                                      <Badge 
+                                        key={id} 
+                                        variant="secondary"
+                                        className="font-normal bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 border border-blue-100 dark:border-blue-800"
+                                      >
+                                        {getStaffName(id)}
+                                        {levelLabel && (
+                                          <span className="ml-1 text-[9px] opacity-60">({levelLabel})</span>
+                                        )}
+                                      </Badge>
+                                    );
+                                  })}
                                   {isUnfilled && (
                                     <Badge
                                       variant="secondary"

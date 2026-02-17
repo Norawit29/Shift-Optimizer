@@ -29,7 +29,7 @@ async function exportToExcel(
   result: DaySchedule[],
   config: SchedulerConfig,
   staff: StaffMember[],
-  labels: { date: string; day: string; staffName: string; total: string; summary: string; schedule: string; staffSchedule: string }
+  labels: { date: string; day: string; staffName: string; total: string; summary: string; schedule: string; staffSchedule: string; level: string }
 ) {
   const isCustomRange = config.useCustomRange && config.customStartDate;
   const baseDate = isCustomRange
@@ -64,10 +64,16 @@ async function exportToExcel(
   ws1.getRow(1).font = { bold: true };
 
   const ws2 = wb.addWorksheet(labels.summary);
-  const summaryHeaders = [labels.staffName, ...config.shiftNames, labels.total];
+  const hasLevels = config.staffLevels && config.staffLevels.length > 0;
+  const summaryHeaders = hasLevels
+    ? [labels.staffName, labels.level, ...config.shiftNames, labels.total]
+    : [labels.staffName, ...config.shiftNames, labels.total];
   ws2.addRow(summaryHeaders);
   staff.forEach(s => {
     const row: (string | number)[] = [s.name];
+    if (hasLevels) {
+      row.push(config.staffLevels![(s.level ?? 0)] || config.staffLevels![0] || "");
+    }
     let total = 0;
     config.shiftNames.forEach((_, shiftIdx) => {
       const count = result.reduce((acc, day) =>
@@ -200,7 +206,7 @@ export default function ScheduleDetailsPage() {
           <div className="flex items-center gap-2">
             <LanguageToggle />
             <Button
-              onClick={() => exportToExcel(schedule.name, schedule.month, schedule.year, resultAsDaySchedule, schedule.config, schedule.staff, { date: t.date, day: t.day, staffName: t.staffName, total: t.total, summary: t.summary, schedule: t.scheduleView, staffSchedule: t.staffSchedule })}
+              onClick={() => exportToExcel(schedule.name, schedule.month, schedule.year, resultAsDaySchedule, schedule.config, schedule.staff, { date: t.date, day: t.day, staffName: t.staffName, total: t.total, summary: t.summary, schedule: t.scheduleView, staffSchedule: t.staffSchedule, level: t.level })}
               variant="default"
               data-testid="button-export-excel"
             >

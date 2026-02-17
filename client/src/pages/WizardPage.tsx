@@ -34,7 +34,8 @@ import {
   History,
   Trash2,
   CalendarDays,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Layers
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { nanoid } from "nanoid";
@@ -83,7 +84,7 @@ async function exportToExcel(
   result: DaySchedule[],
   config: SchedulerConfig,
   staff: StaffMember[],
-  labels: { date: string; day: string; staffName: string; total: string; summary: string; schedule: string; staffSchedule: string }
+  labels: { date: string; day: string; staffName: string; total: string; summary: string; schedule: string; staffSchedule: string; level: string }
 ) {
   const isCustomRange = config.useCustomRange && config.customStartDate;
   const baseDate = isCustomRange
@@ -132,10 +133,16 @@ async function exportToExcel(
   ws1.getRow(1).font = { bold: true };
 
   const ws2 = wb.addWorksheet(labels.summary);
-  const summaryHeaders = [labels.staffName, ...config.shiftNames, labels.total];
+  const hasLevels = config.staffLevels && config.staffLevels.length > 0;
+  const summaryHeaders = hasLevels
+    ? [labels.staffName, labels.level, ...config.shiftNames, labels.total]
+    : [labels.staffName, ...config.shiftNames, labels.total];
   ws2.addRow(summaryHeaders);
   staff.forEach(s => {
     const row: (string | number)[] = [s.name];
+    if (hasLevels) {
+      row.push(config.staffLevels![(s.level ?? 0)] || config.staffLevels![0] || "");
+    }
     let total = 0;
     config.shiftNames.forEach((_, shiftIdx) => {
       const count = result.reduce((acc, day) =>
@@ -147,8 +154,10 @@ async function exportToExcel(
     ws2.addRow(row);
   });
   ws2.getColumn(1).width = 20;
-  for (let i = 2; i <= config.shiftNames.length + 1; i++) ws2.getColumn(i).width = 12;
-  ws2.getColumn(config.shiftNames.length + 2).width = 8;
+  const colOffset = hasLevels ? 1 : 0;
+  if (hasLevels) ws2.getColumn(2).width = 16;
+  for (let i = 2 + colOffset; i <= config.shiftNames.length + 1 + colOffset; i++) ws2.getColumn(i).width = 12;
+  ws2.getColumn(config.shiftNames.length + 2 + colOffset).width = 8;
   ws2.getRow(1).font = { bold: true };
 
   const dateHeaders = result.map((day) => format(getDateForIdx(day.date), "d MMM"));
@@ -231,6 +240,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const [bulkPrefix, setBulkPrefix] = useState("");
   const [bulkStartNum, setBulkStartNum] = useState(1);
   const [bulkMaxShifts, setBulkMaxShifts] = useState(20);
+  const [bulkLevel, setBulkLevel] = useState(0);
   const [globalMaxShifts, setGlobalMaxShifts] = useState(20);
   const [results, setResults] = useState<OptimizerResult[]>([]);
   const [selectedVersion, setSelectedVersion] = useState(0);
@@ -347,6 +357,50 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     setConfig({ ...config, holidayStaffPerShift: newCounts });
   };
 
+  const addStaffLevel = () => {
+    const levels = config.staffLevels || [];
+    if (levels.length >= 3) return;
+    const defaultNames = lang === "th" 
+      ? ["พยาบาล", "ผู้ช่วยพยาบาล", "คนงาน"]
+      : ["Nurse", "Assistant", "Worker"];
+    const newName = defaultNames[levels.length] || `Level ${levels.length + 1}`;
+    const newLevels = [...levels, newName];
+    const newMinPerLevel = (config.minStaffPerLevel || config.shiftNames.map(() => [])).map(row => [...row, 0]);
+    setConfig({ ...config, staffLevels: newLevels, minStaffPerLevel: newMinPerLevel });
+  };
+
+  const removeStaffLevel = (idx: number) => {
+    const levels = [...(config.staffLevels || [])];
+    levels.splice(idx, 1);
+    const newMinPerLevel = (config.minStaffPerLevel || []).map(row => {
+      const newRow = [...row];
+      newRow.splice(idx, 1);
+      return newRow;
+    });
+    setStaff(staff.map(s => {
+      if ((s.level ?? 0) === idx) return { ...s, level: 0 };
+      if ((s.level ?? 0) > idx) return { ...s, level: (s.level ?? 0) - 1 };
+      return s;
+    }));
+    if (levels.length === 0) {
+      setConfig({ ...config, staffLevels: undefined, minStaffPerLevel: undefined });
+    } else {
+      setConfig({ ...config, staffLevels: levels, minStaffPerLevel: newMinPerLevel });
+    }
+  };
+
+  const updateStaffLevelName = (idx: number, name: string) => {
+    const levels = [...(config.staffLevels || [])];
+    levels[idx] = name;
+    setConfig({ ...config, staffLevels: levels });
+  };
+
+  const updateMinStaffPerLevel = (shiftIdx: number, levelIdx: number, val: number) => {
+    const current = config.minStaffPerLevel || config.shiftNames.map(() => (config.staffLevels || []).map(() => 0));
+    const newMin = current.map((row, si) => si === shiftIdx ? row.map((v, li) => li === levelIdx ? Math.max(0, val) : v) : [...row]);
+    setConfig({ ...config, minStaffPerLevel: newMin });
+  };
+
   const toggleSeparateHolidayConfig = (checked: boolean) => {
     if (checked) {
       setConfig({
@@ -368,18 +422,21 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     const newNames = [...config.shiftNames];
     const newCounts = [...config.staffPerShift];
     const newHolCounts = config.holidayStaffPerShift ? [...config.holidayStaffPerShift] : undefined;
+    let newMinPerLevel = config.minStaffPerLevel ? config.minStaffPerLevel.map(row => [...row]) : undefined;
     if (val > config.shiftsPerDay) {
       for (let i = config.shiftsPerDay; i < val; i++) {
         newNames.push(`Shift ${i + 1}`);
         newCounts.push(1);
         if (newHolCounts) newHolCounts.push(1);
+        if (newMinPerLevel) newMinPerLevel.push((config.staffLevels || []).map(() => 0));
       }
     } else {
       newNames.splice(val);
       newCounts.splice(val);
       if (newHolCounts) newHolCounts.splice(val);
+      if (newMinPerLevel) newMinPerLevel.splice(val);
     }
-    setConfig({ ...config, shiftsPerDay: val, shiftNames: newNames, staffPerShift: newCounts, holidayStaffPerShift: newHolCounts });
+    setConfig({ ...config, shiftsPerDay: val, shiftNames: newNames, staffPerShift: newCounts, holidayStaffPerShift: newHolCounts, minStaffPerLevel: newMinPerLevel });
   };
 
   const addStaff = () => {
@@ -401,12 +458,16 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     const prefix = bulkPrefix.trim() || (lang === "th" ? "บุคลากร" : "Staff");
     const newStaff: StaffMember[] = [];
     for (let i = 0; i < bulkCount; i++) {
-      newStaff.push({
+      const member: StaffMember = {
         id: nanoid(),
         name: `${prefix} ${bulkStartNum + i}`,
         maxShifts: bulkMaxShifts,
         blocked: [],
-      });
+      };
+      if (config.staffLevels && config.staffLevels.length > 0) {
+        member.level = bulkLevel;
+      }
+      newStaff.push(member);
     }
     setStaff([...staff, ...newStaff]);
     setShowBulkAdd(false);
@@ -554,7 +615,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     };
     await exportToExcel(
       scheduleName, month, year, r.schedule, exConfig, staff,
-      { date: t.date, day: t.day, staffName: t.staffName, total: t.total, summary: t.summary, schedule: t.scheduleView, staffSchedule: t.staffSchedule }
+      { date: t.date, day: t.day, staffName: t.staffName, total: t.total, summary: t.summary, schedule: t.scheduleView, staffSchedule: t.staffSchedule, level: t.level }
     );
     setShowSaveDialog(false);
   };
@@ -820,6 +881,97 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               </CardContent>
             </Card>
           </div>
+
+          <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800 mt-6">
+            <CardContent className="p-6 space-y-4">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-primary" />
+                    <Label className="text-base font-semibold">{t.staffLevels}</Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{t.staffLevelsDesc}</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={addStaffLevel}
+                  disabled={(config.staffLevels?.length || 0) >= 3}
+                  data-testid="button-add-level"
+                >
+                  <Plus className="w-4 h-4 mr-1" /> {t.addLevel}
+                </Button>
+              </div>
+
+              {config.staffLevels && config.staffLevels.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    {config.staffLevels.map((levelName, idx) => (
+                      <div key={idx} className="flex gap-3 items-center bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg" data-testid={`staff-level-row-${idx}`}>
+                        <div className="flex-1 space-y-1">
+                          <Label className="text-xs">{t.levelName}</Label>
+                          <Input
+                            value={levelName}
+                            onChange={e => updateStaffLevelName(idx, e.target.value)}
+                            data-testid={`input-level-name-${idx}`}
+                          />
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive shrink-0"
+                          onClick={() => removeStaffLevel(idx)}
+                          data-testid={`button-remove-level-${idx}`}
+                        >
+                          <X className="w-3.5 h-3.5 mr-1" /> {t.removeLevel}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">{t.minPerLevel}</Label>
+                    <p className="text-xs text-muted-foreground">{t.minPerLevelDesc}</p>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm" data-testid="table-min-per-level">
+                        <thead>
+                          <tr>
+                            <th className="text-left p-2 font-medium text-muted-foreground">{t.nameLabel}</th>
+                            {config.staffLevels.map((lvl, li) => (
+                              <th key={li} className="text-center p-2 font-medium text-muted-foreground">{lvl}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {config.shiftNames.map((shiftName, si) => (
+                            <tr key={si} className="border-t border-slate-100 dark:border-slate-800">
+                              <td className="p-2 font-medium">{shiftName}</td>
+                              {config.staffLevels!.map((_, li) => (
+                                <td key={li} className="p-2 text-center">
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    className="w-16 h-7 text-xs text-center mx-auto"
+                                    value={config.minStaffPerLevel?.[si]?.[li] ?? 0}
+                                    onChange={e => updateMinStaffPerLevel(si, li, parseInt(e.target.value) || 0)}
+                                    data-testid={`input-min-level-${si}-${li}`}
+                                  />
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground italic" data-testid="text-no-levels">{t.noLevelsConfigured}</p>
+              )}
+            </CardContent>
+          </Card>
         </WizardStep>
 
         {/* STEP 2: STAFF + BLOCKED DATES */}
@@ -877,6 +1029,19 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     />
                   </div>
                 </div>
+                {config.staffLevels && config.staffLevels.length > 0 && (
+                  <div className="space-y-2">
+                    <Label>{t.level}</Label>
+                    <Select value={bulkLevel.toString()} onValueChange={(v) => setBulkLevel(parseInt(v))}>
+                      <SelectTrigger data-testid="select-bulk-level"><SelectValue /></SelectTrigger>
+                      <SelectContent position="popper" sideOffset={4} className="bg-white dark:bg-slate-900">
+                        {config.staffLevels.map((lvl, i) => (
+                          <SelectItem key={i} value={i.toString()}>{lvl}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 text-sm text-muted-foreground">
                   {bulkPrefix.trim() || (lang === "th" ? "บุคลากร" : "Staff")} {bulkStartNum} — {bulkPrefix.trim() || (lang === "th" ? "บุคลากร" : "Staff")} {bulkStartNum + bulkCount - 1}
                 </div>
@@ -958,6 +1123,25 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                               data-testid={`input-staff-name-${s.id}`}
                             />
                           </div>
+                          {config.staffLevels && config.staffLevels.length > 0 && (
+                            <Select
+                              value={(s.level ?? 0).toString()}
+                              onValueChange={(v) => { updateStaff(s.id, "level", parseInt(v)); }}
+                            >
+                              <SelectTrigger
+                                className="w-24 h-6 text-[10px] shrink-0"
+                                onClick={e => e.stopPropagation()}
+                                data-testid={`select-staff-level-${s.id}`}
+                              >
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent position="popper" sideOffset={4} className="bg-white dark:bg-slate-900">
+                                {config.staffLevels.map((lvl, li) => (
+                                  <SelectItem key={li} value={li.toString()}>{lvl}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
                           {blockedCount > 0 && (
                             <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">{blockedCount}</Badge>
                           )}
