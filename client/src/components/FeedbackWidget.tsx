@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Star, MessageSquarePlus, Send, Check } from "lucide-react";
@@ -12,7 +12,6 @@ import {
 
 export function FeedbackWidget({ autoOpen }: { autoOpen?: boolean }) {
   const [open, setOpen] = useState(false);
-  const [hasAutoOpened, setHasAutoOpened] = useState(false);
   const [rating, setRating] = useState(0);
   const [hoveredStar, setHoveredStar] = useState(0);
   const [comment, setComment] = useState("");
@@ -20,14 +19,15 @@ export function FeedbackWidget({ autoOpen }: { autoOpen?: boolean }) {
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
   const { lang } = useLanguage();
+  const prevAutoOpen = useRef(autoOpen);
 
   useEffect(() => {
-    if (autoOpen && !hasAutoOpened && !submitted) {
-      setHasAutoOpened(true);
+    if (autoOpen && !prevAutoOpen.current && !submitted) {
       const timer = setTimeout(() => setOpen(true), 800);
       return () => clearTimeout(timer);
     }
-  }, [autoOpen, hasAutoOpened, submitted]);
+    prevAutoOpen.current = autoOpen;
+  }, [autoOpen, submitted]);
 
   const handleSubmit = async () => {
     if (rating === 0) return;
