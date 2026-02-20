@@ -237,8 +237,16 @@ async function exportToExcel(
 export default function WizardPage(props: { exportOnly?: boolean } & Record<string, any>) {
   const exportOnly = props.exportOnly ?? false;
   const [step, setStep] = useState(1);
-  const [month, setMonth] = useState(new Date().getMonth() + 1);
-  const [year, setYear] = useState(new Date().getFullYear());
+  const [month, setMonth] = useState(() => {
+    const now = new Date();
+    const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    return next.getMonth() + 1;
+  });
+  const [year, setYear] = useState(() => {
+    const now = new Date();
+    const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    return next.getFullYear();
+  });
   const [config, setConfig] = useState<SchedulerConfig>(INITIAL_CONFIG);
   const [staff, setStaff] = useState<StaffMember[]>(INITIAL_STAFF);
   const [showBulkAdd, setShowBulkAdd] = useState(false);
