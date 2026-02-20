@@ -95,7 +95,6 @@ export default function TutorialDialog() {
             {isFirst ? (
               <Button
                 variant="ghost"
-                size="sm"
                 onClick={handleClose}
                 data-testid="button-tutorial-skip"
               >
@@ -104,7 +103,6 @@ export default function TutorialDialog() {
             ) : (
               <Button
                 variant="ghost"
-                size="sm"
                 onClick={handleBack}
                 data-testid="button-tutorial-back"
               >
@@ -113,7 +111,6 @@ export default function TutorialDialog() {
             )}
 
             <Button
-              size="sm"
               onClick={handleNext}
               data-testid="button-tutorial-next"
             >
