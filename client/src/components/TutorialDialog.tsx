@@ -69,19 +69,33 @@ export function TutorialWelcome() {
 export function TutorialBanner({ wizardStep }: { wizardStep: number }) {
   const { t } = useLanguage();
   const [dismissed, setDismissed] = useState<Record<number, boolean>>({});
+  const [tutorialSeen, setTutorialSeen] = useState(false);
 
   useEffect(() => {
     try {
       const stored = localStorage.getItem(TUTORIAL_DISMISSED_KEY);
       if (stored) setDismissed(JSON.parse(stored));
     } catch {}
+    if (localStorage.getItem(TUTORIAL_SEEN_KEY)) {
+      setTutorialSeen(true);
+    }
   }, []);
+
+  useEffect(() => {
+    if (tutorialSeen) return;
+    const interval = setInterval(() => {
+      if (localStorage.getItem(TUTORIAL_SEEN_KEY)) {
+        setTutorialSeen(true);
+        clearInterval(interval);
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  }, [tutorialSeen]);
 
   const tip = stepTips[wizardStep];
   if (!tip || dismissed[wizardStep]) return null;
 
-  const seen = localStorage.getItem(TUTORIAL_SEEN_KEY);
-  if (!seen) return null;
+  if (!tutorialSeen) return null;
 
   const handleDismiss = () => {
     const next = { ...dismissed, [wizardStep]: true };
