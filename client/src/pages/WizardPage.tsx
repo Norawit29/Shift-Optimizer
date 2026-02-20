@@ -46,7 +46,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import ExcelJS from "exceljs";
 import { FeedbackWidget } from "@/components/FeedbackWidget";
-import TutorialDialog from "@/components/TutorialDialog";
+import { TutorialWelcome, TutorialBanner } from "@/components/TutorialDialog";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June", 
@@ -720,7 +720,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
-      <TutorialDialog />
+      <TutorialWelcome />
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-2">
           <div className="flex items-center gap-4">
@@ -778,6 +778,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           title={t.basicConfig} 
           description={t.basicConfigDesc}
         >
+          <TutorialBanner wizardStep={1} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800">
               <CardContent className="p-6 space-y-6">
@@ -1054,6 +1055,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           title={t.staffAvailability} 
           description={t.staffAvailabilityDesc}
         >
+          <TutorialBanner wizardStep={2} />
           <Dialog open={showBulkAdd} onOpenChange={setShowBulkAdd}>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
@@ -1431,6 +1433,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           title={t.rulesConstraints} 
           description={t.rulesConstraintsDesc}
         >
+          <TutorialBanner wizardStep={3} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-6">
               <Card className="shadow-md">
@@ -1669,6 +1672,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
             title={t.generatedSchedule}
             className="max-w-6xl"
           >
+            <TutorialBanner wizardStep={4} />
             <div className="space-y-8">
               <div className="flex items-center gap-4 bg-white dark:bg-zinc-900 p-4 rounded-xl border flex-wrap">
                 <div className="flex-1 min-w-[200px]">
