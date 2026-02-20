@@ -46,6 +46,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import ExcelJS from "exceljs";
 import { FeedbackWidget } from "@/components/FeedbackWidget";
+import TutorialDialog from "@/components/TutorialDialog";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June", 
@@ -719,6 +720,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
+      <TutorialDialog />
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-2">
           <div className="flex items-center gap-4">

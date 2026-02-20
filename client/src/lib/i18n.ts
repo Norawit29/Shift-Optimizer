@@ -200,6 +200,25 @@ const translations = {
     softLevelNote: "The optimizer will try to meet level requirements as much as possible, but some slots may not have the required staff level.",
     unmetLevelWarning: "Some shifts could not meet the minimum staff level requirements. Review the schedule for details.",
 
+    // Tutorial
+    tutorialWelcomeTitle: "Welcome to Shift Scheduler",
+    tutorialWelcomeDesc: "This tool helps you create fair, balanced duty rosters automatically using an optimization algorithm. Let's walk through the steps.",
+    tutorialStep1Title: "Step 1: Configure Shifts",
+    tutorialStep1Desc: "Choose how many shifts per day (e.g. Morning, Afternoon, Night), set the schedule period, and specify how many staff are needed per shift.",
+    tutorialStep2Title: "Step 2: Add Staff",
+    tutorialStep2Desc: "Add your team members one by one or in bulk. You can also set staff levels (e.g. Nurse, Assistant) and maximum shifts per person.",
+    tutorialStep3Title: "Step 3: Block Dates",
+    tutorialStep3Desc: "Mark days when each staff member is unavailable — such as leave days, training, or personal requests. You can also set public holidays.",
+    tutorialStep4Title: "Step 4: Generate Schedule",
+    tutorialStep4Desc: "The optimizer will automatically create a fair schedule that respects all constraints. It maximizes coverage first, then balances workload evenly.",
+    tutorialStep5Title: "Step 5: Export to Excel",
+    tutorialStep5Desc: "Download the completed roster as an Excel file, ready to print or share with your team. Includes summary statistics and workload charts.",
+    tutorialSkip: "Skip",
+    tutorialNext: "Next",
+    tutorialBack: "Back",
+    tutorialDone: "Get Started",
+    tutorialStepOf: "of",
+
     // Language
     language: "Language",
   },
@@ -401,6 +420,25 @@ const translations = {
     cancelOptimization: "กลับไปแก้ไข",
     softLevelNote: "ระบบจะพยายามจัดระดับบุคลากรให้ครบตามที่กำหนดมากที่สุด แต่บางช่องอาจไม่ครบตามจำนวนขั้นต่ำ",
     unmetLevelWarning: "บางเวรไม่สามารถจัดบุคลากรตามระดับขั้นต่ำได้ครบ กรุณาตรวจสอบตาราง",
+
+    // Tutorial
+    tutorialWelcomeTitle: "ยินดีต้อนรับสู่ระบบจัดตารางเวร",
+    tutorialWelcomeDesc: "เครื่องมือนี้ช่วยสร้างตารางเวรที่ยุติธรรมและสมดุลโดยอัตโนมัติ ด้วยระบบจัดสรรอัจฉริยะ มาดูขั้นตอนการใช้งานกัน",
+    tutorialStep1Title: "ขั้นตอนที่ 1: ตั้งค่าเวร",
+    tutorialStep1Desc: "เลือกจำนวนเวรต่อวัน (เช่น เช้า บ่าย ดึก) กำหนดช่วงเวลา และระบุจำนวนบุคลากรที่ต้องการในแต่ละเวร",
+    tutorialStep2Title: "ขั้นตอนที่ 2: เพิ่มบุคลากร",
+    tutorialStep2Desc: "เพิ่มบุคลากรทีละคนหรือเพิ่มพร้อมกันหลายคน สามารถกำหนดระดับบุคลากร (เช่น พยาบาล ผู้ช่วย) และจำนวนเวรสูงสุดต่อคนได้",
+    tutorialStep3Title: "ขั้นตอนที่ 3: กำหนดวันบล็อก",
+    tutorialStep3Desc: "ทำเครื่องหมายวันที่บุคลากรไม่สามารถขึ้นเวรได้ เช่น วันลา วันอบรม หรือวันที่ขอไว้ รวมถึงกำหนดวันหยุดนักขัตฤกษ์",
+    tutorialStep4Title: "ขั้นตอนที่ 4: สร้างตารางเวร",
+    tutorialStep4Desc: "ระบบจะสร้างตารางเวรที่ยุติธรรมโดยอัตโนมัติ โดยจัดให้ครบจำนวนมากที่สุดก่อน แล้วจึงกระจายเวรให้สมดุล",
+    tutorialStep5Title: "ขั้นตอนที่ 5: ส่งออก Excel",
+    tutorialStep5Desc: "ดาวน์โหลดตารางเวรเป็นไฟล์ Excel พร้อมพิมพ์หรือแชร์ให้ทีม รวมสรุปสถิติและกราฟภาระงาน",
+    tutorialSkip: "ข้าม",
+    tutorialNext: "ถัดไป",
+    tutorialBack: "ย้อนกลับ",
+    tutorialDone: "เริ่มใช้งาน",
+    tutorialStepOf: "จาก",
 
     // Language
     language: "ภาษา",
