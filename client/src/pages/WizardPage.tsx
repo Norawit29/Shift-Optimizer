@@ -313,7 +313,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           const p = presets[0];
           if (p.config) setConfig(p.config);
           if (p.staff && p.staff.length > 0) {
-            setStaff(p.staff.map((s: StaffMember) => ({ ...s, blocked: [] })));
+            setStaff(p.staff.map((s: StaffMember) => ({ ...s, blocked: s.blocked || [] })));
           }
           toast({ title: lang === "th" ? "โหลดข้อมูลสตาฟสำเร็จ" : "Staff data loaded", description: lang === "th" ? "ข้อมูลสตาฟและการตั้งค่าจากครั้งก่อนถูกโหลดแล้ว" : "Your saved staff and config have been loaded" });
         }
