@@ -14,7 +14,7 @@ The scheduler supports **separate weekend/holiday staffing**:
 - Setting a shift's holiday staff to 0 effectively disables that shift on weekends/holidays
 - The optimizer, schedule view, and Excel export all respect per-day staffing requirements
 
-The scheduler supports **staff levels** (up to 3 levels):
+The scheduler supports **staff levels** (up to 5 levels):
 - `staffLevels` in SchedulerConfig: array of level names (e.g., ["พยาบาล", "ผู้ช่วยพยาบาล", "คนงาน"])
 - Each StaffMember has an optional `level` field (0-based index into staffLevels)
 - `minStaffPerLevel` in SchedulerConfig: 2D array `[shiftIdx][levelIdx]` for minimum staff of each level per shift

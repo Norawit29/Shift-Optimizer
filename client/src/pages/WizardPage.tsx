@@ -367,10 +367,10 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
 
   const addStaffLevel = () => {
     const levels = config.staffLevels || [];
-    if (levels.length >= 3) return;
+    if (levels.length >= 5) return;
     const defaultNames = lang === "th" 
-      ? ["พยาบาล", "ผู้ช่วยพยาบาล", "คนงาน"]
-      : ["Nurse", "Assistant", "Worker"];
+      ? ["พยาบาล", "ผู้ช่วยพยาบาล", "คนงาน", "ระดับ 4", "ระดับ 5"]
+      : ["Nurse", "Assistant", "Worker", "Level 4", "Level 5"];
     const newName = defaultNames[levels.length] || `Level ${levels.length + 1}`;
     const newLevels = [...levels, newName];
     const newMinPerLevel = (config.minStaffPerLevel || config.shiftNames.map(() => [])).map(row => [...row, 0]);
@@ -960,7 +960,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                   variant="outline"
                   size="sm"
                   onClick={addStaffLevel}
-                  disabled={(config.staffLevels?.length || 0) >= 3}
+                  disabled={(config.staffLevels?.length || 0) >= 5}
                   data-testid="button-add-level"
                 >
                   <Plus className="w-4 h-4 mr-1" /> {t.addLevel}

@@ -184,7 +184,7 @@ const translations = {
 
     // Staff Levels
     staffLevels: "Staff Levels",
-    staffLevelsDesc: "Define up to 3 staff levels (e.g., Nurse, Assistant, Worker)",
+    staffLevelsDesc: "Define up to 5 staff levels (e.g., Nurse, Assistant, Worker)",
     levelName: "Level Name",
     addLevel: "Add Level",
     removeLevel: "Remove",
@@ -386,7 +386,7 @@ const translations = {
 
     // Staff Levels
     staffLevels: "ระดับบุคลากร",
-    staffLevelsDesc: "กำหนดระดับบุคลากรได้สูงสุด 3 ระดับ (เช่น พยาบาล, ผู้ช่วยพยาบาล, คนงาน)",
+    staffLevelsDesc: "กำหนดระดับบุคลากรได้สูงสุด 5 ระดับ (เช่น พยาบาล, ผู้ช่วยพยาบาล, คนงาน)",
     levelName: "ชื่อระดับ",
     addLevel: "เพิ่มระดับ",
     removeLevel: "ลบ",
