@@ -7,6 +7,7 @@ import type { Translations } from "@/lib/i18n";
 
 const TUTORIAL_SEEN_KEY = "shift-scheduler-tutorial-seen";
 const TUTORIAL_DISMISSED_KEY = "shift-scheduler-tutorial-dismissed";
+const TUTORIAL_SEEN_EVENT = "tutorial-seen";
 
 interface StepTip {
   titleKey: keyof Translations;
@@ -36,6 +37,7 @@ export function TutorialWelcome() {
   const handleClose = () => {
     localStorage.setItem(TUTORIAL_SEEN_KEY, "true");
     setOpen(false);
+    window.dispatchEvent(new Event(TUTORIAL_SEEN_EVENT));
   };
 
   return (
@@ -69,27 +71,22 @@ export function TutorialWelcome() {
 export function TutorialBanner({ wizardStep }: { wizardStep: number }) {
   const { t } = useLanguage();
   const [dismissed, setDismissed] = useState<Record<number, boolean>>({});
-  const [tutorialSeen, setTutorialSeen] = useState(false);
+  const [tutorialSeen, setTutorialSeen] = useState(
+    () => !!localStorage.getItem(TUTORIAL_SEEN_KEY)
+  );
 
   useEffect(() => {
     try {
       const stored = localStorage.getItem(TUTORIAL_DISMISSED_KEY);
       if (stored) setDismissed(JSON.parse(stored));
     } catch {}
-    if (localStorage.getItem(TUTORIAL_SEEN_KEY)) {
-      setTutorialSeen(true);
-    }
   }, []);
 
   useEffect(() => {
     if (tutorialSeen) return;
-    const interval = setInterval(() => {
-      if (localStorage.getItem(TUTORIAL_SEEN_KEY)) {
-        setTutorialSeen(true);
-        clearInterval(interval);
-      }
-    }, 500);
-    return () => clearInterval(interval);
+    const handler = () => setTutorialSeen(true);
+    window.addEventListener(TUTORIAL_SEEN_EVENT, handler);
+    return () => window.removeEventListener(TUTORIAL_SEEN_EVENT, handler);
   }, [tutorialSeen]);
 
   const tip = stepTips[wizardStep];
