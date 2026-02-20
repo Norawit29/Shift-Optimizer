@@ -72,9 +72,23 @@ export default function TutorialDialog() {
         </div>
 
         <div className="p-6">
-          <p className="text-base text-muted-foreground leading-relaxed text-center">
-            {t[step.descKey]}
-          </p>
+          {(() => {
+            const lines = t[step.descKey].split("\n");
+            if (lines.length <= 1) {
+              return (
+                <p className="text-base text-muted-foreground leading-relaxed text-center">
+                  {lines[0]}
+                </p>
+              );
+            }
+            return (
+              <ul className="text-sm text-muted-foreground leading-relaxed space-y-1.5 list-disc list-inside">
+                {lines.map((line, i) => (
+                  <li key={i}>{line}</li>
+                ))}
+              </ul>
+            );
+          })()}
 
           <div className="flex items-center justify-center gap-1.5 mt-5">
             {steps.map((_, idx) => (
