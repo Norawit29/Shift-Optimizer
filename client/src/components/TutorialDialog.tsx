@@ -72,7 +72,7 @@ export default function TutorialDialog() {
         </div>
 
         <div className="p-6">
-          <p className="text-sm text-muted-foreground leading-relaxed text-center">
+          <p className="text-base text-muted-foreground leading-relaxed text-center">
             {t[step.descKey]}
           </p>
 
