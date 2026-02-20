@@ -270,6 +270,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const [customEndDate, setCustomEndDate] = useState("");
 
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [loginPromptReason, setLoginPromptReason] = useState<"next" | "save">("next");
   const [presetLoaded, setPresetLoaded] = useState(false);
   const [showLevelWarning, setShowLevelWarning] = useState(false);
   const [levelWarnings, setLevelWarnings] = useState<string[]>([]);
@@ -293,9 +294,13 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   useEffect(() => {
     if (user && showLoginPrompt) {
       setShowLoginPrompt(false);
-      setStep(s => Math.min(s + 1, 4));
+      if (loginPromptReason === "save") {
+        savePreset();
+      } else {
+        setStep(s => Math.min(s + 1, 4));
+      }
     }
-  }, [user, showLoginPrompt]);
+  }, [user, showLoginPrompt, loginPromptReason]);
 
   useEffect(() => {
     if (!user) {
@@ -325,13 +330,19 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const savePreset = useCallback(async () => {
     if (!user) return;
     try {
-      await fetch("/api/presets", {
+      const res = await fetch("/api/presets", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: scheduleName, config, staff }),
       });
+      if (res.ok) {
+        toast({
+          title: lang === "th" ? "บันทึกสำเร็จ" : "Saved successfully",
+          description: lang === "th" ? "ข้อมูลการตั้งค่าและรายชื่อบุคลากรถูกบันทึกแล้ว" : "Your settings and staff data have been saved",
+        });
+      }
     } catch {}
-  }, [user, config, staff, scheduleName]);
+  }, [user, config, staff, scheduleName, toast, lang]);
 
   const daysInMonth = useMemo(() => {
     if (useCustomRange && customStartDate && customEndDate) {
@@ -348,8 +359,18 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     return getDaysInMonth(new Date(year, month - 1));
   }, [month, year, useCustomRange, customStartDate, customEndDate]);
 
+  const handleSavePresetClick = () => {
+    if (!user) {
+      setLoginPromptReason("save");
+      setShowLoginPrompt(true);
+      return;
+    }
+    savePreset();
+  };
+
   const handleNext = () => {
     if (step === 2 && !user) {
+      setLoginPromptReason("next");
       setShowLoginPrompt(true);
       return;
     }
@@ -1892,6 +1913,15 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               </Button>
               
               <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleSavePresetClick}
+                  className="rounded-full"
+                  data-testid="button-save-preset"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {lang === "th" ? "บันทึก" : "Save"}
+                </Button>
                 {step < 3 ? (
                   <Button
                     onClick={handleNext}
@@ -2048,7 +2078,9 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               className="text-muted-foreground"
               onClick={() => {
                 setShowLoginPrompt(false);
-                setStep(s => Math.min(s + 1, 4));
+                if (loginPromptReason === "next") {
+                  setStep(s => Math.min(s + 1, 4));
+                }
               }}
               data-testid="button-skip-login"
             >
