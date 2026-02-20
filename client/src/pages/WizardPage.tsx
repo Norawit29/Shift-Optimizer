@@ -273,6 +273,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const [presetLoaded, setPresetLoaded] = useState(false);
   const [showLevelWarning, setShowLevelWarning] = useState(false);
   const [levelWarnings, setLevelWarnings] = useState<string[]>([]);
+  const [hasExported, setHasExported] = useState(false);
   const { user } = useAuth();
 
   const handleModeSwitch = (mode: string) => {
@@ -691,6 +692,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
       { date: t.date, day: t.day, staffName: t.staffName, total: t.total, summary: t.summary, schedule: t.scheduleView, staffSchedule: t.staffSchedule, level: t.level }
     );
     setShowSaveDialog(false);
+    setHasExported(true);
   };
 
   const handleSaveClick = () => {
@@ -1873,7 +1875,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           </WizardStep>
         )}
 
-        {step === 4 && <FeedbackWidget />}
+        {step === 4 && <FeedbackWidget autoOpen={hasExported} />}
 
         {/* Navigation Footer */}
         {step < 4 && (
