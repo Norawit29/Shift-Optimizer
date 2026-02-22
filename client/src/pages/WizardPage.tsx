@@ -205,7 +205,8 @@ async function exportToExcel(
 
     dayCellInfo.forEach((info, ci) => {
       const dayDate = result[ci].date;
-      const allShiftsBlocked = config.shiftNames.every((_, shiftIdx) =>
+      const hasFullDayBlock = s.blocked.some(b => b.date === dayDate && b.shift === -1);
+      const allShiftsBlocked = hasFullDayBlock || config.shiftNames.every((_, shiftIdx) =>
         s.blocked.some(b => b.date === dayDate && b.shift === shiftIdx)
       );
       const cell = excelRow.getCell(ci + 2 + ws3ColOffset);
