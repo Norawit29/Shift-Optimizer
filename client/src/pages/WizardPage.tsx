@@ -1512,8 +1512,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                             variant="outline" 
                             size="sm"
                             onClick={() => {
-                              updateStaff(selectedStaffId!, "blocked", []);
-                              updateStaff(selectedStaffId!, "requested", []);
+                              setStaff(staff.map(s => s.id === selectedStaffId ? { ...s, blocked: [], requested: [] } : s));
                             }}
                             data-testid="button-clear-blocks"
                           >
