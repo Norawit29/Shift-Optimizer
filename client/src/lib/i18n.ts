@@ -460,7 +460,7 @@ const translations = {
     preCheckWarningDesc: "พบปัญหาต่อไปนี้ คุณสามารถจัดเวรต่อได้ แต่ตารางอาจมีช่องที่ไม่สามารถจัดคนได้ครบ:",
     preCheckConflictTitle: "เวรที่ขออยู่ขัดกับเงื่อนไข",
     preCheckConflictDesc: "เวรที่ขออยู่ต่อไปนี้ขัดกับกฎห้ามอยู่ต่อเนื่อง กรุณาแก้ไขก่อนจัดเวร:",
-    mustFixBeforeProceed: "กรุณากลับไปลบเวรที่ขอซึ่งขัดกับเงื่อนไขก่อนจัดตารางเวร",
+    mustFixBeforeProceed: "กรุณากลับไปแก้ไขเวรที่ขอซึ่งขัดกับเงื่อนไขก่อนจัดตารางเวร",
     capacityWarning: "จำนวนช่องเวรทั้งหมด ({totalSlots}) มากกว่าจำนวนที่บุคลากรทั้งหมดสามารถอยู่ได้ ({totalCapacity}) หลังหักวันไม่ว่าง บางช่องจะไม่มีคนอยู่",
     capacityWarningDay: "วันที่ {day} ({date}), เวร \"{shift}\": ต้องการ {needed} คน แต่มีเพียง {available} คนว่าง",
     requestedConflictWarning: "เวรที่ขออยู่ขัดกับเงื่อนไข:",
