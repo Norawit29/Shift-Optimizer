@@ -220,16 +220,17 @@ export class ShiftOptimizer {
     }
 
     for (const rule of this.config.consecutiveRules) {
+      const ruleType = rule.type || 'nextDay';
       for (let i = 0; i < N; i++) {
-        for (let d = 0; d < D - 1; d++) {
-          const v1 = this.vn(i, d, rule.from);
-          const v2 = this.vn(i, d + 1, rule.to);
-          if (varMap.has(v1) && varMap.has(v2)) {
-            lines.push(`  c${cIdx.val++}: ${v1} + ${v2} <= 1`);
+        if (ruleType === 'nextDay') {
+          for (let d = 0; d < D - 1; d++) {
+            const v1 = this.vn(i, d, rule.from);
+            const v2 = this.vn(i, d + 1, rule.to);
+            if (varMap.has(v1) && varMap.has(v2)) {
+              lines.push(`  c${cIdx.val++}: ${v1} + ${v2} <= 1`);
+            }
           }
-        }
-
-        if (rule.from < rule.to) {
+        } else {
           for (let d = 0; d < D; d++) {
             const v1 = this.vn(i, d, rule.from);
             const v2 = this.vn(i, d, rule.to);
@@ -819,19 +820,21 @@ export class ShiftOptimizer {
 
               let violatesConsecutive = false;
               for (const rule of this.config.consecutiveRules) {
-                if (rule.to === s && d > 0) {
-                  if (schedule[d - 1].shifts[rule.from]?.includes(member.id)) {
-                    violatesConsecutive = true;
-                    break;
+                const ruleType = rule.type || 'nextDay';
+                if (ruleType === 'nextDay') {
+                  if (rule.to === s && d > 0) {
+                    if (schedule[d - 1].shifts[rule.from]?.includes(member.id)) {
+                      violatesConsecutive = true;
+                      break;
+                    }
                   }
-                }
-                if (rule.from === s && d < D - 1) {
-                  if (schedule[d + 1].shifts[rule.to]?.includes(member.id)) {
-                    violatesConsecutive = true;
-                    break;
+                  if (rule.from === s && d < D - 1) {
+                    if (schedule[d + 1].shifts[rule.to]?.includes(member.id)) {
+                      violatesConsecutive = true;
+                      break;
+                    }
                   }
-                }
-                if (rule.from < rule.to) {
+                } else {
                   if (rule.from === s && schedule[d].shifts[rule.to]?.includes(member.id)) {
                     violatesConsecutive = true;
                     break;
@@ -941,19 +944,21 @@ export class ShiftOptimizer {
 
         let consecutiveBlock = "";
         for (const rule of this.config.consecutiveRules) {
-          if (rule.to === s && d > 0) {
-            if (schedule[d - 1].shifts[rule.from]?.includes(member.id)) {
-              consecutiveBlock = `worked ${this.config.shiftNames[rule.from]} on Day${slot.date - 1}`;
-              break;
+          const ruleType = rule.type || 'nextDay';
+          if (ruleType === 'nextDay') {
+            if (rule.to === s && d > 0) {
+              if (schedule[d - 1].shifts[rule.from]?.includes(member.id)) {
+                consecutiveBlock = `worked ${this.config.shiftNames[rule.from]} on Day${slot.date - 1}`;
+                break;
+              }
             }
-          }
-          if (rule.from === s && d < D - 1) {
-            if (schedule[d + 1].shifts[rule.to]?.includes(member.id)) {
-              consecutiveBlock = `works ${this.config.shiftNames[rule.to]} on Day${slot.date + 1}`;
-              break;
+            if (rule.from === s && d < D - 1) {
+              if (schedule[d + 1].shifts[rule.to]?.includes(member.id)) {
+                consecutiveBlock = `works ${this.config.shiftNames[rule.to]} on Day${slot.date + 1}`;
+                break;
+              }
             }
-          }
-          if (rule.from < rule.to) {
+          } else {
             if (rule.from === s && schedule[d].shifts[rule.to]?.includes(member.id)) {
               consecutiveBlock = `works ${this.config.shiftNames[rule.to]} same day`;
               break;

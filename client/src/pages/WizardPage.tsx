@@ -1529,12 +1529,19 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                   </p>
 
                   <div className="space-y-2">
-                    {config.consecutiveRules.map((rule, idx) => (
+                    {config.consecutiveRules.map((rule, idx) => {
+                      const ruleType = rule.type || 'nextDay';
+                      return (
                       <div key={idx} className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border flex-wrap">
                         <span className="text-red-500 font-bold">{t.no}</span>
                         <Badge variant="outline">{config.shiftNames[rule.from]}</Badge>
-                        <span className="text-muted-foreground text-sm">{t.followedBy}</span>
+                        <span className="text-muted-foreground text-sm">
+                          {ruleType === 'sameDay' ? t.sameDayWith : t.followedBy}
+                        </span>
                         <Badge variant="outline">{config.shiftNames[rule.to]}</Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          {ruleType === 'sameDay' ? t.ruleTypeSameDay : t.ruleTypeNextDay}
+                        </Badge>
                         <Button variant="ghost" size="sm" className="ml-auto h-6 w-6 p-0" onClick={() => {
                            const newRules = config.consecutiveRules.filter((_, i) => i !== idx);
                            setConfig({...config, consecutiveRules: newRules});
@@ -1542,27 +1549,57 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                           <X className="w-3 h-3" />
                         </Button>
                       </div>
-                    ))}
+                      );
+                    })}
                     
                     <div className="flex items-center gap-2 pt-2">
-                       <Select key={config.consecutiveRules.length} onValueChange={(val) => {
+                       <Select key={`nextDay-${config.consecutiveRules.length}`} onValueChange={(val) => {
                          const [from, to] = val.split(',').map(Number);
                          setConfig({
                            ...config,
-                           consecutiveRules: [...config.consecutiveRules, { from, to }]
+                           consecutiveRules: [...config.consecutiveRules, { from, to, type: 'nextDay' as const }]
                          });
                        }}>
-                         <SelectTrigger className="w-full" data-testid="select-add-rule">
-                           <SelectValue placeholder={t.addNewRule} />
+                         <SelectTrigger className="w-full" data-testid="select-add-nextday-rule">
+                           <SelectValue placeholder={t.addNextDayRule} />
                          </SelectTrigger>
                          <SelectContent position="popper" sideOffset={4} className="bg-white dark:bg-slate-900">
                            {config.shiftNames.flatMap((name1, i) =>
                              config.shiftNames.map((name2, j) => {
-                               const exists = config.consecutiveRules.some(r => r.from === i && r.to === j);
+                               const exists = config.consecutiveRules.some(r => r.from === i && r.to === j && (r.type || 'nextDay') === 'nextDay');
                                if (exists) return null;
                                return (
                                  <SelectItem key={`${i}-${j}`} value={`${i},${j}`}>
-                                   {t.blockRule} {name1} {t.followedBy} {name2}
+                                   {t.no} {name1} {t.followedBy} {name2}
+                                 </SelectItem>
+                               );
+                             })
+                           ).filter(Boolean)}
+                         </SelectContent>
+                       </Select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                       <Select key={`sameDay-${config.consecutiveRules.length}`} onValueChange={(val) => {
+                         const [from, to] = val.split(',').map(Number);
+                         setConfig({
+                           ...config,
+                           consecutiveRules: [...config.consecutiveRules, { from, to, type: 'sameDay' as const }]
+                         });
+                       }}>
+                         <SelectTrigger className="w-full" data-testid="select-add-sameday-rule">
+                           <SelectValue placeholder={t.addSameDayRule} />
+                         </SelectTrigger>
+                         <SelectContent position="popper" sideOffset={4} className="bg-white dark:bg-slate-900">
+                           {config.shiftNames.flatMap((name1, i) =>
+                             config.shiftNames.map((name2, j) => {
+                               if (i === j) return null;
+                               const exists = config.consecutiveRules.some(r =>
+                                 r.type === 'sameDay' && ((r.from === i && r.to === j) || (r.from === j && r.to === i))
+                               );
+                               if (exists) return null;
+                               return (
+                                 <SelectItem key={`${i}-${j}`} value={`${i},${j}`}>
+                                   {t.no} {name1} {t.sameDayWith} {name2}
                                  </SelectItem>
                                );
                              })
