@@ -25,6 +25,7 @@ export interface StaffMember {
   name: string;
   maxShifts: number;
   blocked: { date: number; shift: number }[];
+  requested?: { date: number; shift: number }[];
   level?: number;
 }
 

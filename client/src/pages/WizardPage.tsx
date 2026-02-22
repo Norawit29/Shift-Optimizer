@@ -209,11 +209,15 @@ async function exportToExcel(
       const allShiftsBlocked = hasFullDayBlock || config.shiftNames.every((_, shiftIdx) =>
         s.blocked.some(b => b.date === dayDate && b.shift === shiftIdx)
       );
+      const hasRequested = (s.requested || []).some(r => r.date === dayDate && info.shiftIndices.includes(r.shift));
       const cell = excelRow.getCell(ci + 2 + ws3ColOffset);
       if (allShiftsBlocked) {
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFF4444" } };
         cell.font = { color: { argb: "FFFFFFFF" } };
         return;
+      }
+      if (hasRequested && info.shiftIndices.length > 0) {
+        cell.border = { top: { style: "medium", color: { argb: "FF10B981" } }, bottom: { style: "medium", color: { argb: "FF10B981" } }, left: { style: "medium", color: { argb: "FF10B981" } }, right: { style: "medium", color: { argb: "FF10B981" } } };
       }
       if (info.shiftIndices.length === 0) return;
       let bgColor: string;
@@ -291,7 +295,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     const newMode = mode === "custom";
     if (newMode !== useCustomRange) {
       setUseCustomRange(newMode);
-      setStaff(prev => prev.map(s => ({ ...s, blocked: [] })));
+      setStaff(prev => prev.map(s => ({ ...s, blocked: [], requested: [] })));
       setConfig(prev => ({ ...prev, holidays: [] }));
     }
   };
@@ -328,7 +332,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           const p = presets[0];
           if (p.config) setConfig(p.config);
           if (p.staff && p.staff.length > 0) {
-            setStaff(p.staff.map((s: StaffMember) => ({ ...s, blocked: s.blocked || [] })));
+            setStaff(p.staff.map((s: StaffMember) => ({ ...s, blocked: s.blocked || [], requested: s.requested || [] })));
           }
           toast({ title: lang === "th" ? "โหลดข้อมูลสตาฟสำเร็จ" : "Staff data loaded", description: lang === "th" ? "ข้อมูลสตาฟและการตั้งค่าจากครั้งก่อนถูกโหลดแล้ว" : "Your saved staff and config have been loaded" });
         }
@@ -544,6 +548,10 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
       newBlocked = member.blocked.filter((_, i) => i !== existing);
     } else {
       newBlocked = [...member.blocked, { date, shift: shiftIdx }];
+      const newRequested = (member.requested || []).filter(r => !(r.date === date && r.shift === shiftIdx));
+      if (newRequested.length !== (member.requested || []).length) {
+        updateStaff(staffId, "requested", newRequested);
+      }
     }
     updateStaff(staffId, "blocked", newBlocked);
   };
@@ -569,8 +577,39 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
       newBlocked = member.blocked.filter(b => !(b.date === date));
     } else {
       newBlocked = [...member.blocked.filter(b => b.date !== date), { date, shift: -1 }];
+      const newRequested = (member.requested || []).filter(r => r.date !== date);
+      if (newRequested.length !== (member.requested || []).length) {
+        updateStaff(staffId, "requested", newRequested);
+      }
     }
     updateStaff(staffId, "blocked", newBlocked);
+  };
+
+  const toggleRequestedDate = (staffId: string, date: number, shiftIdx: number) => {
+    const member = staff.find(s => s.id === staffId);
+    if (!member) return;
+    if (member.blocked.some(b => b.date === date && (b.shift === -1 || b.shift === shiftIdx))) return;
+    const requested = member.requested || [];
+    const existing = requested.findIndex(r => r.date === date && r.shift === shiftIdx);
+    let newRequested;
+    if (existing !== -1) {
+      newRequested = requested.filter((_, i) => i !== existing);
+    } else {
+      newRequested = [...requested, { date, shift: shiftIdx }];
+    }
+    updateStaff(staffId, "requested", newRequested);
+  };
+
+  const isDateRequested = (staffId: string, date: number, shiftIdx: number) => {
+    const member = staff.find(s => s.id === staffId);
+    if (!member) return false;
+    return (member.requested || []).some(r => r.date === date && r.shift === shiftIdx);
+  };
+
+  const hasAnyRequested = (staffId: string, date: number) => {
+    const member = staff.find(s => s.id === staffId);
+    if (!member) return false;
+    return (member.requested || []).some(r => r.date === date);
   };
 
   const checkLevelFeasibility = (): string[] => {
@@ -784,6 +823,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   };
 
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
+  const [calendarMode, setCalendarMode] = useState<'block' | 'request'>('block');
   const selectedStaffMember = staff.find(s => s.id === selectedStaffId) || null;
   const baseDate = useCustomRange && customStartDate
     ? parseISO(customStartDate)
@@ -1258,6 +1298,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                   <div className="space-y-1 max-h-[420px] overflow-y-auto pr-1">
                     {staff.map((s) => {
                       const blockedCount = s.blocked?.length || 0;
+                      const requestedCount = s.requested?.length || 0;
                       const isSelected = selectedStaffId === s.id;
                       return (
                         <div 
@@ -1297,6 +1338,9 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                           {blockedCount > 0 && (
                             <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">{blockedCount}</Badge>
                           )}
+                          {requestedCount > 0 && (
+                            <Badge className="text-[10px] px-1.5 py-0 shrink-0 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 hover:bg-emerald-100">{requestedCount}</Badge>
+                          )}
                           <Input 
                             type="number"
                             min={1}
@@ -1329,12 +1373,15 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                       <div>
                         <h3 className="font-semibold text-lg">{selectedStaffMember.name} - {t.availability}</h3>
                         <p className="text-sm text-muted-foreground">
-                          {t.clickDatesToBlock}
+                          {calendarMode === 'block' ? t.clickDatesToBlock : t.requestedShiftsDesc}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant="secondary" className="text-xs">
                           {selectedStaffMember.blocked?.length || 0} {t.blocked}
+                        </Badge>
+                        <Badge className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 hover:bg-emerald-100">
+                          {selectedStaffMember.requested?.length || 0} {t.requested}
                         </Badge>
                         {(selectedStaffMember.blocked?.length || 0) > 0 && (
                           <Button 
@@ -1347,6 +1394,27 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                           </Button>
                         )}
                       </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        variant={calendarMode === 'block' ? 'default' : 'outline'}
+                        size="sm"
+                        className={calendarMode === 'block' ? 'bg-red-500 hover:bg-red-600' : ''}
+                        onClick={() => setCalendarMode('block')}
+                        data-testid="button-mode-block"
+                      >
+                        {t.modeBlock}
+                      </Button>
+                      <Button
+                        variant={calendarMode === 'request' ? 'default' : 'outline'}
+                        size="sm"
+                        className={calendarMode === 'request' ? 'bg-emerald-500 hover:bg-emerald-600' : ''}
+                        onClick={() => setCalendarMode('request')}
+                        data-testid="button-mode-request"
+                      >
+                        {t.modeRequest}
+                      </Button>
                     </div>
 
                     <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4">
@@ -1363,22 +1431,44 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                           const date = i + 1;
                           const blocked = isFullDayBlocked(selectedStaffId!, date);
                           const partiallyBlocked = !blocked && selectedStaffMember.blocked?.some(b => b.date === date);
+                          const hasRequested = hasAnyRequested(selectedStaffId!, date);
                           const currentDate = getDateForIndex(date);
                           const isWeekend = currentDate.getDay() === 0 || currentDate.getDay() === 6;
                           
                           return (
                             <button
                               key={date}
-                              onClick={() => toggleFullDayBlock(selectedStaffId!, date)}
+                              onClick={() => {
+                                if (calendarMode === 'block') {
+                                  toggleFullDayBlock(selectedStaffId!, date);
+                                } else {
+                                  const member = staff.find(s => s.id === selectedStaffId);
+                                  if (!member) return;
+                                  const requested = member.requested || [];
+                                  const hasAny = requested.some(r => r.date === date);
+                                  let newRequested;
+                                  if (hasAny) {
+                                    newRequested = requested.filter(r => r.date !== date);
+                                  } else {
+                                    const newEntries = config.shiftNames
+                                      .map((_, sIdx) => ({ date, shift: sIdx }))
+                                      .filter(e => !member.blocked.some(b => b.date === date && (b.shift === -1 || b.shift === e.shift)));
+                                    newRequested = [...requested, ...newEntries];
+                                  }
+                                  updateStaff(selectedStaffId!, "requested", newRequested);
+                                }
+                              }}
                               className={`
                                 relative p-2 rounded-md text-sm font-medium transition-all text-center
                                 ${blocked 
                                   ? 'bg-red-500 text-white hover:bg-red-600' 
                                   : partiallyBlocked
                                     ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-orange-900/50 ring-1 ring-orange-300 dark:ring-orange-700'
-                                    : isWeekend 
-                                      ? 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700' 
-                                      : 'bg-white dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                    : hasRequested
+                                      ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 ring-1 ring-emerald-300 dark:ring-emerald-700'
+                                      : isWeekend 
+                                        ? 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700' 
+                                        : 'bg-white dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-700'
                                 }
                               `}
                               data-testid={`calendar-day-${date}`}
@@ -1486,6 +1576,61 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
 
                         {(!selectedStaffMember.blocked || selectedStaffMember.blocked.length === 0) && (
                           <p className="text-sm text-center text-muted-foreground py-4 italic">{t.noBlockedDates}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">{t.requestedShifts}</Label>
+                      <p className="text-xs text-muted-foreground">{t.requestedShiftsDesc}</p>
+                      <div className="max-h-[200px] overflow-y-auto space-y-1 pr-1">
+                        {(selectedStaffMember.requested || [])
+                          .reduce<{ date: number; shifts: number[] }[]>((acc, r) => {
+                            const existing = acc.find(a => a.date === r.date);
+                            if (existing) { existing.shifts.push(r.shift); }
+                            else { acc.push({ date: r.date, shifts: [r.shift] }); }
+                            return acc;
+                          }, [])
+                          .sort((a, b) => a.date - b.date)
+                          .map((group) => {
+                            const currentDate = getDateForIndex(group.date);
+                            return (
+                              <div key={`req-${group.date}`} className="flex items-center justify-between gap-2 p-2 bg-emerald-50 dark:bg-emerald-900/10 rounded-md border border-emerald-200 dark:border-emerald-800">
+                                <span className="text-sm font-medium">{format(currentDate, "MMM d")} ({format(currentDate, "EEE")})</span>
+                                <div className="flex items-center gap-1">
+                                  {config.shiftNames.map((shiftName, sIdx) => {
+                                    const isReq = group.shifts.includes(sIdx);
+                                    return (
+                                      <Badge 
+                                        key={sIdx}
+                                        variant="outline"
+                                        className={`text-[10px] cursor-pointer ${isReq ? 'bg-emerald-500 text-white border-emerald-500' : ''}`}
+                                        onClick={() => toggleRequestedDate(selectedStaffId!, group.date, sIdx)}
+                                        data-testid={`badge-req-${group.date}-${sIdx}`}
+                                      >
+                                        {shiftName}
+                                      </Badge>
+                                    );
+                                  })}
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    className="h-5 w-5 text-muted-foreground hover:text-destructive ml-1"
+                                    onClick={() => {
+                                      const newRequested = (selectedStaffMember.requested || []).filter(r => r.date !== group.date);
+                                      updateStaff(selectedStaffId!, "requested", newRequested);
+                                    }}
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            );
+                          })
+                        }
+
+                        {(!selectedStaffMember.requested || selectedStaffMember.requested.length === 0) && (
+                          <p className="text-sm text-center text-muted-foreground py-2 italic">{t.noRequestedDates}</p>
                         )}
                       </div>
                     </div>

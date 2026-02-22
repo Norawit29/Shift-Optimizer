@@ -142,6 +142,12 @@ export class ShiftOptimizer {
     return member.blocked.some(b => b.date === date && (b.shift === -1 || b.shift === shiftIdx));
   }
 
+  private isRequested(staffIdx: number, dayIdx: number, shiftIdx: number): boolean {
+    const member = this.staff[staffIdx];
+    const date = dayIdx + 1;
+    return (member.requested || []).some(r => r.date === date && r.shift === shiftIdx);
+  }
+
   private vn(staffIdx: number, dayIdx: number, shiftIdx: number): string {
     return `x_${staffIdx}_${dayIdx}_${shiftIdx}`;
   }
@@ -256,6 +262,18 @@ export class ShiftOptimizer {
         lines.push(`  c${cIdx.val++}:`);
         lines.push(writeTerms(terms, 10));
         lines.push(`  <= ${maxShifts}`);
+      }
+    }
+
+    for (let i = 0; i < N; i++) {
+      const requested = this.staff[i].requested || [];
+      for (const req of requested) {
+        const d = req.date - 1;
+        if (d < 0 || d >= D) continue;
+        const v = this.vn(i, d, req.shift);
+        if (varMap.has(v)) {
+          lines.push(`  c${cIdx.val++}: ${v} = 1`);
+        }
       }
     }
 

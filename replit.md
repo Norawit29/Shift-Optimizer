@@ -14,6 +14,20 @@ The scheduler supports **separate weekend/holiday staffing**:
 - Setting a shift's holiday staff to 0 effectively disables that shift on weekends/holidays
 - The optimizer, schedule view, and Excel export all respect per-day staffing requirements
 
+The scheduler supports **consecutive shift rules** with two types:
+- **Next-day rules** (`type: 'nextDay'`): Prevent shift A on day D followed by shift B on day D+1 (e.g., Night→Morning)
+- **Same-day rules** (`type: 'sameDay'`): Prevent two overlapping shifts on the same day (e.g., 9-22 with Morning)
+- Each rule has `from`, `to` (shift indices) and optional `type` (defaults to 'nextDay' for backward compatibility)
+- Same-day rules are symmetric in the LP constraint (`x_from + x_to <= 1`)
+
+The scheduler supports **requested/preferred shifts**:
+- Each StaffMember has optional `requested` array (same format as `blocked`: `{date, shift}[]`)
+- Requested shifts are enforced as HARD constraints in the optimizer (`x[i,d,s] = 1`)
+- UI has mode toggle: "Block mode" (red) and "Request mode" (green)
+- In request mode, clicking a calendar date adds all non-blocked shifts as requested
+- Blocked and requested are mutually exclusive — blocking a date/shift auto-removes any requests
+- Excel export shows green borders for cells with fulfilled requested shifts
+
 The scheduler supports **staff levels** (up to 5 levels):
 - `staffLevels` in SchedulerConfig: array of level names (e.g., ["พยาบาล", "ผู้ช่วยพยาบาล", "คนงาน"])
 - Each StaffMember has an optional `level` field (0-based index into staffLevels)
