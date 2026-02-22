@@ -290,6 +290,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const [levelWarnings, setLevelWarnings] = useState<string[]>([]);
   const [showPreCheckWarning, setShowPreCheckWarning] = useState(false);
   const [preCheckWarnings, setPreCheckWarnings] = useState<string[]>([]);
+  const [preCheckConflicts, setPreCheckConflicts] = useState<string[]>([]);
   const [hasExported, setHasExported] = useState(false);
   const { user } = useAuth();
 
@@ -758,8 +759,8 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     })();
   };
 
-  const checkPreOptimization = (): string[] => {
-    const warnings: string[] = [];
+  const checkPreOptimization = (): { capacityWarnings: string[]; conflicts: string[] } => {
+    const capacityWarnings: string[] = [];
     let totalDays: number;
     if (useCustomRange && customStartDate && customEndDate) {
       const start = new Date(customStartDate);
@@ -797,7 +798,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
         }
         if (available < needed) {
           const dt = getDateForIndex(d);
-          warnings.push(
+          capacityWarnings.push(
             t.capacityWarningDay
               .replace("{day}", String(d))
               .replace("{date}", format(dt, "d/M"))
@@ -811,7 +812,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
 
     let totalCapacity = staff.reduce((sum, m) => sum + m.maxShifts, 0);
     if (totalSlots > totalCapacity) {
-      warnings.unshift(
+      capacityWarnings.unshift(
         t.capacityWarning
           .replace("{totalSlots}", String(totalSlots))
           .replace("{totalCapacity}", String(totalCapacity))
@@ -857,18 +858,15 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
         }
       }
     }
-    if (conflicts.length > 0) {
-      warnings.push(t.requestedConflictWarning);
-      warnings.push(...conflicts);
-    }
 
-    return warnings;
+    return { capacityWarnings, conflicts };
   };
 
   const runOptimizer = () => {
-    const preChecks = checkPreOptimization();
-    if (preChecks.length > 0) {
-      setPreCheckWarnings(preChecks);
+    const { capacityWarnings, conflicts } = checkPreOptimization();
+    if (conflicts.length > 0 || capacityWarnings.length > 0) {
+      setPreCheckConflicts(conflicts);
+      setPreCheckWarnings(capacityWarnings);
       setShowPreCheckWarning(true);
       return;
     }
@@ -2381,20 +2379,37 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
         <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-amber-500 dark:text-amber-400 shrink-0" />
-              <DialogTitle>{t.preCheckWarningTitle}</DialogTitle>
+              {preCheckConflicts.length > 0
+                ? <AlertTriangle className="w-5 h-5 text-red-500 dark:text-red-400 shrink-0" />
+                : <AlertTriangle className="w-5 h-5 text-amber-500 dark:text-amber-400 shrink-0" />
+              }
+              <DialogTitle>
+                {preCheckConflicts.length > 0 ? t.preCheckConflictTitle : t.preCheckWarningTitle}
+              </DialogTitle>
             </div>
             <DialogDescription className="pt-2">
-              {t.preCheckWarningDesc}
+              {preCheckConflicts.length > 0 ? t.preCheckConflictDesc : t.preCheckWarningDesc}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2 text-sm text-muted-foreground">
-            {preCheckWarnings.map((w, i) => (
-              <div key={i} className="pl-3 border-l-2 border-amber-400 dark:border-amber-500 py-1">
-                {w}
-              </div>
-            ))}
-          </div>
+          {preCheckConflicts.length > 0 && (
+            <div className="space-y-2 text-sm">
+              {preCheckConflicts.map((c, i) => (
+                <div key={`c-${i}`} className="pl-3 border-l-2 border-red-400 dark:border-red-500 py-1 text-red-700 dark:text-red-300">
+                  {c}
+                </div>
+              ))}
+              <p className="text-sm text-red-600 dark:text-red-400 font-medium italic">{t.mustFixBeforeProceed}</p>
+            </div>
+          )}
+          {preCheckWarnings.length > 0 && preCheckConflicts.length === 0 && (
+            <div className="space-y-2 text-sm text-muted-foreground">
+              {preCheckWarnings.map((w, i) => (
+                <div key={`w-${i}`} className="pl-3 border-l-2 border-amber-400 dark:border-amber-500 py-1">
+                  {w}
+                </div>
+              ))}
+            </div>
+          )}
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
             <Button
               variant="outline"
@@ -2403,12 +2418,14 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
             >
               {t.cancelOptimization}
             </Button>
-            <Button
-              onClick={proceedAfterPreCheck}
-              data-testid="button-proceed-precheck"
-            >
-              {t.proceedAnyway}
-            </Button>
+            {preCheckConflicts.length === 0 && (
+              <Button
+                onClick={proceedAfterPreCheck}
+                data-testid="button-proceed-precheck"
+              >
+                {t.proceedAnyway}
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>
