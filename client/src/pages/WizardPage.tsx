@@ -1508,13 +1508,11 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               <CardContent className="p-6">
                 {selectedStaffMember ? (
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <div>
-                        <h3 className="font-semibold text-lg">{selectedStaffMember.name} - {t.availability}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {calendarMode === 'block' ? t.clickDatesToBlock : t.requestedShiftsDesc}
-                        </p>
-                      </div>
+                    <div className="space-y-2">
+                      <h3 className="font-semibold text-lg">{selectedStaffMember.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {calendarMode === 'block' ? t.clickDatesToBlock : t.requestedShiftsDesc}
+                      </p>
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant="secondary" className="text-xs">
                           {selectedStaffMember.blocked?.length || 0} {t.blocked}
