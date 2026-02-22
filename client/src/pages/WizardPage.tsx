@@ -262,7 +262,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
     return next.getFullYear();
   });
-  const [config, setConfig] = useState<SchedulerConfig>(() => getInitialConfig("th"));
+  const [config, setConfig] = useState<SchedulerConfig>(() => getInitialConfig(localStorage.getItem("app-lang") || "th"));
   const [staff, setStaff] = useState<StaffMember[]>(INITIAL_STAFF);
   const [showBulkAdd, setShowBulkAdd] = useState(false);
   const [bulkCount, setBulkCount] = useState(10);
