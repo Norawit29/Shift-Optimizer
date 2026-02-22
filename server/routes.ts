@@ -2,7 +2,7 @@ import type { Express } from "express";
 import type { Server } from "http";
 import { OAuth2Client } from "google-auth-library";
 import { db } from "./db";
-import { users, userPresets, feedbacks } from "@shared/schema";
+import { users, userPresets, feedbacks, usageLogs, generatedSchedules } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -167,6 +167,57 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Feedback error:", error);
       res.status(500).json({ message: "Failed to save feedback" });
+    }
+  });
+
+  app.post("/api/usage-log", async (req, res) => {
+    try {
+      const { eventType, staffCount, dayCount, shiftCount, coveragePercent, isPartial, durationMs, metadata } = req.body;
+      if (!eventType) {
+        return res.status(400).json({ message: "Missing eventType" });
+      }
+      const [log] = await db
+        .insert(usageLogs)
+        .values({
+          userId: req.session.userId || null,
+          eventType,
+          staffCount: staffCount ?? null,
+          dayCount: dayCount ?? null,
+          shiftCount: shiftCount ?? null,
+          coveragePercent: coveragePercent ?? null,
+          isPartial: isPartial ?? null,
+          durationMs: durationMs ?? null,
+          metadata: metadata ?? null,
+        })
+        .returning();
+      res.json({ ok: true, id: log.id });
+    } catch (error) {
+      console.error("Usage log error:", error);
+      res.status(500).json({ message: "Failed to save usage log" });
+    }
+  });
+
+  app.post("/api/generated-schedules", async (req, res) => {
+    try {
+      const { month, year, config, staff, result } = req.body;
+      if (!config || !staff || !result) {
+        return res.status(400).json({ message: "Missing config, staff, or result" });
+      }
+      const [schedule] = await db
+        .insert(generatedSchedules)
+        .values({
+          userId: req.session.userId || null,
+          month: month ?? 0,
+          year: year ?? 0,
+          config,
+          staff,
+          result,
+        })
+        .returning();
+      res.json({ ok: true, id: schedule.id });
+    } catch (error) {
+      console.error("Generated schedule error:", error);
+      res.status(500).json({ message: "Failed to save generated schedule" });
     }
   });
 

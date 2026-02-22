@@ -98,6 +98,10 @@ The single `schedules` table contains:
 - `isPublished` — Boolean flag
 - `createdAt`, `updatedAt` — Timestamps
 
+Analytics tables:
+- `usage_logs` — Tracks events like schedule generation with metadata (staff count, day count, shift count, coverage %, duration, etc.)
+- `generated_schedules` — Stores anonymized copies of generated schedules (config, anonymized staff, optimizer result) for analytics. Staff names are anonymized client-side before sending.
+
 ### Shared Code (`shared/`)
 
 - `schema.ts` — Drizzle table definitions and Zod insert schemas, plus TypeScript types

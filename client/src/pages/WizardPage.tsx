@@ -610,6 +610,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const executeOptimizer = (softLevels: boolean) => {
     setIsOptimizing(true);
     setOptimizeProgress(0);
+    const optimizeStartTime = performance.now();
     (async () => {
       try {
         let holStaff = config.holidayStaffPerShift;
@@ -636,6 +637,50 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
         setSelectedVersion(0);
         setStep(4);
         savePreset();
+
+        const totalDays = allResults[0]?.schedule?.length ?? 0;
+        const totalSlots = totalDays * config.shiftNames.length;
+        const filledSlots = allResults[0]?.schedule?.reduce((acc, day) =>
+          acc + day.shifts.reduce((a2, s) => a2 + s.length, 0), 0) ?? 0;
+        const coveragePct = totalSlots > 0 ? Math.round((filledSlots / (totalSlots * config.staffPerShift.reduce((a, b) => a + b, 0) / config.shiftNames.length)) * 100) : 0;
+        try {
+          fetch("/api/usage-log", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              eventType: "schedule_generated",
+              staffCount: staff.length,
+              dayCount: totalDays,
+              shiftCount: config.shiftNames.length,
+              coveragePercent: Math.min(coveragePct, 100),
+              isPartial: allResults[0]?.isPartial ?? false,
+              durationMs: Math.round(performance.now() - optimizeStartTime),
+              metadata: {
+                shiftNames: config.shiftNames,
+                softLevels,
+                versions: allResults.length,
+                hasLevels: !!config.staffLevels?.length,
+              },
+            }),
+          }).catch(() => {});
+          const anonymizedStaff = staff.map((s, i) => ({
+            ...s,
+            name: `Staff_${i + 1}`,
+            id: `s${i + 1}`,
+          }));
+          fetch("/api/generated-schedules", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              month,
+              year,
+              config: optimizerConfig,
+              staff: anonymizedStaff,
+              result: allResults[0],
+            }),
+          }).catch(() => {});
+        } catch {}
+
         const anyPartial = allResults.some(r => r.isPartial && r.unfilledSlots && r.unfilledSlots.length > 0);
         if (anyPartial) {
           toast({ 

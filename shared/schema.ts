@@ -112,6 +112,31 @@ export const feedbacks = pgTable("feedbacks", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const usageLogs = pgTable("usage_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"),
+  eventType: text("event_type").notNull(),
+  staffCount: integer("staff_count"),
+  dayCount: integer("day_count"),
+  shiftCount: integer("shift_count"),
+  coveragePercent: integer("coverage_percent"),
+  isPartial: boolean("is_partial"),
+  durationMs: integer("duration_ms"),
+  metadata: jsonb("metadata").$type<Record<string, any>>(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const generatedSchedules = pgTable("generated_schedules", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id"),
+  month: integer("month").notNull(),
+  year: integer("year").notNull(),
+  config: jsonb("config").$type<SchedulerConfig>().notNull(),
+  staff: jsonb("staff").$type<StaffMember[]>().notNull(),
+  result: jsonb("result").$type<OptimizerResult>().notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // === SCHEMAS ===
 
 export const insertScheduleSchema = createInsertSchema(schedules).omit({ 
@@ -120,8 +145,22 @@ export const insertScheduleSchema = createInsertSchema(schedules).omit({
   updatedAt: true 
 });
 
+export const insertUsageLogSchema = createInsertSchema(usageLogs).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertGeneratedScheduleSchema = createInsertSchema(generatedSchedules).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type Schedule = typeof schedules.$inferSelect;
 export type InsertSchedule = z.infer<typeof insertScheduleSchema>;
 
 export type User = typeof users.$inferSelect;
 export type UserPreset = typeof userPresets.$inferSelect;
+export type UsageLog = typeof usageLogs.$inferSelect;
+export type InsertUsageLog = z.infer<typeof insertUsageLogSchema>;
+export type GeneratedSchedule = typeof generatedSchedules.$inferSelect;
+export type InsertGeneratedSchedule = z.infer<typeof insertGeneratedScheduleSchema>;
