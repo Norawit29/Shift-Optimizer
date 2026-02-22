@@ -84,22 +84,9 @@ export function TutorialBanner({ wizardStep }: { wizardStep: number }) {
 
   useEffect(() => {
     if (tutorialSeen) return;
-    if (localStorage.getItem(TUTORIAL_SEEN_KEY)) {
-      setTutorialSeen(true);
-      return;
-    }
     const handler = () => setTutorialSeen(true);
     window.addEventListener(TUTORIAL_SEEN_EVENT, handler);
-    const fallback = setInterval(() => {
-      if (localStorage.getItem(TUTORIAL_SEEN_KEY)) {
-        setTutorialSeen(true);
-        clearInterval(fallback);
-      }
-    }, 300);
-    return () => {
-      window.removeEventListener(TUTORIAL_SEEN_EVENT, handler);
-      clearInterval(fallback);
-    };
+    return () => window.removeEventListener(TUTORIAL_SEEN_EVENT, handler);
   }, [tutorialSeen]);
 
   const tip = stepTips[wizardStep];
