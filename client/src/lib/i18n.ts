@@ -14,8 +14,8 @@ const translations = {
     viewHistory: "View History",
     featureFairTitle: "Fair Distribution",
     featureFairDesc: "Automatically balances shifts across all available staff members.",
-    featureSmartTitle: "Smart Constraints",
-    featureSmartDesc: "Respects rest periods, consecutive shift rules, and blocked dates.",
+    featureSmartTitle: "90% Less Time Scheduling",
+    featureSmartDesc: "From hours every month down to just a few minutes.",
     featureExportTitle: "Instant Export",
     featureExportDesc: "Generate a clean, printable view of the monthly roster in seconds.",
 
@@ -235,8 +235,8 @@ const translations = {
     viewHistory: "ดูประวัติ",
     featureFairTitle: "กระจายเวรยุติธรรม",
     featureFairDesc: "กระจายเวรให้สมดุลระหว่างบุคลากรทุกคนโดยอัตโนมัติ",
-    featureSmartTitle: "เงื่อนไขอัจฉริยะ",
-    featureSmartDesc: "เคารพช่วงพักผ่อน กฎเวรต่อเนื่อง และวันที่บล็อก",
+    featureSmartTitle: "ลดเวลาจัดเวรลง 90%",
+    featureSmartDesc: "จากหลายชั่วโมงต่อเดือน เหลือเพียงไม่กี่นาที",
     featureExportTitle: "ส่งออกทันที",
     featureExportDesc: "สร้างมุมมองตารางเวรรายเดือนที่พิมพ์ได้ในไม่กี่วินาที",
 
