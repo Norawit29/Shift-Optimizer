@@ -9,7 +9,7 @@ const translations = {
     // HomePage
     heroTitle1: "Automated Shift Scheduling",
     heroTitle2: "Turn monthly headaches into a breeze.",
-    heroDesc: "Handle complex constraints with ease.\nPowered by AI Scheduling Engine.",
+    heroDesc: "Handle complex constraints with ease.\nPowered by AI Scheduling Engine that calculates and allocates shifts fairly.",
     createNewSchedule: "Create New Schedule",
     viewHistory: "View History",
     featureFairTitle: "Fair Distribution",
@@ -230,7 +230,7 @@ const translations = {
     // HomePage
     heroTitle1: "ระบบจัดเวรอัตโนมัติ",
     heroTitle2: "เปลี่ยนความยุ่งยากของทุกเดือนให้เป็นเรื่องง่าย",
-    heroDesc: "รองรับเงื่อนไขที่หลากหลายและซับซ้อน\nด้วยระบบ AI Scheduling Engine",
+    heroDesc: "รองรับเงื่อนไขที่หลากหลายและซับซ้อน\nด้วยระบบ AI Scheduling Engine ที่คำนวณและจัดสรรเวรอย่างยุติธรรม",
     createNewSchedule: "สร้างตารางเวรใหม่",
     viewHistory: "ดูประวัติ",
     featureFairTitle: "กระจายเวรยุติธรรม",
