@@ -53,12 +53,12 @@ const MONTHS = [
   "July", "August", "September", "October", "November", "December"
 ];
 
-const INITIAL_CONFIG: SchedulerConfig = {
+const getInitialConfig = (lang: string): SchedulerConfig => ({
   shiftsPerDay: 3,
-  shiftNames: ["Morning", "Evening", "Night"],
-  staffPerShift: [2, 2, 1],
+  shiftNames: lang === "th" ? ["เช้า", "บ่าย", "ดึก"] : ["Morning", "Evening", "Night"],
+  staffPerShift: [3, 3, 3],
   consecutiveRules: [{ from: 2, to: 0 }],
-};
+});
 
 const INITIAL_STAFF: StaffMember[] = [
   { id: "1", name: "Dr. Smith", maxShifts: 20, blocked: [] },
@@ -262,7 +262,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
     return next.getFullYear();
   });
-  const [config, setConfig] = useState<SchedulerConfig>(INITIAL_CONFIG);
+  const [config, setConfig] = useState<SchedulerConfig>(() => getInitialConfig("th"));
   const [staff, setStaff] = useState<StaffMember[]>(INITIAL_STAFF);
   const [showBulkAdd, setShowBulkAdd] = useState(false);
   const [bulkCount, setBulkCount] = useState(10);
