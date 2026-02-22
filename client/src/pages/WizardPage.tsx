@@ -639,10 +639,10 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
         savePreset();
 
         const totalDays = allResults[0]?.schedule?.length ?? 0;
-        const totalSlots = totalDays * config.shiftNames.length;
+        const totalRequiredSlots = totalDays * config.staffPerShift.reduce((a, b) => a + b, 0);
         const filledSlots = allResults[0]?.schedule?.reduce((acc, day) =>
           acc + day.shifts.reduce((a2, s) => a2 + s.length, 0), 0) ?? 0;
-        const coveragePct = totalSlots > 0 ? Math.round((filledSlots / (totalSlots * config.staffPerShift.reduce((a, b) => a + b, 0) / config.shiftNames.length)) * 100) : 0;
+        const coveragePct = totalRequiredSlots > 0 ? Math.round((filledSlots / totalRequiredSlots) * 100) : 0;
         try {
           fetch("/api/usage-log", {
             method: "POST",
