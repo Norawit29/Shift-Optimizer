@@ -1576,10 +1576,12 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                                   if (hasAny) {
                                     newRequested = requested.filter(r => r.date !== date);
                                   } else {
-                                    const newEntries = config.shiftNames
-                                      .map((_, sIdx) => ({ date, shift: sIdx }))
-                                      .filter(e => !member.blocked.some(b => b.date === date && (b.shift === -1 || b.shift === e.shift)));
-                                    newRequested = [...requested, ...newEntries];
+                                    const isBlocked = member.blocked.some(b => b.date === date && (b.shift === -1 || b.shift === 0));
+                                    if (!isBlocked) {
+                                      newRequested = [...requested, { date, shift: 0 }];
+                                    } else {
+                                      newRequested = requested;
+                                    }
                                   }
                                   updateStaff(selectedStaffId!, "requested", newRequested);
                                 }
