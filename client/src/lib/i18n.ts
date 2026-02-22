@@ -267,7 +267,7 @@ const translations = {
     staffReqHoliday: "คนวันหยุด",
 
     // Step 2
-    staffAvailability: "บุคลากรและวันว่าง",
+    staffAvailability: "บุคลากรและวันไม่ว่าง",
     staffAvailabilityDesc: "เพิ่มสมาชิกในทีมและกำหนดวันที่ไม่สะดวกบนปฏิทิน",
     staff: "บุคลากร",
     add: "เพิ่ม",
@@ -288,8 +288,8 @@ const translations = {
     maxShifts: "เวรสูงสุด",
     blocked: "บล็อก",
     selectStaffMember: "เลือกบุคลากร",
-    selectStaffMemberDesc: "คลิกที่ชื่อบุคลากรจากรายการเพื่อดูและแก้ไขปฏิทินวันว่าง",
-    availability: "วันว่าง",
+    selectStaffMemberDesc: "คลิกที่ชื่อบุคลากรจากรายการเพื่อดูและแก้ไขปฏิทินวันไม่ว่าง",
+    availability: "วันไม่ว่าง",
     clickDatesToBlock: "คลิกวันที่เพื่อบล็อก/ยกเลิกบล็อก วันที่บล็อกจะแสดงเป็นสีแดง",
     clearAll: "ล้างทั้งหมด",
     blockSpecificShifts: "บล็อกเวรเฉพาะ",
