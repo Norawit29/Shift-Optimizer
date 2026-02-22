@@ -44,7 +44,9 @@ export default function HomePage() {
           </h1>
           
           <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-            {t.heroDesc}
+            {t.heroDesc.split("\n").map((line, i) => (
+              <span key={i}>{line}{i < t.heroDesc.split("\n").length - 1 && <br />}</span>
+            ))}
           </p>
         </div>
 

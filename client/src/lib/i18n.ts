@@ -7,9 +7,9 @@ const translations = {
     step: "Step",
 
     // HomePage
-    heroTitle1: "Fair Schedules,",
-    heroTitle2: "Happier Staff.",
-    heroDesc: "Automate your duty roster creation with our AI-powered constraint solver. Ensure fairness, handle requests, and save hours of manual work.",
+    heroTitle1: "Automated Shift Scheduling",
+    heroTitle2: "Turn monthly headaches into a breeze.",
+    heroDesc: "Handle complex constraints with ease.\nPowered by AI that calculates and allocates shifts fairly.",
     createNewSchedule: "Create New Schedule",
     viewHistory: "View History",
     featureFairTitle: "Fair Distribution",
@@ -228,9 +228,9 @@ const translations = {
     step: "ขั้นตอน",
 
     // HomePage
-    heroTitle1: "ตารางเวรยุติธรรม",
-    heroTitle2: "บุคลากรมีความสุข",
-    heroDesc: "สร้างตารางเวรอัตโนมัติด้วยระบบจัดสรรอัจฉริยะ กระจายเวรอย่างยุติธรรม จัดการคำขอ และประหยัดเวลาทำงาน",
+    heroTitle1: "ระบบจัดเวรอัตโนมัติ",
+    heroTitle2: "เปลี่ยนความยุ่งยากของทุกเดือนให้เป็นเรื่องง่าย",
+    heroDesc: "รองรับเงื่อนไขที่หลากหลายและซับซ้อน\nด้วยระบบ AI ที่คำนวณและจัดสรรเวรอย่างยุติธรรม",
     createNewSchedule: "สร้างตารางเวรใหม่",
     viewHistory: "ดูประวัติ",
     featureFairTitle: "กระจายเวรยุติธรรม",
