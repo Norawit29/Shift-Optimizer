@@ -204,8 +204,17 @@ async function exportToExcel(
     const excelRow = ws3.addRow(rowValues);
 
     dayCellInfo.forEach((info, ci) => {
-      if (info.shiftIndices.length === 0) return;
+      const dayDate = result[ci].date;
+      const allShiftsBlocked = config.shiftNames.every((_, shiftIdx) =>
+        s.blocked.some(b => b.date === dayDate && b.shift === shiftIdx)
+      );
       const cell = excelRow.getCell(ci + 2 + ws3ColOffset);
+      if (allShiftsBlocked) {
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFF4444" } };
+        cell.font = { color: { argb: "FFFFFFFF" } };
+        return;
+      }
+      if (info.shiftIndices.length === 0) return;
       let bgColor: string;
       if (info.shiftIndices.length === 1) {
         bgColor = shiftColors[info.shiftIndices[0]];
