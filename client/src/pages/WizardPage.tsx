@@ -308,6 +308,21 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const [, setLocation] = useLocation();
   const { t, dayNames, lang } = useLanguage();
 
+  const defaultShiftNamesTh = ["เช้า", "บ่าย", "ดึก"];
+  const defaultShiftNamesEn = ["Morning", "Evening", "Night"];
+  useEffect(() => {
+    setConfig(prev => {
+      const isDefaultTh = prev.shiftNames.length === 3 && prev.shiftNames.every((n, i) => n === defaultShiftNamesTh[i]);
+      const isDefaultEn = prev.shiftNames.length === 3 && prev.shiftNames.every((n, i) => n === defaultShiftNamesEn[i]);
+      if (isDefaultTh || isDefaultEn) {
+        const newNames = lang === "th" ? defaultShiftNamesTh : defaultShiftNamesEn;
+        if (prev.shiftNames.every((n, i) => n === newNames[i])) return prev;
+        return { ...prev, shiftNames: newNames };
+      }
+      return prev;
+    });
+  }, [lang]);
+
   useEffect(() => {
     if (user && showLoginPrompt) {
       setShowLoginPrompt(false);
