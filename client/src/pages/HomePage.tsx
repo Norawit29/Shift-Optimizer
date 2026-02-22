@@ -38,7 +38,7 @@ export default function HomePage() {
           
           <h1 className="text-5xl md:text-7xl font-display font-bold text-slate-900 dark:text-white leading-tight">
             {t.heroTitle1} <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent text-3xl md:text-5xl">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent text-2xl md:text-4xl whitespace-nowrap">
               {t.heroTitle2}
             </span>
           </h1>
