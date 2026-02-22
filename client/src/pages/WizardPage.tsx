@@ -1507,11 +1507,14 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                         <Badge className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 hover:bg-emerald-100">
                           {selectedStaffMember.requested?.length || 0} {t.requested}
                         </Badge>
-                        {(selectedStaffMember.blocked?.length || 0) > 0 && (
+                        {((selectedStaffMember.blocked?.length || 0) > 0 || (selectedStaffMember.requested?.length || 0) > 0) && (
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => updateStaff(selectedStaffId!, "blocked", [])}
+                            onClick={() => {
+                              updateStaff(selectedStaffId!, "blocked", []);
+                              updateStaff(selectedStaffId!, "requested", []);
+                            }}
                             data-testid="button-clear-blocks"
                           >
                             {t.clearAll}
