@@ -288,6 +288,8 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const [presetLoaded, setPresetLoaded] = useState(false);
   const [showLevelWarning, setShowLevelWarning] = useState(false);
   const [levelWarnings, setLevelWarnings] = useState<string[]>([]);
+  const [showPreCheckWarning, setShowPreCheckWarning] = useState(false);
+  const [preCheckWarnings, setPreCheckWarnings] = useState<string[]>([]);
   const [hasExported, setHasExported] = useState(false);
   const { user } = useAuth();
 
@@ -756,7 +758,131 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     })();
   };
 
+  const checkPreOptimization = (): string[] => {
+    const warnings: string[] = [];
+    let totalDays: number;
+    if (useCustomRange && customStartDate && customEndDate) {
+      const start = new Date(customStartDate);
+      const end = new Date(customEndDate);
+      totalDays = Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
+    } else {
+      totalDays = new Date(year, month, 0).getDate();
+    }
+
+    const holidayDays = new Set<number>();
+    if (config.balanceHolidays || config.separateHolidayConfig) {
+      for (let d = 1; d <= totalDays; d++) {
+        const dt = getDateForIndex(d);
+        const dow = dt.getDay();
+        if (dow === 0 || dow === 6) holidayDays.add(d);
+      }
+      if (config.holidays) {
+        for (const h of config.holidays) holidayDays.add(h);
+      }
+    }
+
+    let totalSlots = 0;
+    for (let d = 1; d <= totalDays; d++) {
+      const isHol = holidayDays.has(d);
+      const sps = (config.separateHolidayConfig && config.holidayStaffPerShift && isHol)
+        ? config.holidayStaffPerShift : config.staffPerShift;
+      for (let s = 0; s < config.shiftNames.length; s++) {
+        const needed = sps[s] || 0;
+        if (needed === 0) continue;
+        totalSlots += needed;
+        let available = 0;
+        for (const m of staff) {
+          const blocked = m.blocked.some(b => b.date === d && (b.shift === -1 || b.shift === s));
+          if (!blocked) available++;
+        }
+        if (available < needed) {
+          const dt = getDateForIndex(d);
+          warnings.push(
+            t.capacityWarningDay
+              .replace("{day}", String(d))
+              .replace("{date}", format(dt, "d/M"))
+              .replace("{shift}", config.shiftNames[s])
+              .replace("{needed}", String(needed))
+              .replace("{available}", String(available))
+          );
+        }
+      }
+    }
+
+    let totalCapacity = staff.reduce((sum, m) => sum + m.maxShifts, 0);
+    if (totalSlots > totalCapacity) {
+      warnings.unshift(
+        t.capacityWarning
+          .replace("{totalSlots}", String(totalSlots))
+          .replace("{totalCapacity}", String(totalCapacity))
+      );
+    }
+
+    const conflicts: string[] = [];
+    for (const m of staff) {
+      const requested = m.requested || [];
+      if (requested.length === 0) continue;
+      for (const rule of config.consecutiveRules) {
+        const ruleType = rule.type || 'nextDay';
+        if (ruleType === 'sameDay') {
+          for (let d = 1; d <= totalDays; d++) {
+            const hasFrom = requested.some(r => r.date === d && r.shift === rule.from);
+            const hasTo = requested.some(r => r.date === d && r.shift === rule.to);
+            if (hasFrom && hasTo) {
+              conflicts.push(
+                t.requestedConflictDetail
+                  .replace("{name}", m.name)
+                  .replace("{shiftA}", config.shiftNames[rule.from])
+                  .replace("{shiftB}", config.shiftNames[rule.to])
+                  .replace("{context}", t.requestedConflictSameDay.replace("{day}", String(d)))
+                  .replace("{ruleType}", t.conflictRuleSameDay)
+              );
+            }
+          }
+        } else {
+          for (let d = 1; d < totalDays; d++) {
+            const hasFrom = requested.some(r => r.date === d && r.shift === rule.from);
+            const hasTo = requested.some(r => r.date === d + 1 && r.shift === rule.to);
+            if (hasFrom && hasTo) {
+              conflicts.push(
+                t.requestedConflictDetail
+                  .replace("{name}", m.name)
+                  .replace("{shiftA}", config.shiftNames[rule.from])
+                  .replace("{shiftB}", config.shiftNames[rule.to])
+                  .replace("{context}", t.requestedConflictNextDay.replace("{dayA}", String(d)).replace("{dayB}", String(d + 1)))
+                  .replace("{ruleType}", t.conflictRuleNextDay)
+              );
+            }
+          }
+        }
+      }
+    }
+    if (conflicts.length > 0) {
+      warnings.push(t.requestedConflictWarning);
+      warnings.push(...conflicts);
+    }
+
+    return warnings;
+  };
+
   const runOptimizer = () => {
+    const preChecks = checkPreOptimization();
+    if (preChecks.length > 0) {
+      setPreCheckWarnings(preChecks);
+      setShowPreCheckWarning(true);
+      return;
+    }
+    const warnings = checkLevelFeasibility();
+    if (warnings.length > 0) {
+      setLevelWarnings(warnings);
+      setShowLevelWarning(true);
+    } else {
+      executeOptimizer(false);
+    }
+  };
+
+  const proceedAfterPreCheck = () => {
+    setShowPreCheckWarning(false);
     const warnings = checkLevelFeasibility();
     if (warnings.length > 0) {
       setLevelWarnings(warnings);
@@ -2248,6 +2374,42 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               : `${t.confirmSave} (${t.version} ${saveVersion + 1})`
             }
           </Button>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showPreCheckWarning} onOpenChange={setShowPreCheckWarning}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500 dark:text-amber-400 shrink-0" />
+              <DialogTitle>{t.preCheckWarningTitle}</DialogTitle>
+            </div>
+            <DialogDescription className="pt-2">
+              {t.preCheckWarningDesc}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 text-sm text-muted-foreground">
+            {preCheckWarnings.map((w, i) => (
+              <div key={i} className="pl-3 border-l-2 border-amber-400 dark:border-amber-500 py-1">
+                {w}
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setShowPreCheckWarning(false)}
+              data-testid="button-cancel-precheck"
+            >
+              {t.cancelOptimization}
+            </Button>
+            <Button
+              onClick={proceedAfterPreCheck}
+              data-testid="button-proceed-precheck"
+            >
+              {t.proceedAnyway}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
