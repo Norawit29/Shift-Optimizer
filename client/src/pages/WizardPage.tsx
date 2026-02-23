@@ -86,7 +86,8 @@ async function exportToExcel(
   result: DaySchedule[],
   config: SchedulerConfig,
   staff: StaffMember[],
-  labels: { date: string; day: string; staffName: string; total: string; summary: string; schedule: string; staffSchedule: string; level: string }
+  labels: { date: string; day: string; staffName: string; total: string; summary: string; schedule: string; staffSchedule: string; level: string },
+  lang: string
 ) {
   const isCustomRange = config.useCustomRange && config.customStartDate;
   const baseDate = isCustomRange
@@ -235,6 +236,60 @@ async function exportToExcel(
   for (let i = 2 + ws3ColOffset; i <= dateHeaders.length + 1 + ws3ColOffset; i++) ws3.getColumn(i).width = 10;
   for (let i = dateHeaders.length + 2 + ws3ColOffset; i <= dateHeaders.length + 1 + ws3ColOffset + config.shiftNames.length; i++) ws3.getColumn(i).width = 12;
   ws3.getColumn(matrixHeaders.length).width = 8;
+
+  if (hasLevels) {
+    ws3.addRow([]);
+    ws3.addRow([]);
+
+    const levelNames = config.staffLevels!;
+    const totalLabel = lang === "th" ? "รวม" : "Total";
+
+    config.shiftNames.forEach((shiftName, shiftIdx) => {
+      const shiftColor = SHIFT_COLORS[shiftIdx % SHIFT_COLORS.length];
+      const shiftHeaderRow = ws3.addRow([shiftName, ""]);
+      shiftHeaderRow.getCell(1).font = { bold: true, size: 12 };
+      shiftHeaderRow.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF" + shiftColor } };
+
+      levelNames.forEach((lvlName, lvlIdx) => {
+        const rowValues: (string | number)[] = ["", lvlName];
+        result.forEach((day) => {
+          const assignedIds = day.shifts[shiftIdx]?.map(String) || [];
+          const count = assignedIds.filter(id => {
+            const member = staff.find(s => s.id === id);
+            return member && (member.level ?? 0) === lvlIdx;
+          }).length;
+          rowValues.push(count);
+        });
+        const lvlRow = ws3.addRow(rowValues);
+        lvlRow.getCell(2).font = { bold: true };
+        for (let ci = 2 + ws3ColOffset; ci <= result.length + 1 + ws3ColOffset; ci++) {
+          const cell = lvlRow.getCell(ci);
+          const val = cell.value as number;
+          if (val > 0) {
+            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE8F5E9" } };
+            cell.font = { bold: true };
+          }
+          cell.alignment = { horizontal: "center" };
+        }
+      });
+
+      const totalRowValues: (string | number)[] = ["", totalLabel];
+      result.forEach((day) => {
+        const count = day.shifts[shiftIdx]?.length || 0;
+        totalRowValues.push(count);
+      });
+      const totRow = ws3.addRow(totalRowValues);
+      totRow.getCell(2).font = { bold: true };
+      for (let ci = 2 + ws3ColOffset; ci <= result.length + 1 + ws3ColOffset; ci++) {
+        const cell = totRow.getCell(ci);
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF" + shiftColor } };
+        cell.font = { bold: true };
+        cell.alignment = { horizontal: "center" };
+      }
+
+      ws3.addRow([]);
+    });
+  }
 
   const buffer = await wb.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
@@ -1005,7 +1060,8 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     };
     await exportToExcel(
       scheduleName, month, year, r.schedule, exConfig, staff,
-      { date: t.date, day: t.day, staffName: t.staffName, total: t.total, summary: t.summary, schedule: t.scheduleView, staffSchedule: t.staffSchedule, level: t.level }
+      { date: t.date, day: t.day, staffName: t.staffName, total: t.total, summary: t.summary, schedule: t.scheduleView, staffSchedule: t.staffSchedule, level: t.level },
+      lang
     );
     setShowSaveDialog(false);
     setHasExported(true);
