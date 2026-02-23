@@ -321,7 +321,7 @@ export class ShiftOptimizer {
 
     if (this.config.staffLevels && this.config.staffLevels.length > 0 && this.config.minStaffPerLevel) {
       const numLevels = this.config.staffLevels.length;
-      const useSoft = this.softLevelConstraints && options?.levelSlackVars;
+      const useSoft = !!(this.softLevelConstraints && options?.levelSlackVars);
       let levelConstraintCount = 0;
       if (options?.levelSlackVars !== undefined || !this.softLevelConstraints) {
         console.log(`[OPT] Level constraints: ${numLevels} levels, useSoft=${useSoft}`);
@@ -373,6 +373,48 @@ export class ShiftOptimizer {
     }
   }
 
+  private buildLevelBalanceConstraints(
+    levelSlackVars: string[],
+    cIdx: { val: number }
+  ): { levelMaxVars: string[]; levelMaxConstraints: string[] } {
+    const levelMaxVars: string[] = [];
+    const levelMaxConstraints: string[] = [];
+    if (levelSlackVars.length === 0) return { levelMaxVars, levelMaxConstraints };
+
+    const byLevel: Record<number, Record<number, string[]>> = {};
+    for (const lv of levelSlackVars) {
+      const parts = lv.split('_');
+      const s = parseInt(parts[2]);
+      const l = parseInt(parts[3]);
+      if (!byLevel[l]) byLevel[l] = {};
+      if (!byLevel[l][s]) byLevel[l][s] = [];
+      byLevel[l][s].push(lv);
+    }
+
+    for (const lStr of Object.keys(byLevel)) {
+      const l = parseInt(lStr);
+      const shiftGroups = byLevel[l];
+      const shiftKeys = Object.keys(shiftGroups);
+      if (shiftKeys.length <= 1) continue;
+      const maxVar = `lvMax_${l}`;
+      levelMaxVars.push(maxVar);
+      for (const sStr of shiftKeys) {
+        const vars = shiftGroups[parseInt(sStr)];
+        const terms = vars.map((v: string, idx: number) => idx === 0 ? v : `+ ${v}`);
+        terms.push(`- ${maxVar}`);
+        levelMaxConstraints.push(`  c${cIdx.val++}:`);
+        levelMaxConstraints.push(writeTerms(terms, 10));
+        levelMaxConstraints.push(`  <= 0`);
+      }
+    }
+
+    if (levelMaxVars.length > 0) {
+      console.log(`[OPT] Level balance: ${levelMaxVars.length} lvMax vars added to distribute violations evenly across shifts`);
+    }
+
+    return { levelMaxVars, levelMaxConstraints };
+  }
+
   private buildPhase1Model(
     varMap: Map<string, { staff: number; day: number; shift: number }>,
     binaryVars: string[]
@@ -417,6 +459,9 @@ export class ShiftOptimizer {
       }
     }
 
+    const { levelMaxVars, levelMaxConstraints } = this.buildLevelBalanceConstraints(levelSlackVars, cIdx);
+    constraintLines.push(...levelMaxConstraints);
+
     const lines: string[] = [];
     lines.push("Minimize");
     lines.push("  obj:");
@@ -433,6 +478,10 @@ export class ShiftOptimizer {
       const w = fmt(10000 + (Math.random() - 0.5) * 0.1);
       objParts.push(`+ ${w} ${lv}`);
     }
+    for (const mv of levelMaxVars) {
+      const w = fmt(100000 + (Math.random() - 0.5) * 0.1);
+      objParts.push(`+ ${w} ${mv}`);
+    }
     lines.push(writeTerms(objParts, 10));
 
     lines.push("Subject To");
@@ -444,6 +493,9 @@ export class ShiftOptimizer {
     }
     for (const lv of levelSlackVars) {
       lines.push(`  ${lv} >= 0`);
+    }
+    for (const mv of levelMaxVars) {
+      lines.push(`  ${mv} >= 0`);
     }
 
     lines.push("Binary");
@@ -649,6 +701,12 @@ export class ShiftOptimizer {
       const w = fmt(10000 + (Math.random() - 0.5) * 0.1);
       objParts.push(`+ ${w} ${lv}`);
     }
+    const { levelMaxVars: p2LevelMaxVars, levelMaxConstraints: p2LevelMaxConstraints } = this.buildLevelBalanceConstraints(levelSlackVars, cIdx);
+    constraintLines.push(...p2LevelMaxConstraints);
+    for (const mv of p2LevelMaxVars) {
+      const w = fmt(100000 + (Math.random() - 0.5) * 0.1);
+      objParts.push(`+ ${w} ${mv}`);
+    }
     lines.push(writeTerms(objParts, 8));
 
     lines.push("Subject To");
@@ -675,6 +733,9 @@ export class ShiftOptimizer {
     }
     for (const lv of levelSlackVars) {
       lines.push(`  ${lv} >= 0`);
+    }
+    for (const mv of p2LevelMaxVars) {
+      lines.push(`  ${mv} >= 0`);
     }
 
     lines.push("Binary");
@@ -1339,6 +1400,11 @@ export class ShiftOptimizer {
       }
       if (detectedLevelViolations.length > 0) {
         console.warn(`[OPT] Level constraint violations (${detectedLevelViolations.length}): ${detectedLevelViolations.slice(0, 10).map(v => `Day${v.day}-${v.shiftName}: ${v.levelName} ${v.actual}/${v.required}`).join(', ')}${detectedLevelViolations.length > 10 ? '...' : ''}`);
+        const perShiftViol: Record<string, number> = {};
+        for (const v of detectedLevelViolations) {
+          perShiftViol[v.shiftName] = (perShiftViol[v.shiftName] || 0) + 1;
+        }
+        console.log(`[OPT] Violations per shift: ${Object.entries(perShiftViol).map(([k, v]) => `${k}=${v}`).join(', ')}`);
       } else {
         console.log(`[OPT] All level constraints satisfied`);
       }
