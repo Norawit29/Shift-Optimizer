@@ -644,8 +644,8 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     const ws = wb.addWorksheet(lang === "th" ? "รายชื่อ" : "Staff");
     ws.getColumn(1).width = 30;
     const sampleNames = lang === "th"
-      ? ["สมชาย ใจดี", "สมหญิง รักเรียน", "วิชัย สุขสันต์"]
-      : ["John Smith", "Jane Doe", "Mike Johnson"];
+      ? ["สมชาย ใจดี", "สมหญิง รักเรียน", "วิชัย สุขสันต์", "ประภาศรี แก้วใส", "นภัทร วงศ์สว่าง", "ธนกฤต พิทักษ์", "แพรวา จันทร์เพ็ญ", "ญาดา มณีรัตน์", "ปัทมพร ศรีสุข", "หฤษฏ์ เจริญผล"]
+      : ["John Smith", "Jane Doe", "Mike Johnson", "Sarah Williams", "David Brown", "Emily Davis", "Robert Wilson", "Lisa Anderson", "James Taylor", "Maria Garcia"];
     sampleNames.forEach(name => ws.addRow([name]));
     const buffer = await wb.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
