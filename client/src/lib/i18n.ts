@@ -238,6 +238,7 @@ const translations = {
     conflictRuleSameDay: "same-day",
     maxConsecutiveConflict: "{name}: requested {shifts} on {count} consecutive days ({days}), but the max consecutive rule allows only {max} days.",
     requestedExceedsSlots: "Day {day} ({date}), Shift \"{shift}\": {requested} staff requested but only {capacity} slots available ({names}). Please remove some requests.",
+    requestedBlocksLevel: "Day {day} ({date}), Shift \"{shift}\": {requestedCount} requested staff are {requestedLevel}, leaving only {remaining} slots for {neededLevel} (needs at least {minRequired}). Please adjust requests.",
     proceedAnyway: "Generate Anyway",
 
     // Tutorial
@@ -499,6 +500,7 @@ const translations = {
     conflictRuleSameDay: "ห้ามอยู่วันเดียวกัน",
     maxConsecutiveConflict: "{name}: ขอเวร {shifts} ติดกัน {count} วัน (วันที่ {days}) แต่กฎอนุญาตแค่ {max} วันติดกัน",
     requestedExceedsSlots: "วันที่ {day} ({date}), เวร \"{shift}\": มี {requested} คนขอเวรนี้ แต่มีแค่ {capacity} ตำแหน่ง ({names}) กรุณาลบคำขอบางส่วน",
+    requestedBlocksLevel: "วันที่ {day} ({date}), เวร \"{shift}\": มี {requestedLevel} ขอเวร {requestedCount} คน ทำให้เหลือตำแหน่งแค่ {remaining} แต่ต้องการ {neededLevel} อย่างน้อย {minRequired} คน กรุณาปรับคำขอ",
     proceedAnyway: "จัดเวรต่อ",
 
     // Tutorial

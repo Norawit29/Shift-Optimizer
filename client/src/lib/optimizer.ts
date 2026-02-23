@@ -123,6 +123,33 @@ export class ShiftOptimizer {
             `Day ${day}, "${this.config.shiftNames[shiftIdx]}": ${requestedNames.length} staff requested but only ${capacity} slots (${requestedNames.join(', ')})`
           );
         }
+
+        if (this.config.staffLevels && this.config.staffLevels.length > 0 && this.config.minStaffPerLevel) {
+          const requestedByLevel: Record<number, number> = {};
+          let totalReqCount = 0;
+          for (const member of this.staff) {
+            const hasReq = (member.requested || []).some(r => r.date === day && r.shift === shiftIdx);
+            if (hasReq) {
+              const lvl = member.level ?? 0;
+              requestedByLevel[lvl] = (requestedByLevel[lvl] || 0) + 1;
+              totalReqCount++;
+            }
+          }
+          if (totalReqCount > 0) {
+            const remainingSlots = capacity - totalReqCount;
+            for (let lvl = 0; lvl < this.config.staffLevels.length; lvl++) {
+              const minReq = this.config.minStaffPerLevel[shiftIdx]?.[lvl] || 0;
+              if (minReq <= 0) continue;
+              const reqAtLevel = requestedByLevel[lvl] || 0;
+              const stillNeeded = minReq - reqAtLevel;
+              if (stillNeeded > 0 && stillNeeded > remainingSlots) {
+                warnings.push(
+                  `Day ${day}, "${this.config.shiftNames[shiftIdx]}": requested staff leave only ${Math.max(0, remainingSlots)} slots but need ${stillNeeded} more "${this.config.staffLevels[lvl]}".`
+                );
+              }
+            }
+          }
+        }
       }
     }
 

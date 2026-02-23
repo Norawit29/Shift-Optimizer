@@ -1071,6 +1071,46 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               .replace("{names}", requestedNames.join(', '))
           );
         }
+
+        if (config.staffLevels && config.staffLevels.length > 0 && config.minStaffPerLevel) {
+          const requestedByLevel: Record<number, string[]> = {};
+          for (const m of staff) {
+            const hasReq = (m.requested || []).some(r => r.date === d && r.shift === s);
+            if (hasReq) {
+              const lvl = m.level ?? 0;
+              if (!requestedByLevel[lvl]) requestedByLevel[lvl] = [];
+              requestedByLevel[lvl].push(m.name);
+            }
+          }
+          const totalRequested = Object.values(requestedByLevel).reduce((sum, arr) => sum + arr.length, 0);
+          if (totalRequested > 0) {
+            const remainingSlots = capacity - totalRequested;
+            for (let lvl = 0; lvl < config.staffLevels.length; lvl++) {
+              const minReq = config.minStaffPerLevel[s]?.[lvl] || 0;
+              if (minReq <= 0) continue;
+              const requestedAtThisLevel = (requestedByLevel[lvl] || []).length;
+              const stillNeeded = minReq - requestedAtThisLevel;
+              if (stillNeeded > 0 && stillNeeded > remainingSlots) {
+                const dt = getDateForIndex(d);
+                const otherLevels = Object.entries(requestedByLevel)
+                  .filter(([l]) => Number(l) !== lvl)
+                  .map(([l, names]) => `${config.staffLevels![Number(l)]} ${names.length} คน`)
+                  .join(', ');
+                conflicts.push(
+                  t.requestedBlocksLevel
+                    .replace("{day}", String(d))
+                    .replace("{date}", format(dt, "d/M"))
+                    .replace("{shift}", config.shiftNames[s])
+                    .replace("{requestedCount}", String(totalRequested - requestedAtThisLevel))
+                    .replace("{requestedLevel}", otherLevels || "other levels")
+                    .replace("{remaining}", String(Math.max(0, remainingSlots)))
+                    .replace("{neededLevel}", config.staffLevels[lvl])
+                    .replace("{minRequired}", String(minReq))
+                );
+              }
+            }
+          }
+        }
       }
     }
 
