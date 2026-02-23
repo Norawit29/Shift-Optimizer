@@ -253,41 +253,45 @@ export class ShiftOptimizer {
         const windowSize = rule.maxDays + 1;
         const isCombined = rule.shifts.length > 1;
         for (let i = 0; i < N; i++) {
-          const memberRequested = this.staff[i].requested || [];
-
-          let skipCombinedForMember = false;
-          if (isCombined && memberRequested.length > 0) {
-            const dayShiftMap = new Map<number, Set<number>>();
-            for (const r of memberRequested) {
-              if (rule.shifts.includes(r.shift)) {
-                let s = dayShiftMap.get(r.date);
-                if (!s) { s = new Set<number>(); dayShiftMap.set(r.date, s); }
-                s.add(r.shift);
+          let skipAllWindows = false;
+          if (isCombined) {
+            const memberReqs = this.staff[i].requested || [];
+            const dayTypes: Record<number, number[]> = {};
+            for (let ri = 0; ri < memberReqs.length; ri++) {
+              const r = memberReqs[ri];
+              if (rule.shifts.indexOf(r.shift) >= 0) {
+                if (!dayTypes[r.date]) dayTypes[r.date] = [];
+                if (dayTypes[r.date].indexOf(r.shift) < 0) dayTypes[r.date].push(r.shift);
               }
             }
-            const mapEntries = Array.from(dayShiftMap.values());
-            for (let mi = 0; mi < mapEntries.length; mi++) {
-              if (mapEntries[mi].size >= 2) { skipCombinedForMember = true; break; }
+            const dayKeys = Object.keys(dayTypes);
+            for (let dk = 0; dk < dayKeys.length; dk++) {
+              if (dayTypes[Number(dayKeys[dk])].length >= 2) {
+                skipAllWindows = true;
+                break;
+              }
             }
           }
+          if (skipAllWindows) continue;
 
           for (let dStart = 0; dStart <= D - windowSize; dStart++) {
             if (isCombined) {
-              if (skipCombinedForMember) continue;
-              const reqDaysInWindow = new Set<number>();
-              const reqShiftTypesInWindow = new Set<number>();
+              let reqDaysCount = 0;
+              let singleType = true;
+              let firstType = -1;
               for (let dd = 0; dd < windowSize; dd++) {
                 const dayIdx = dStart + 1 + dd;
-                for (const r of memberRequested) {
-                  if (r.date === dayIdx && rule.shifts.includes(r.shift)) {
-                    reqDaysInWindow.add(dayIdx);
-                    reqShiftTypesInWindow.add(r.shift);
+                const memberReqs = this.staff[i].requested || [];
+                for (let ri = 0; ri < memberReqs.length; ri++) {
+                  const r = memberReqs[ri];
+                  if (r.date === dayIdx && rule.shifts.indexOf(r.shift) >= 0) {
+                    reqDaysCount++;
+                    if (firstType < 0) firstType = r.shift;
+                    else if (r.shift !== firstType) singleType = false;
                   }
                 }
               }
-              if (reqShiftTypesInWindow.size <= 1 && reqDaysInWindow.size > rule.maxDays) {
-                continue;
-              }
+              if (singleType && reqDaysCount > rule.maxDays) continue;
             }
             const windowVars: string[] = [];
             for (let dd = 0; dd < windowSize; dd++) {
@@ -929,25 +933,21 @@ export class ShiftOptimizer {
                 let violatesMaxConsec = false;
                 for (const rule of this.config.maxConsecutiveRules) {
                   if (!rule.shifts.includes(s)) continue;
-                  const isCombinedRule = rule.shifts.length > 1;
-                  const shiftTypesInRun = new Set<number>();
-                  shiftTypesInRun.add(s);
                   let consecutive = 1;
                   for (let dd = d - 1; dd >= 0; dd--) {
                     let found = false;
                     for (const rs of rule.shifts) {
-                      if (schedule[dd].shifts[rs]?.includes(member.id)) { found = true; shiftTypesInRun.add(rs); break; }
+                      if (schedule[dd].shifts[rs]?.includes(member.id)) { found = true; break; }
                     }
                     if (found) consecutive++; else break;
                   }
                   for (let dd = d + 1; dd < D; dd++) {
                     let found = false;
                     for (const rs of rule.shifts) {
-                      if (schedule[dd].shifts[rs]?.includes(member.id)) { found = true; shiftTypesInRun.add(rs); break; }
+                      if (schedule[dd].shifts[rs]?.includes(member.id)) { found = true; break; }
                     }
                     if (found) consecutive++; else break;
                   }
-                  if (isCombinedRule && shiftTypesInRun.size <= 1) continue;
                   if (consecutive > rule.maxDays) { violatesMaxConsec = true; break; }
                 }
                 if (violatesMaxConsec) continue;
@@ -1084,25 +1084,21 @@ export class ShiftOptimizer {
           let maxConsecBlock = "";
           for (const rule of this.config.maxConsecutiveRules) {
             if (!rule.shifts.includes(s)) continue;
-            const isCombinedRule = rule.shifts.length > 1;
-            const shiftTypesInRun = new Set<number>();
-            shiftTypesInRun.add(s);
             let consecutive = 1;
             for (let dd = d - 1; dd >= 0; dd--) {
               let found = false;
               for (const rs of rule.shifts) {
-                if (schedule[dd].shifts[rs]?.includes(member.id)) { found = true; shiftTypesInRun.add(rs); break; }
+                if (schedule[dd].shifts[rs]?.includes(member.id)) { found = true; break; }
               }
               if (found) consecutive++; else break;
             }
             for (let dd = d + 1; dd < D; dd++) {
               let found = false;
               for (const rs of rule.shifts) {
-                if (schedule[dd].shifts[rs]?.includes(member.id)) { found = true; shiftTypesInRun.add(rs); break; }
+                if (schedule[dd].shifts[rs]?.includes(member.id)) { found = true; break; }
               }
               if (found) consecutive++; else break;
             }
-            if (isCombinedRule && shiftTypesInRun.size <= 1) continue;
             if (consecutive > rule.maxDays) {
               const shiftNames = rule.shifts.map(si => this.config.shiftNames[si]).join("+");
               maxConsecBlock = `max ${rule.maxDays} consecutive ${shiftNames}`;
