@@ -1172,23 +1172,63 @@ export class ShiftOptimizer {
     console.log(`[OPT] Setup: ${this.staff.length} staff, ${this.daysInMonth} days, ${this.config.shiftNames.length} shifts`);
     console.log(`[OPT] Total required slots: ${totalRequired}, Total staff capacity (maxShifts): ${totalMaxShifts}, Variables: ${varMap.size}`);
 
-    const { model: phase1Model } = this.buildPhase1Model(varMap, binaryVars);
+    const origSoftLevel = this.softLevelConstraints;
+    const hasLevelConstraints = this.config.staffLevels && this.config.staffLevels.length > 0 && this.config.minStaffPerLevel;
+    let usedSoftLevels = false;
     let phase1Solution: any;
-    try {
-      phase1Solution = solver.solve(phase1Model, {
-        time_limit: 15.0,
-        presolve: "on",
-        mip_rel_gap: 0.01,
-      });
-    } catch (err: any) {
-      console.error("[OPT] Phase 1 solver CRASH:", err);
-      return this.makeEmptyResult(`Solver crashed during coverage optimization: ${err?.message || "Unknown error"}.`);
-    }
 
-    console.log(`[OPT] Phase 1 status: ${phase1Solution.Status}, ObjectiveValue: ${phase1Solution.ObjectiveValue}`);
+    if (hasLevelConstraints) {
+      this.softLevelConstraints = false;
+      const { model: phase1ModelHard } = this.buildPhase1Model(varMap, binaryVars);
+      try {
+        phase1Solution = solver.solve(phase1ModelHard, {
+          time_limit: 15.0,
+          presolve: "on",
+          mip_rel_gap: 0.01,
+        });
+      } catch (err: any) {
+        console.error("[OPT] Phase 1 (hard levels) solver CRASH:", err);
+        phase1Solution = { Status: "Solve error" };
+      }
+
+      console.log(`[OPT] Phase 1 (hard levels) status: ${phase1Solution.Status}, ObjectiveValue: ${phase1Solution.ObjectiveValue}`);
+
+      if (failStatuses.includes(phase1Solution.Status) || !phase1Solution.Columns) {
+        console.warn(`[OPT] Phase 1 infeasible with HARD level constraints, retrying with SOFT`);
+        this.softLevelConstraints = true;
+        usedSoftLevels = true;
+        const { model: phase1ModelSoft } = this.buildPhase1Model(varMap, binaryVars);
+        const solver1b = await createSolver();
+        try {
+          phase1Solution = solver1b.solve(phase1ModelSoft, {
+            time_limit: 15.0,
+            presolve: "on",
+            mip_rel_gap: 0.01,
+          });
+        } catch (err: any) {
+          console.error("[OPT] Phase 1 (soft levels) solver CRASH:", err);
+          return this.makeEmptyResult(`Solver crashed during coverage optimization: ${err?.message || "Unknown error"}.`);
+        }
+        console.log(`[OPT] Phase 1 (soft levels) status: ${phase1Solution.Status}, ObjectiveValue: ${phase1Solution.ObjectiveValue}`);
+      }
+    } else {
+      const { model: phase1Model } = this.buildPhase1Model(varMap, binaryVars);
+      try {
+        phase1Solution = solver.solve(phase1Model, {
+          time_limit: 15.0,
+          presolve: "on",
+          mip_rel_gap: 0.01,
+        });
+      } catch (err: any) {
+        console.error("[OPT] Phase 1 solver CRASH:", err);
+        return this.makeEmptyResult(`Solver crashed during coverage optimization: ${err?.message || "Unknown error"}.`);
+      }
+      console.log(`[OPT] Phase 1 status: ${phase1Solution.Status}, ObjectiveValue: ${phase1Solution.ObjectiveValue}`);
+    }
 
     if (failStatuses.includes(phase1Solution.Status) || !phase1Solution.Columns) {
       console.error(`[OPT] Phase 1 FAILED: ${phase1Solution.Status}`);
+      this.softLevelConstraints = origSoftLevel;
       return this.makeEmptyResult(feasibilityMsg || `Phase 1 solver status: ${phase1Solution.Status}.`);
     }
 
@@ -1211,24 +1251,41 @@ export class ShiftOptimizer {
       return this.makeEmptyResult("No assignments possible with current constraints.");
     }
 
-    const phase2Model = this.buildPhase2Model(varMap, binaryVars, phase1Targets);
-    console.log(`[OPT] Phase 2 model size: ${phase2Model.length} chars, ${phase2Model.split('\n').length} lines`);
+    const phase2SoftMode = usedSoftLevels;
+    this.softLevelConstraints = phase2SoftMode;
     let finalSolution: any;
     let usedPhase = 2;
-    try {
-      const solver2 = await createSolver();
-      const phase2Solution = solver2.solve(phase2Model, {
-        time_limit: 15.0,
-        presolve: "on",
-        mip_rel_gap: 0.01,
-      });
 
+    const tryPhase2 = async (soft: boolean): Promise<any> => {
+      this.softLevelConstraints = soft;
+      const model = this.buildPhase2Model(varMap, binaryVars, phase1Targets);
+      console.log(`[OPT] Phase 2 model size: ${model.length} chars, ${model.split('\n').length} lines, softLevels=${soft}`);
+      const s = await createSolver();
+      return s.solve(model, { time_limit: 15.0, presolve: "on", mip_rel_gap: 0.01 });
+    };
+
+    try {
+      let phase2Solution = await tryPhase2(phase2SoftMode);
       console.log(`[OPT] Phase 2 status: ${phase2Solution.Status}, ObjectiveValue: ${phase2Solution.ObjectiveValue}`);
 
       if (failStatuses.includes(phase2Solution.Status) || !phase2Solution.Columns) {
-        console.warn(`[OPT] Phase 2 FAILED (${phase2Solution.Status}), falling back to Phase 1`);
-        finalSolution = phase1Solution;
-        usedPhase = 1;
+        if (!phase2SoftMode && hasLevelConstraints) {
+          console.warn(`[OPT] Phase 2 infeasible with HARD level constraints, retrying with SOFT`);
+          usedSoftLevels = true;
+          try {
+            phase2Solution = await tryPhase2(true);
+            console.log(`[OPT] Phase 2 (soft levels) status: ${phase2Solution.Status}, ObjectiveValue: ${phase2Solution.ObjectiveValue}`);
+          } catch {
+            phase2Solution = { Status: "Solve error" };
+          }
+        }
+        if (failStatuses.includes(phase2Solution.Status) || !phase2Solution.Columns) {
+          console.warn(`[OPT] Phase 2 FAILED, falling back to Phase 1`);
+          finalSolution = phase1Solution;
+          usedPhase = 1;
+        } else {
+          finalSolution = phase2Solution;
+        }
       } else {
         finalSolution = phase2Solution;
       }
@@ -1237,12 +1294,13 @@ export class ShiftOptimizer {
       finalSolution = phase1Solution;
       usedPhase = 1;
     }
+    this.softLevelConstraints = origSoftLevel;
 
     const schedule = this.extractSchedule(finalSolution, varMap);
 
     let unfilledBefore = this.findUnfilledSlots(schedule);
     const coverageBefore = totalRequired - unfilledBefore.reduce((sum, u) => sum + (u.required - u.assigned), 0);
-    console.log(`[OPT] Solver result (Phase ${usedPhase}): coverage ${coverageBefore}/${totalRequired}, unfilled slots: ${unfilledBefore.length}`);
+    console.log(`[OPT] Solver result (Phase ${usedPhase}, levelMode=${usedSoftLevels ? 'SOFT' : 'HARD'}): coverage ${coverageBefore}/${totalRequired}, unfilled slots: ${unfilledBefore.length}`);
 
     if (unfilledBefore.length > 0) {
       const greedyFilled = this.greedyFillUnfilled(schedule);
