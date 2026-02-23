@@ -1985,9 +1985,20 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     <div className="flex items-center gap-2">
                        <Select key={`sameDay-${config.consecutiveRules.length}`} onValueChange={(val) => {
                          const [from, to] = val.split(',').map(Number);
+                         const blockedPair = [from, to].sort().join(',');
+                         const filteredMaxRules = (config.maxConsecutiveRules || []).filter(r => {
+                           if (r.shifts.length <= 1) return true;
+                           for (let a = 0; a < r.shifts.length; a++) {
+                             for (let b = a + 1; b < r.shifts.length; b++) {
+                               if ([r.shifts[a], r.shifts[b]].sort().join(',') === blockedPair) return false;
+                             }
+                           }
+                           return true;
+                         });
                          setConfig({
                            ...config,
-                           consecutiveRules: [...config.consecutiveRules, { from, to, type: 'sameDay' as const }]
+                           consecutiveRules: [...config.consecutiveRules, { from, to, type: 'sameDay' as const }],
+                           maxConsecutiveRules: filteredMaxRules.length > 0 ? filteredMaxRules : undefined
                          });
                        }}>
                          <SelectTrigger className="w-full" data-testid="select-add-sameday-rule">
@@ -2034,15 +2045,18 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                   </p>
 
                   <div className="space-y-2">
-                    {(config.maxConsecutiveRules || []).map((rule, idx) => (
+                    {(config.maxConsecutiveRules || []).map((rule, idx) => {
+                      const isCombined = rule.shifts.length > 1;
+                      return (
                       <div key={idx} className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border flex-wrap">
                         <div className="flex items-center gap-1 flex-wrap">
                           {rule.shifts.map((si, j) => (
                             <span key={j} className="flex items-center gap-1">
-                              {j > 0 && <span className="text-muted-foreground text-xs">+</span>}
+                              {j > 0 && <span className="text-muted-foreground text-xs">{isCombined ? lang === "th" ? "และ" : "&" : "+"}</span>}
                               <Badge variant="outline">{config.shiftNames[si]}</Badge>
                             </span>
                           ))}
+                          {isCombined && <span className="text-xs text-muted-foreground ml-1">{t.maxConsecutiveSameDay}</span>}
                         </div>
                         <span className="text-muted-foreground text-sm mx-1">≤</span>
                         <Input
@@ -2067,7 +2081,8 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                           <X className="w-3 h-3" />
                         </Button>
                       </div>
-                    ))}
+                      );
+                    })}
 
                     <div className="pt-2">
                       <Select
@@ -2087,6 +2102,22 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                         <SelectContent position="popper" sideOffset={4} className="bg-white dark:bg-slate-900">
                           {(() => {
                             const existingKeys = new Set((config.maxConsecutiveRules || []).map(r => [...r.shifts].sort().join(',')));
+                            const sameDayBlocked = new Set<string>();
+                            (config.consecutiveRules || []).forEach(r => {
+                              if (r.type === 'sameDay') {
+                                const pair = [r.from, r.to].sort().join(',');
+                                sameDayBlocked.add(pair);
+                              }
+                            });
+                            const isCombinedBlockedBySameDay = (indices: number[]) => {
+                              for (let a = 0; a < indices.length; a++) {
+                                for (let b = a + 1; b < indices.length; b++) {
+                                  const pair = [indices[a], indices[b]].sort().join(',');
+                                  if (sameDayBlocked.has(pair)) return true;
+                                }
+                              }
+                              return false;
+                            };
                             const options: { label: string; value: string }[] = [];
                             for (let i = 0; i < config.shiftNames.length; i++) {
                               const key = String(i);
@@ -2097,15 +2128,18 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                             for (let i = 0; i < config.shiftNames.length; i++) {
                               for (let j = i + 1; j < config.shiftNames.length; j++) {
                                 const key = `${i},${j}`;
-                                if (!existingKeys.has(key)) {
-                                  options.push({ label: `${config.shiftNames[i]} + ${config.shiftNames[j]}`, value: key });
+                                if (!existingKeys.has(key) && !isCombinedBlockedBySameDay([i, j])) {
+                                  const connector = lang === "th" ? " และ " : " & ";
+                                  options.push({ label: `${config.shiftNames[i]}${connector}${config.shiftNames[j]}`, value: key });
                                 }
                               }
                             }
                             if (config.shiftNames.length >= 3) {
-                              const allKey = config.shiftNames.map((_, i) => i).join(',');
-                              if (!existingKeys.has(allKey)) {
-                                options.push({ label: config.shiftNames.join(' + '), value: allKey });
+                              const allIndices = config.shiftNames.map((_, i) => i);
+                              const allKey = allIndices.join(',');
+                              if (!existingKeys.has(allKey) && !isCombinedBlockedBySameDay(allIndices)) {
+                                const connector = lang === "th" ? " และ " : " & ";
+                                options.push({ label: config.shiftNames.join(connector), value: allKey });
                               }
                             }
                             return options.map(opt => (
