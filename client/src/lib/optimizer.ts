@@ -414,7 +414,7 @@ export class ShiftOptimizer {
       objParts.push(n >= 0 ? `+ ${fmt(n)} ${xv}` : `- ${fmt(-n)} ${xv}`);
     }
     for (const lv of levelSlackVars) {
-      const w = fmt(100 + (Math.random() - 0.5) * 0.1);
+      const w = fmt(10000 + (Math.random() - 0.5) * 0.1);
       objParts.push(`+ ${w} ${lv}`);
     }
     lines.push(writeTerms(objParts, 10));
@@ -630,7 +630,7 @@ export class ShiftOptimizer {
       objParts.push(n >= 0 ? `+ ${fmt(n)} ${shuffled[j]}` : `- ${fmt(-n)} ${shuffled[j]}`);
     }
     for (const lv of levelSlackVars) {
-      const w = fmt(100 + (Math.random() - 0.5) * 0.1);
+      const w = fmt(10000 + (Math.random() - 0.5) * 0.1);
       objParts.push(`+ ${w} ${lv}`);
     }
     lines.push(writeTerms(objParts, 8));
@@ -1232,6 +1232,33 @@ export class ShiftOptimizer {
       const greedyFilled = this.greedyFillUnfilled(schedule);
       if (greedyFilled > 0) {
         console.log(`[OPT] Greedy post-fill: filled ${greedyFilled} slot(s) respecting all hard constraints`);
+      }
+    }
+
+    if (this.config.staffLevels && this.config.staffLevels.length > 0 && this.config.minStaffPerLevel) {
+      const levelViolations: string[] = [];
+      for (let d = 0; d < this.daysInMonth; d++) {
+        const dayReq = this.getStaffPerShiftForDay(d + 1);
+        for (let s = 0; s < this.config.shiftNames.length; s++) {
+          if (dayReq[s] === 0) continue;
+          const assigned = schedule[d].shifts[s].filter(id => id && id.length > 0);
+          for (let lvl = 0; lvl < this.config.staffLevels.length; lvl++) {
+            const minReq = this.config.minStaffPerLevel[s]?.[lvl] || 0;
+            if (minReq <= 0) continue;
+            const lvlCount = assigned.filter(id => {
+              const member = this.staff.find(m => m.id === id);
+              return member && (member.level ?? 0) === lvl;
+            }).length;
+            if (lvlCount < minReq) {
+              levelViolations.push(`Day${d + 1}-${this.config.shiftNames[s]}: ${this.config.staffLevels[lvl]} ${lvlCount}/${minReq}`);
+            }
+          }
+        }
+      }
+      if (levelViolations.length > 0) {
+        console.warn(`[OPT] Level constraint violations (${levelViolations.length}): ${levelViolations.slice(0, 10).join(', ')}${levelViolations.length > 10 ? '...' : ''}`);
+      } else {
+        console.log(`[OPT] All level constraints satisfied`);
       }
     }
 
