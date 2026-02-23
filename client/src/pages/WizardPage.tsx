@@ -1943,6 +1943,9 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                           {ruleType === 'sameDay' ? t.sameDayWith : t.followedBy}
                         </span>
                         <Badge variant="outline">{config.shiftNames[rule.to]}</Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          {ruleType === 'sameDay' ? t.ruleTypeSameDay : t.ruleTypeNextDay}
+                        </Badge>
                         <Button variant="ghost" size="sm" className="ml-auto h-6 w-6 p-0" onClick={() => {
                            const newRules = config.consecutiveRules.filter((_, i) => i !== idx);
                            setConfig({...config, consecutiveRules: newRules});
