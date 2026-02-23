@@ -9,6 +9,7 @@ export interface SchedulerConfig {
   shiftNames: string[];
   staffPerShift: number[];
   consecutiveRules: { from: number; to: number; type?: 'sameDay' | 'nextDay' }[];
+  maxConsecutiveRules?: { shifts: number[]; maxDays: number }[];
   balanceHolidays?: boolean;
   holidays?: number[];
   useCustomRange?: boolean;

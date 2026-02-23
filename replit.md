@@ -28,6 +28,15 @@ The scheduler supports **requested/preferred shifts**:
 - Blocked and requested are mutually exclusive — blocking a date/shift auto-removes any requests
 - Excel export shows green borders for cells with fulfilled requested shifts
 
+The scheduler supports **max consecutive shift rules**:
+- `maxConsecutiveRules` in SchedulerConfig: optional array of `{ shifts: number[]; maxDays: number }`
+- Each rule limits how many consecutive days a staff member can work a specific shift (or group of shifts)
+- `shifts` is an array of shift indices (e.g., `[0]` for Morning only, `[0,1]` for Morning+Evening combined)
+- `maxDays` is the maximum allowed consecutive days (e.g., 3 means no more than 3 in a row)
+- Enforced as HARD constraints in LP: sliding window of `maxDays+1` days, sum of selected shift vars <= maxDays
+- Also enforced in greedy post-processing
+- UI in Step 3 allows adding rules with shift selection dropdown and editable max days input
+
 The scheduler supports **staff levels** (up to 5 levels):
 - `staffLevels` in SchedulerConfig: array of level names (e.g., ["พยาบาล", "ผู้ช่วยพยาบาล", "คนงาน"])
 - Each StaffMember has an optional `level` field (0-based index into staffLevels)

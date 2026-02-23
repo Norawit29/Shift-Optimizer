@@ -1900,6 +1900,107 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               <Card className="shadow-md">
                 <CardContent className="p-6 space-y-6">
                   <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-amber-100 dark:bg-amber-900/20 rounded-lg">
+                      <Activity className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <h3 className="font-semibold text-lg">{t.maxConsecutiveRules}</h3>
+                  </div>
+                  
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {t.maxConsecutiveDesc}
+                  </p>
+
+                  <div className="space-y-2">
+                    {(config.maxConsecutiveRules || []).map((rule, idx) => (
+                      <div key={idx} className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border flex-wrap">
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {rule.shifts.map((si, j) => (
+                            <span key={j} className="flex items-center gap-1">
+                              {j > 0 && <span className="text-muted-foreground text-xs">+</span>}
+                              <Badge variant="outline">{config.shiftNames[si]}</Badge>
+                            </span>
+                          ))}
+                        </div>
+                        <span className="text-muted-foreground text-sm mx-1">≤</span>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={31}
+                          value={rule.maxDays}
+                          onChange={(e) => {
+                            const val = Math.max(1, Math.min(31, parseInt(e.target.value) || 1));
+                            const newRules = [...(config.maxConsecutiveRules || [])];
+                            newRules[idx] = { ...rule, maxDays: val };
+                            setConfig({ ...config, maxConsecutiveRules: newRules });
+                          }}
+                          className="w-16 text-center"
+                          data-testid={`input-max-consecutive-${idx}`}
+                        />
+                        <span className="text-sm text-muted-foreground">{t.maxConsecutiveDays}</span>
+                        <Button variant="ghost" size="icon" className="ml-auto" onClick={() => {
+                          const newRules = (config.maxConsecutiveRules || []).filter((_, i) => i !== idx);
+                          setConfig({ ...config, maxConsecutiveRules: newRules });
+                        }} data-testid={`button-remove-max-consecutive-${idx}`}>
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    ))}
+
+                    <div className="pt-2">
+                      <Select
+                        key={`maxConsec-${(config.maxConsecutiveRules || []).length}`}
+                        onValueChange={(val) => {
+                          const shiftIndices = val.split(',').map(Number);
+                          const newRule = { shifts: shiftIndices, maxDays: 3 };
+                          setConfig({
+                            ...config,
+                            maxConsecutiveRules: [...(config.maxConsecutiveRules || []), newRule]
+                          });
+                        }}
+                      >
+                        <SelectTrigger className="w-full" data-testid="select-add-max-consecutive">
+                          <SelectValue placeholder={t.addMaxConsecutiveRule} />
+                        </SelectTrigger>
+                        <SelectContent position="popper" sideOffset={4} className="bg-white dark:bg-slate-900">
+                          {(() => {
+                            const existingKeys = new Set((config.maxConsecutiveRules || []).map(r => [...r.shifts].sort().join(',')));
+                            const options: { label: string; value: string }[] = [];
+                            for (let i = 0; i < config.shiftNames.length; i++) {
+                              const key = String(i);
+                              if (!existingKeys.has(key)) {
+                                options.push({ label: config.shiftNames[i], value: key });
+                              }
+                            }
+                            for (let i = 0; i < config.shiftNames.length; i++) {
+                              for (let j = i + 1; j < config.shiftNames.length; j++) {
+                                const key = `${i},${j}`;
+                                if (!existingKeys.has(key)) {
+                                  options.push({ label: `${config.shiftNames[i]} + ${config.shiftNames[j]}`, value: key });
+                                }
+                              }
+                            }
+                            if (config.shiftNames.length >= 3) {
+                              const allKey = config.shiftNames.map((_, i) => i).join(',');
+                              if (!existingKeys.has(allKey)) {
+                                options.push({ label: config.shiftNames.join(' + '), value: allKey });
+                              }
+                            }
+                            return options.map(opt => (
+                              <SelectItem key={opt.value} value={opt.value} data-testid={`select-item-max-consecutive-${opt.value}`}>
+                                {opt.label}
+                              </SelectItem>
+                            ));
+                          })()}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-md">
+                <CardContent className="p-6 space-y-6">
+                  <div className="flex items-center gap-3 mb-4">
                     <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
                       <CalendarDays className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                     </div>

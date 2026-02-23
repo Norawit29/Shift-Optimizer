@@ -248,6 +248,30 @@ export class ShiftOptimizer {
       }
     }
 
+    if (this.config.maxConsecutiveRules) {
+      for (const rule of this.config.maxConsecutiveRules) {
+        const windowSize = rule.maxDays + 1;
+        for (let i = 0; i < N; i++) {
+          for (let dStart = 0; dStart <= D - windowSize; dStart++) {
+            const windowVars: string[] = [];
+            for (let dd = 0; dd < windowSize; dd++) {
+              const d = dStart + dd;
+              for (const s of rule.shifts) {
+                const v = this.vn(i, d, s);
+                if (varMap.has(v)) windowVars.push(v);
+              }
+            }
+            if (windowVars.length > 0) {
+              const terms = windowVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+              lines.push(`  c${cIdx.val++}:`);
+              lines.push(writeTerms(terms, 10));
+              lines.push(`  <= ${rule.maxDays}`);
+            }
+          }
+        }
+      }
+    }
+
     for (let i = 0; i < N; i++) {
       const maxShifts = this.staff[i].maxShifts;
       const staffVars: string[] = [];
@@ -865,6 +889,30 @@ export class ShiftOptimizer {
               }
               if (violatesConsecutive) continue;
 
+              if (this.config.maxConsecutiveRules) {
+                let violatesMaxConsec = false;
+                for (const rule of this.config.maxConsecutiveRules) {
+                  if (!rule.shifts.includes(s)) continue;
+                  let consecutive = 1;
+                  for (let dd = d - 1; dd >= 0; dd--) {
+                    let found = false;
+                    for (const rs of rule.shifts) {
+                      if (schedule[dd].shifts[rs]?.includes(member.id)) { found = true; break; }
+                    }
+                    if (found) consecutive++; else break;
+                  }
+                  for (let dd = d + 1; dd < D; dd++) {
+                    let found = false;
+                    for (const rs of rule.shifts) {
+                      if (schedule[dd].shifts[rs]?.includes(member.id)) { found = true; break; }
+                    }
+                    if (found) consecutive++; else break;
+                  }
+                  if (consecutive > rule.maxDays) { violatesMaxConsec = true; break; }
+                }
+                if (violatesMaxConsec) continue;
+              }
+
               if (arr.includes(member.id)) continue;
               candidates.push({ idx: i, id: member.id, total: currentTotal });
             }
@@ -990,6 +1038,37 @@ export class ShiftOptimizer {
         if (consecutiveBlock) {
           reasons.push({ name: member.name, reason: `consecutive rule: ${consecutiveBlock}` });
           continue;
+        }
+
+        if (this.config.maxConsecutiveRules) {
+          let maxConsecBlock = "";
+          for (const rule of this.config.maxConsecutiveRules) {
+            if (!rule.shifts.includes(s)) continue;
+            let consecutive = 1;
+            for (let dd = d - 1; dd >= 0; dd--) {
+              let found = false;
+              for (const rs of rule.shifts) {
+                if (schedule[dd].shifts[rs]?.includes(member.id)) { found = true; break; }
+              }
+              if (found) consecutive++; else break;
+            }
+            for (let dd = d + 1; dd < D; dd++) {
+              let found = false;
+              for (const rs of rule.shifts) {
+                if (schedule[dd].shifts[rs]?.includes(member.id)) { found = true; break; }
+              }
+              if (found) consecutive++; else break;
+            }
+            if (consecutive > rule.maxDays) {
+              const shiftNames = rule.shifts.map(si => this.config.shiftNames[si]).join("+");
+              maxConsecBlock = `max ${rule.maxDays} consecutive ${shiftNames}`;
+              break;
+            }
+          }
+          if (maxConsecBlock) {
+            reasons.push({ name: member.name, reason: maxConsecBlock });
+            continue;
+          }
         }
 
         reasons.push({ name: member.name, reason: "unknown" });
