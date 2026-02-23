@@ -1047,6 +1047,33 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
       }
     }
 
+    for (let d = 1; d <= totalDays; d++) {
+      const isHol = holidayDays.has(d);
+      const sps = (config.separateHolidayConfig && config.holidayStaffPerShift && isHol)
+        ? config.holidayStaffPerShift : config.staffPerShift;
+      for (let s = 0; s < config.shiftNames.length; s++) {
+        const capacity = sps[s] || 0;
+        if (capacity <= 0) continue;
+        const requestedNames: string[] = [];
+        for (const m of staff) {
+          const hasReq = (m.requested || []).some(r => r.date === d && r.shift === s);
+          if (hasReq) requestedNames.push(m.name);
+        }
+        if (requestedNames.length > capacity) {
+          const dt = getDateForIndex(d);
+          conflicts.push(
+            t.requestedExceedsSlots
+              .replace("{day}", String(d))
+              .replace("{date}", format(dt, "d/M"))
+              .replace("{shift}", config.shiftNames[s])
+              .replace("{requested}", String(requestedNames.length))
+              .replace("{capacity}", String(capacity))
+              .replace("{names}", requestedNames.join(', '))
+          );
+        }
+      }
+    }
+
     return { capacityWarnings, conflicts };
   };
 

@@ -108,6 +108,24 @@ export class ShiftOptimizer {
       }
     }
 
+    for (let day = 1; day <= this.daysInMonth; day++) {
+      const dayStaffPerShift = this.getStaffPerShiftForDay(day);
+      for (let shiftIdx = 0; shiftIdx < S; shiftIdx++) {
+        const capacity = dayStaffPerShift[shiftIdx];
+        if (capacity <= 0) continue;
+        const requestedNames: string[] = [];
+        for (const member of this.staff) {
+          const hasReq = (member.requested || []).some(r => r.date === day && r.shift === shiftIdx);
+          if (hasReq) requestedNames.push(member.name);
+        }
+        if (requestedNames.length > capacity) {
+          warnings.push(
+            `Day ${day}, "${this.config.shiftNames[shiftIdx]}": ${requestedNames.length} staff requested but only ${capacity} slots (${requestedNames.join(', ')})`
+          );
+        }
+      }
+    }
+
     const weekdaySlots = this.config.staffPerShift.reduce((a, b) => a + b, 0);
     const holidaySlots = this.config.separateHolidayConfig && this.config.holidayStaffPerShift
       ? this.config.holidayStaffPerShift.reduce((a, b) => a + b, 0)
