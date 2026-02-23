@@ -2371,27 +2371,29 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               )}
 
               {result.levelViolations && result.levelViolations.length > 0 && (
-                <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg" data-testid="level-violations-warning">
-                  <div className="flex items-start gap-2">
-                    <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-amber-800 dark:text-amber-300 text-sm">
-                        {t.levelViolationTitle} ({result.levelViolations.length})
-                      </p>
-                      <div className="mt-1 text-xs text-amber-700 dark:text-amber-400 max-h-32 overflow-y-auto space-y-0.5">
-                        {result.levelViolations.slice(0, 20).map((v, i) => (
-                          <div key={i}>
-                            {t.levelViolationItem
-                              .replace("{day}", String(v.day))
-                              .replace("{shift}", v.shiftName)
-                              .replace("{level}", v.levelName)
-                              .replace("{actual}", String(v.actual))
-                              .replace("{required}", String(v.required))}
-                          </div>
-                        ))}
-                        {result.levelViolations.length > 20 && (
-                          <div>... {t.andMore.replace("{count}", String(result.levelViolations.length - 20))}</div>
-                        )}
+                <div className="mb-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg max-h-48 overflow-y-auto" data-testid="level-violations-warning">
+                  <div className="p-3">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-amber-800 dark:text-amber-300 text-sm">
+                          {t.levelViolationTitle} ({result.levelViolations.length})
+                        </p>
+                        <div className="mt-1 text-xs text-amber-700 dark:text-amber-400 space-y-0.5">
+                          {result.levelViolations.slice(0, 20).map((v, i) => (
+                            <div key={i}>
+                              {t.levelViolationItem
+                                .replace("{day}", String(v.day))
+                                .replace("{shift}", v.shiftName)
+                                .replace("{level}", v.levelName)
+                                .replace("{actual}", String(v.actual))
+                                .replace("{required}", String(v.required))}
+                            </div>
+                          ))}
+                          {result.levelViolations.length > 20 && (
+                            <div>... {t.andMore.replace("{count}", String(result.levelViolations.length - 20))}</div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
