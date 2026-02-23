@@ -879,30 +879,38 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
         const requested = m.requested || [];
         if (requested.length === 0) continue;
         for (const rule of config.maxConsecutiveRules) {
-          const reqDays = new Set<number>();
-          for (const r of requested) {
-            if (rule.shifts.includes(r.shift)) {
-              reqDays.add(r.date);
+          const isCombined = rule.shifts.length > 1;
+
+          let qualifyingDays: number[];
+          if (isCombined) {
+            const daySet = new Set<number>();
+            for (const r of requested) {
+              if (rule.shifts.includes(r.shift)) daySet.add(r.date);
             }
+            qualifyingDays = Array.from(daySet).filter(day => {
+              const shiftsOnDay = new Set<number>();
+              for (const r of requested) {
+                if (r.date === day && rule.shifts.includes(r.shift)) {
+                  shiftsOnDay.add(r.shift);
+                }
+              }
+              return shiftsOnDay.size >= 2;
+            }).sort((a, b) => a - b);
+          } else {
+            const daySet = new Set<number>();
+            for (const r of requested) {
+              if (rule.shifts.includes(r.shift)) daySet.add(r.date);
+            }
+            qualifyingDays = Array.from(daySet).sort((a, b) => a - b);
           }
-          if (reqDays.size <= rule.maxDays) continue;
-          const sortedDays = Array.from(reqDays).sort((a, b) => a - b);
+
+          if (qualifyingDays.length <= rule.maxDays) continue;
           let runStart = 0;
-          for (let i = 1; i <= sortedDays.length; i++) {
-            if (i === sortedDays.length || sortedDays[i] !== sortedDays[i - 1] + 1) {
+          for (let i = 1; i <= qualifyingDays.length; i++) {
+            if (i === qualifyingDays.length || qualifyingDays[i] !== qualifyingDays[i - 1] + 1) {
               const runLen = i - runStart;
               if (runLen > rule.maxDays) {
-                const runDays = sortedDays.slice(runStart, i);
-                const actualShiftsInRun = new Set<number>();
-                for (const r of requested) {
-                  if (runDays.includes(r.date) && rule.shifts.includes(r.shift)) {
-                    actualShiftsInRun.add(r.shift);
-                  }
-                }
-                if (rule.shifts.length > 1 && actualShiftsInRun.size <= 1) {
-                  runStart = i;
-                  continue;
-                }
+                const runDays = qualifyingDays.slice(runStart, i);
                 const shiftLabel = rule.shifts.map(si => config.shiftNames[si]).join('+');
                 conflicts.push(
                   t.maxConsecutiveConflict

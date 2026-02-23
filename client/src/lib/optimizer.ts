@@ -256,20 +256,34 @@ export class ShiftOptimizer {
           const memberRequested = this.staff[i].requested || [];
           for (let dStart = 0; dStart <= D - windowSize; dStart++) {
             if (isCombined) {
-              const reqShiftsInWindow = new Set<number>();
+              const reqDaysInWindow = new Set<number>();
+              const reqShiftTypesInWindow = new Set<number>();
               for (let dd = 0; dd < windowSize; dd++) {
                 const dayIdx = dStart + 1 + dd;
                 for (const r of memberRequested) {
                   if (r.date === dayIdx && rule.shifts.includes(r.shift)) {
-                    reqShiftsInWindow.add(r.shift);
+                    reqDaysInWindow.add(dayIdx);
+                    reqShiftTypesInWindow.add(r.shift);
                   }
                 }
               }
-              if (reqShiftsInWindow.size <= 1) {
-                const reqCount = memberRequested.filter(r =>
-                  r.date >= dStart + 1 && r.date <= dStart + windowSize && rule.shifts.includes(r.shift)
-                ).length;
-                if (reqCount > rule.maxDays) continue;
+              if (reqShiftTypesInWindow.size <= 1 && reqDaysInWindow.size > rule.maxDays) {
+                continue;
+              }
+              if (reqShiftTypesInWindow.size >= 2) {
+                const multiTypeDays = new Set<number>();
+                for (const dayIdx of reqDaysInWindow) {
+                  const typesOnDay = new Set<number>();
+                  for (const r of memberRequested) {
+                    if (r.date === dayIdx && rule.shifts.includes(r.shift)) {
+                      typesOnDay.add(r.shift);
+                    }
+                  }
+                  if (typesOnDay.size >= 2) multiTypeDays.add(dayIdx);
+                }
+                if (multiTypeDays.size <= rule.maxDays && reqDaysInWindow.size > rule.maxDays) {
+                  continue;
+                }
               }
             }
             const windowVars: string[] = [];
