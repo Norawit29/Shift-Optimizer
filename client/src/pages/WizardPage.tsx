@@ -1568,6 +1568,20 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                       />
                     </div>
                   </div>
+                  <div className="flex items-start gap-3 p-2.5 bg-blue-50/60 dark:bg-blue-950/30 rounded-lg border border-blue-100 dark:border-blue-900/50">
+                    <FileSpreadsheet className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                    <div className="text-xs text-muted-foreground">
+                      <span>{t.uploadExcelHint}</span>
+                      <div className="mt-1.5 flex gap-0.5">
+                        <div className="border rounded px-2 py-0.5 bg-white dark:bg-slate-900 font-mono text-[10px]">
+                          <div className="text-muted-foreground/60 mb-0.5">A</div>
+                          <div>{lang === "th" ? "สมชาย" : "John"}</div>
+                          <div>{lang === "th" ? "สมหญิง" : "Jane"}</div>
+                          <div>{lang === "th" ? "วิชัย" : "Mike"}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
 
                   <div className="p-2.5 bg-slate-50 dark:bg-slate-900/50 rounded-lg space-y-2">
                     <Label className="text-xs text-muted-foreground">{t.setAllMaxShifts}</Label>
