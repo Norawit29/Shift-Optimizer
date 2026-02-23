@@ -275,7 +275,7 @@ async function exportToExcel(
 
       const totalRowValues: (string | number)[] = ["", totalLabel];
       result.forEach((day) => {
-        const count = day.shifts[shiftIdx]?.length || 0;
+        const count = (day.shifts[shiftIdx] || []).filter(id => id && id.length > 0).length;
         totalRowValues.push(count);
       });
       const totRow = ws3.addRow(totalRowValues);
