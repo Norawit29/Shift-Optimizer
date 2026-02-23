@@ -248,7 +248,9 @@ async function exportToExcel(
       shiftHeaderRow.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF" + shiftColor } };
 
       levelNames.forEach((lvlName, lvlIdx) => {
-        const rowValues: (string | number)[] = ["", lvlName];
+        const minReq = config.minStaffPerLevel?.[shiftIdx]?.[lvlIdx] ?? 0;
+        const displayName = minReq > 0 ? `${lvlName} >=${minReq}` : lvlName;
+        const rowValues: (string | number)[] = ["", displayName];
         result.forEach((day) => {
           const assignedIds = day.shifts[shiftIdx]?.map(String) || [];
           const count = assignedIds.filter(id => {
@@ -262,7 +264,9 @@ async function exportToExcel(
         for (let ci = 2 + ws3ColOffset; ci <= result.length + 1 + ws3ColOffset; ci++) {
           const cell = lvlRow.getCell(ci);
           const val = cell.value as number;
-          if (val > 0) {
+          if (minReq > 0 && val < minReq) {
+            cell.font = { bold: true, color: { argb: "FFFF0000" } };
+          } else if (val > 0) {
             cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE8F5E9" } };
             cell.font = { bold: true };
           }
