@@ -182,7 +182,7 @@ export class ShiftOptimizer {
     lines: string[],
     varMap: Map<string, { staff: number; day: number; shift: number }>,
     cIdx: { val: number },
-    options?: { skipStaffingCap?: boolean; levelSlackVars?: string[] }
+    options?: { skipStaffingCap?: boolean; levelSlackVars?: string[]; auxBinaryVars?: string[] }
   ): void {
     const N = this.staff.length;
     const D = this.daysInMonth;
@@ -255,35 +255,81 @@ export class ShiftOptimizer {
     }
 
     if (this.config.maxConsecutiveRules) {
-      for (const rule of this.config.maxConsecutiveRules) {
+      for (let ruleIdx = 0; ruleIdx < this.config.maxConsecutiveRules.length; ruleIdx++) {
+        const rule = this.config.maxConsecutiveRules[ruleIdx];
         const windowSize = rule.maxDays + 1;
+        const isCombined = rule.shifts.length > 1;
+
         for (let i = 0; i < N; i++) {
-          for (let dStart = 0; dStart <= D - windowSize; dStart++) {
-            let reqCount = 0;
-            const memberReqs = this.staff[i].requested || [];
-            for (let dd = 0; dd < windowSize; dd++) {
-              const dayIdx = dStart + 1 + dd;
-              for (let ri = 0; ri < memberReqs.length; ri++) {
-                const r = memberReqs[ri];
-                if (r.date === dayIdx && rule.shifts.indexOf(r.shift) >= 0) {
-                  reqCount++;
+          if (isCombined) {
+            const auxVars: string[] = [];
+            for (let d = 0; d < D; d++) {
+              const allExist = rule.shifts.every(s => varMap.has(this.vn(i, d, s)));
+              if (!allExist) {
+                auxVars.push("");
+                continue;
+              }
+              const yVar = `y_${i}_${d}_r${ruleIdx}`;
+              auxVars.push(yVar);
+              if (options?.auxBinaryVars) options.auxBinaryVars.push(yVar);
+              for (const s of rule.shifts) {
+                lines.push(`  c${cIdx.val++}: ${yVar} - ${this.vn(i, d, s)} <= 0`);
+              }
+              const sumTerms = rule.shifts.map((s, idx) => idx === 0 ? this.vn(i, d, s) : `+ ${this.vn(i, d, s)}`);
+              lines.push(`  c${cIdx.val++}:`);
+              lines.push(writeTerms([...sumTerms, `- ${rule.shifts.length} ${yVar}`], 10));
+              lines.push(`  <= ${rule.shifts.length - 1}`);
+            }
+
+            for (let dStart = 0; dStart <= D - windowSize; dStart++) {
+              const windowYVars: string[] = [];
+              let reqDays = 0;
+              const memberReqs = this.staff[i].requested || [];
+              for (let dd = 0; dd < windowSize; dd++) {
+                const yv = auxVars[dStart + dd];
+                if (yv) windowYVars.push(yv);
+                const dayIdx = dStart + 1 + dd;
+                const allReq = rule.shifts.every(s =>
+                  memberReqs.some(r => r.date === dayIdx && r.shift === s)
+                );
+                if (allReq) reqDays++;
+              }
+              const effectiveMax = Math.max(rule.maxDays, reqDays);
+              if (windowYVars.length > 0 && effectiveMax < windowYVars.length) {
+                const terms = windowYVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+                lines.push(`  c${cIdx.val++}:`);
+                lines.push(writeTerms(terms, 10));
+                lines.push(`  <= ${effectiveMax}`);
+              }
+            }
+          } else {
+            for (let dStart = 0; dStart <= D - windowSize; dStart++) {
+              let reqCount = 0;
+              const memberReqs = this.staff[i].requested || [];
+              for (let dd = 0; dd < windowSize; dd++) {
+                const dayIdx = dStart + 1 + dd;
+                for (let ri = 0; ri < memberReqs.length; ri++) {
+                  const r = memberReqs[ri];
+                  if (r.date === dayIdx && rule.shifts.indexOf(r.shift) >= 0) {
+                    reqCount++;
+                  }
                 }
               }
-            }
-            const effectiveMax = Math.max(rule.maxDays, reqCount);
-            const windowVars: string[] = [];
-            for (let dd = 0; dd < windowSize; dd++) {
-              const d = dStart + dd;
-              for (const s of rule.shifts) {
-                const v = this.vn(i, d, s);
-                if (varMap.has(v)) windowVars.push(v);
+              const effectiveMax = Math.max(rule.maxDays, reqCount);
+              const windowVars: string[] = [];
+              for (let dd = 0; dd < windowSize; dd++) {
+                const d = dStart + dd;
+                for (const s of rule.shifts) {
+                  const v = this.vn(i, d, s);
+                  if (varMap.has(v)) windowVars.push(v);
+                }
               }
-            }
-            if (windowVars.length > 0 && effectiveMax < windowVars.length) {
-              const terms = windowVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
-              lines.push(`  c${cIdx.val++}:`);
-              lines.push(writeTerms(terms, 10));
-              lines.push(`  <= ${effectiveMax}`);
+              if (windowVars.length > 0 && effectiveMax < windowVars.length) {
+                const terms = windowVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+                lines.push(`  c${cIdx.val++}:`);
+                lines.push(writeTerms(terms, 10));
+                lines.push(`  <= ${effectiveMax}`);
+              }
             }
           }
         }
@@ -377,7 +423,8 @@ export class ShiftOptimizer {
 
     const constraintLines: string[] = [];
     const cIdx = { val: 0 };
-    this.writeCommonConstraints(constraintLines, varMap, cIdx, { skipStaffingCap: true, levelSlackVars });
+    const auxBinaryVars: string[] = [];
+    this.writeCommonConstraints(constraintLines, varMap, cIdx, { skipStaffingCap: true, levelSlackVars, auxBinaryVars });
 
     for (let d = 0; d < D; d++) {
       const required = this.getStaffPerShiftForDay(d + 1);
@@ -430,9 +477,10 @@ export class ShiftOptimizer {
       lines.push(`  ${lv} >= 0`);
     }
 
+    const allBinary = [...binaryVars, ...auxBinaryVars];
     lines.push("Binary");
-    for (let i = 0; i < binaryVars.length; i += 20) {
-      lines.push("  " + binaryVars.slice(i, i + 20).join(" "));
+    for (let i = 0; i < allBinary.length; i += 20) {
+      lines.push("  " + allBinary.slice(i, i + 20).join(" "));
     }
 
     lines.push("End");
@@ -499,7 +547,8 @@ export class ShiftOptimizer {
     const levelSlackVars: string[] = [];
     const constraintLines: string[] = [];
     const cIdx = { val: 0 };
-    this.writeCommonConstraints(constraintLines, varMap, cIdx, { levelSlackVars });
+    const auxBinaryVars: string[] = [];
+    this.writeCommonConstraints(constraintLines, varMap, cIdx, { levelSlackVars, auxBinaryVars });
 
     {
       const allXVars = Array.from(varMap.keys());
@@ -661,9 +710,10 @@ export class ShiftOptimizer {
       lines.push(`  ${lv} >= 0`);
     }
 
+    const allBinary = [...binaryVars, ...auxBinaryVars];
     lines.push("Binary");
-    for (let i = 0; i < binaryVars.length; i += 20) {
-      lines.push("  " + binaryVars.slice(i, i + 20).join(" "));
+    for (let i = 0; i < allBinary.length; i += 20) {
+      lines.push("  " + allBinary.slice(i, i + 20).join(" "));
     }
 
     lines.push("End");
@@ -917,22 +967,41 @@ export class ShiftOptimizer {
                 let violatesMaxConsec = false;
                 for (const rule of this.config.maxConsecutiveRules) {
                   if (!rule.shifts.includes(s)) continue;
-                  let consecutive = 1;
-                  for (let dd = d - 1; dd >= 0; dd--) {
-                    let found = false;
-                    for (const rs of rule.shifts) {
-                      if (schedule[dd].shifts[rs]?.includes(member.id)) { found = true; break; }
+                  const isCombined = rule.shifts.length > 1;
+                  if (isCombined) {
+                    const wouldHaveAll = rule.shifts.every(rs => {
+                      if (rs === s) return true;
+                      return schedule[d].shifts[rs]?.includes(member.id);
+                    });
+                    if (!wouldHaveAll) continue;
+                    let consecutive = 1;
+                    for (let dd = d - 1; dd >= 0; dd--) {
+                      const allOnDay = rule.shifts.every(rs => schedule[dd].shifts[rs]?.includes(member.id));
+                      if (allOnDay) consecutive++; else break;
                     }
-                    if (found) consecutive++; else break;
-                  }
-                  for (let dd = d + 1; dd < D; dd++) {
-                    let found = false;
-                    for (const rs of rule.shifts) {
-                      if (schedule[dd].shifts[rs]?.includes(member.id)) { found = true; break; }
+                    for (let dd = d + 1; dd < D; dd++) {
+                      const allOnDay = rule.shifts.every(rs => schedule[dd].shifts[rs]?.includes(member.id));
+                      if (allOnDay) consecutive++; else break;
                     }
-                    if (found) consecutive++; else break;
+                    if (consecutive > rule.maxDays) { violatesMaxConsec = true; break; }
+                  } else {
+                    let consecutive = 1;
+                    for (let dd = d - 1; dd >= 0; dd--) {
+                      let found = false;
+                      for (const rs of rule.shifts) {
+                        if (schedule[dd].shifts[rs]?.includes(member.id)) { found = true; break; }
+                      }
+                      if (found) consecutive++; else break;
+                    }
+                    for (let dd = d + 1; dd < D; dd++) {
+                      let found = false;
+                      for (const rs of rule.shifts) {
+                        if (schedule[dd].shifts[rs]?.includes(member.id)) { found = true; break; }
+                      }
+                      if (found) consecutive++; else break;
+                    }
+                    if (consecutive > rule.maxDays) { violatesMaxConsec = true; break; }
                   }
-                  if (consecutive > rule.maxDays) { violatesMaxConsec = true; break; }
                 }
                 if (violatesMaxConsec) continue;
               }
@@ -1068,25 +1137,48 @@ export class ShiftOptimizer {
           let maxConsecBlock = "";
           for (const rule of this.config.maxConsecutiveRules) {
             if (!rule.shifts.includes(s)) continue;
-            let consecutive = 1;
-            for (let dd = d - 1; dd >= 0; dd--) {
-              let found = false;
-              for (const rs of rule.shifts) {
-                if (schedule[dd].shifts[rs]?.includes(member.id)) { found = true; break; }
+            const isCombined = rule.shifts.length > 1;
+            if (isCombined) {
+              const wouldHaveAll = rule.shifts.every(rs => {
+                if (rs === s) return true;
+                return schedule[d].shifts[rs]?.includes(member.id);
+              });
+              if (!wouldHaveAll) continue;
+              let consecutive = 1;
+              for (let dd = d - 1; dd >= 0; dd--) {
+                const allOnDay = rule.shifts.every(rs => schedule[dd].shifts[rs]?.includes(member.id));
+                if (allOnDay) consecutive++; else break;
               }
-              if (found) consecutive++; else break;
-            }
-            for (let dd = d + 1; dd < D; dd++) {
-              let found = false;
-              for (const rs of rule.shifts) {
-                if (schedule[dd].shifts[rs]?.includes(member.id)) { found = true; break; }
+              for (let dd = d + 1; dd < D; dd++) {
+                const allOnDay = rule.shifts.every(rs => schedule[dd].shifts[rs]?.includes(member.id));
+                if (allOnDay) consecutive++; else break;
               }
-              if (found) consecutive++; else break;
-            }
-            if (consecutive > rule.maxDays) {
-              const shiftNames = rule.shifts.map(si => this.config.shiftNames[si]).join("+");
-              maxConsecBlock = `max ${rule.maxDays} consecutive ${shiftNames}`;
-              break;
+              if (consecutive > rule.maxDays) {
+                const shiftNames = rule.shifts.map(si => this.config.shiftNames[si]).join("+");
+                maxConsecBlock = `max ${rule.maxDays} consecutive ${shiftNames}`;
+                break;
+              }
+            } else {
+              let consecutive = 1;
+              for (let dd = d - 1; dd >= 0; dd--) {
+                let found = false;
+                for (const rs of rule.shifts) {
+                  if (schedule[dd].shifts[rs]?.includes(member.id)) { found = true; break; }
+                }
+                if (found) consecutive++; else break;
+              }
+              for (let dd = d + 1; dd < D; dd++) {
+                let found = false;
+                for (const rs of rule.shifts) {
+                  if (schedule[dd].shifts[rs]?.includes(member.id)) { found = true; break; }
+                }
+                if (found) consecutive++; else break;
+              }
+              if (consecutive > rule.maxDays) {
+                const shiftNames = rule.shifts.map(si => this.config.shiftNames[si]).join("+");
+                maxConsecBlock = `max ${rule.maxDays} consecutive ${shiftNames}`;
+                break;
+              }
             }
           }
           if (maxConsecBlock) {
