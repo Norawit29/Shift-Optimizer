@@ -893,11 +893,19 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               const runLen = i - runStart;
               if (runLen > rule.maxDays) {
                 const runDays = sortedDays.slice(runStart, i);
-                const shiftLabel = rule.shifts.map(si => config.shiftNames[si]).join('+');
+                const actualShiftsInRun = new Set<number>();
+                for (const r of requested) {
+                  if (runDays.includes(r.date) && rule.shifts.includes(r.shift)) {
+                    actualShiftsInRun.add(r.shift);
+                  }
+                }
+                const actualShiftLabel = Array.from(actualShiftsInRun).map(si => config.shiftNames[si]).join('+');
+                const ruleLabel = rule.shifts.map(si => config.shiftNames[si]).join('+');
+                const shiftDisplay = actualShiftLabel === ruleLabel ? ruleLabel : `${actualShiftLabel} (${lang === "th" ? "ในกลุ่ม" : "in group"} ${ruleLabel})`;
                 conflicts.push(
                   t.maxConsecutiveConflict
                     .replace("{name}", m.name)
-                    .replace("{shifts}", shiftLabel)
+                    .replace("{shifts}", shiftDisplay)
                     .replace("{count}", String(runLen))
                     .replace("{days}", runDays.join(', '))
                     .replace("{max}", String(rule.maxDays))
