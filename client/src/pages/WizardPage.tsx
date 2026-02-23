@@ -730,7 +730,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     return warnings;
   };
 
-  const executeOptimizer = (softLevels: boolean) => {
+  const executeOptimizer = (_softLevels?: boolean) => {
     setIsOptimizing(true);
     setOptimizeProgress(0);
     const optimizeStartTime = performance.now();
@@ -752,7 +752,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
         for (let v = 0; v < 3; v++) {
           setOptimizeProgress(v + 1);
           await new Promise(r => setTimeout(r, 50));
-          const optimizer = new ShiftOptimizer(optimizerConfig, staff, month, year, { softLevelConstraints: softLevels });
+          const optimizer = new ShiftOptimizer(optimizerConfig, staff, month, year);
           const res = await optimizer.optimize();
           allResults.push(res);
         }
@@ -781,7 +781,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               durationMs: Math.round(performance.now() - optimizeStartTime),
               metadata: {
                 shiftNames: config.shiftNames,
-                softLevels,
+                softLevels: false,
                 versions: allResults.length,
                 hasLevels: !!config.staffLevels?.length,
               },
@@ -812,8 +812,6 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
             description: t.partialScheduleDesc, 
             variant: "destructive" 
           });
-        } else if (softLevels) {
-          toast({ title: t.scheduleGenerated, description: t.softLevelNote, variant: "default" });
         } else {
           toast({ title: t.scheduleGenerated, description: t.optimizationComplete });
         }
@@ -2719,7 +2717,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               </div>
             ))}
           </div>
-          <p className="text-sm text-muted-foreground italic break-words">{t.softLevelNote}</p>
+          <p className="text-sm text-muted-foreground italic break-words">{t.hardLevelNote}</p>
           <div className="flex flex-wrap gap-2 justify-end">
             <Button
               variant="outline"
@@ -2731,11 +2729,11 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
             <Button
               onClick={() => {
                 setShowLevelWarning(false);
-                executeOptimizer(true);
+                executeOptimizer(false);
               }}
-              data-testid="button-proceed-soft-levels"
+              data-testid="button-proceed-hard-levels"
             >
-              {t.proceedWithSoftLevels}
+              {t.proceedWithOptimization}
             </Button>
           </div>
         </DialogContent>
