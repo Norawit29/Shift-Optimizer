@@ -2048,17 +2048,17 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     {(config.maxConsecutiveRules || []).map((rule, idx) => {
                       const isCombined = rule.shifts.length > 1;
                       return (
-                      <div key={idx} className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border flex-wrap">
-                        <div className="flex items-center gap-1 flex-wrap">
+                      <div key={idx} className="flex items-center gap-1.5 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border flex-nowrap overflow-x-auto">
+                        <div className="flex items-center gap-1 flex-nowrap shrink-0">
                           {rule.shifts.map((si, j) => (
-                            <span key={j} className="flex items-center gap-1">
+                            <span key={j} className="flex items-center gap-1 shrink-0">
                               {j > 0 && <span className="text-muted-foreground text-xs">{isCombined ? lang === "th" ? "และ" : "&" : "+"}</span>}
-                              <Badge variant="outline">{config.shiftNames[si]}</Badge>
+                              <Badge variant="outline" className="whitespace-nowrap text-xs">{config.shiftNames[si]}</Badge>
                             </span>
                           ))}
-                          {isCombined && <span className="text-xs text-muted-foreground ml-1">{t.maxConsecutiveSameDay}</span>}
+                          {isCombined && <span className="text-xs text-muted-foreground shrink-0">{t.maxConsecutiveSameDay}</span>}
                         </div>
-                        <span className="text-muted-foreground text-sm mx-1">≤</span>
+                        <span className="text-muted-foreground text-xs shrink-0">≤</span>
                         <Input
                           type="number"
                           min={1}
@@ -2070,11 +2070,11 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                             newRules[idx] = { ...rule, maxDays: val };
                             setConfig({ ...config, maxConsecutiveRules: newRules });
                           }}
-                          className="w-16 text-center"
+                          className="w-14 text-center shrink-0"
                           data-testid={`input-max-consecutive-${idx}`}
                         />
-                        <span className="text-sm text-muted-foreground">{t.maxConsecutiveDays}</span>
-                        <Button variant="ghost" size="icon" className="ml-auto" onClick={() => {
+                        <span className="text-xs text-muted-foreground shrink-0 whitespace-nowrap">{t.maxConsecutiveDays}</span>
+                        <Button variant="ghost" size="icon" className="ml-auto shrink-0" onClick={() => {
                           const newRules = (config.maxConsecutiveRules || []).filter((_, i) => i !== idx);
                           setConfig({ ...config, maxConsecutiveRules: newRules });
                         }} data-testid={`button-remove-max-consecutive-${idx}`}>
