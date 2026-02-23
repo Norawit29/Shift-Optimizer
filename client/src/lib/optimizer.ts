@@ -331,12 +331,33 @@ export class ShiftOptimizer {
 
     for (let i = 0; i < N; i++) {
       const requested = this.staff[i].requested || [];
+      if (requested.length === 0) continue;
+      const dayShifts: Record<number, number[]> = {};
       for (const req of requested) {
         const d = req.date - 1;
         if (d < 0 || d >= D) continue;
-        const v = this.vn(i, d, req.shift);
-        if (varMap.has(v)) {
-          lines.push(`  c${cIdx.val++}: ${v} = 1`);
+        if (!dayShifts[d]) dayShifts[d] = [];
+        if (dayShifts[d].indexOf(req.shift) < 0) dayShifts[d].push(req.shift);
+      }
+      const dayKeys = Object.keys(dayShifts);
+      for (let dk = 0; dk < dayKeys.length; dk++) {
+        const d = Number(dayKeys[dk]);
+        const shifts = dayShifts[d];
+        if (shifts.length === 1) {
+          const v = this.vn(i, d, shifts[0]);
+          if (varMap.has(v)) {
+            lines.push(`  c${cIdx.val++}: ${v} = 1`);
+          }
+        } else {
+          const reqVars: string[] = [];
+          for (let si = 0; si < shifts.length; si++) {
+            const v = this.vn(i, d, shifts[si]);
+            if (varMap.has(v)) reqVars.push(v);
+          }
+          if (reqVars.length > 0) {
+            const terms = reqVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+            lines.push(`  c${cIdx.val++}: ${terms.join(' ')} >= 1`);
+          }
         }
       }
     }
