@@ -228,6 +228,7 @@ const translations = {
     requestedConflictSameDay: "day {day} (same day)",
     conflictRuleNextDay: "next-day",
     conflictRuleSameDay: "same-day",
+    maxConsecutiveConflict: "{name}: requested {shifts} on {count} consecutive days ({days}), but the max consecutive rule allows only {max} days.",
     proceedAnyway: "Generate Anyway",
 
     // Tutorial
@@ -479,6 +480,7 @@ const translations = {
     requestedConflictSameDay: "วันที่ {day} (วันเดียวกัน)",
     conflictRuleNextDay: "ห้ามอยู่ต่อเนื่อง",
     conflictRuleSameDay: "ห้ามอยู่วันเดียวกัน",
+    maxConsecutiveConflict: "{name}: ขอเวร {shifts} ติดกัน {count} วัน (วันที่ {days}) แต่กฎอนุญาตแค่ {max} วันติดกัน",
     proceedAnyway: "จัดเวรต่อ",
 
     // Tutorial

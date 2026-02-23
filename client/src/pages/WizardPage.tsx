@@ -874,6 +874,42 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
       }
     }
 
+    if (config.maxConsecutiveRules) {
+      for (const m of staff) {
+        const requested = m.requested || [];
+        if (requested.length === 0) continue;
+        for (const rule of config.maxConsecutiveRules) {
+          const reqDays = new Set<number>();
+          for (const r of requested) {
+            if (rule.shifts.includes(r.shift)) {
+              reqDays.add(r.date);
+            }
+          }
+          if (reqDays.size <= rule.maxDays) continue;
+          const sortedDays = Array.from(reqDays).sort((a, b) => a - b);
+          let runStart = 0;
+          for (let i = 1; i <= sortedDays.length; i++) {
+            if (i === sortedDays.length || sortedDays[i] !== sortedDays[i - 1] + 1) {
+              const runLen = i - runStart;
+              if (runLen > rule.maxDays) {
+                const runDays = sortedDays.slice(runStart, i);
+                const shiftLabel = rule.shifts.map(si => config.shiftNames[si]).join('+');
+                conflicts.push(
+                  t.maxConsecutiveConflict
+                    .replace("{name}", m.name)
+                    .replace("{shifts}", shiftLabel)
+                    .replace("{count}", String(runLen))
+                    .replace("{days}", runDays.join(', '))
+                    .replace("{max}", String(rule.maxDays))
+                );
+              }
+              runStart = i;
+            }
+          }
+        }
+      }
+    }
+
     return { capacityWarnings, conflicts };
   };
 
