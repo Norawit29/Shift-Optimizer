@@ -1590,7 +1590,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                   <div className="flex items-center gap-3 p-2 bg-blue-50/60 dark:bg-blue-950/30 rounded-lg border border-blue-100 dark:border-blue-900/50">
                     <FileSpreadsheet className="w-4 h-4 text-blue-500 shrink-0" />
                     <span className="text-xs text-muted-foreground flex-1">{t.uploadExcelHint}</span>
-                    <Button variant="link" size="sm" className="text-xs h-auto p-0 text-blue-600 dark:text-blue-400 shrink-0" onClick={downloadExcelTemplate} data-testid="button-download-template">
+                    <Button variant="ghost" size="sm" className="text-xs h-auto p-0 text-blue-600 dark:text-blue-400 shrink-0" onClick={downloadExcelTemplate} data-testid="button-download-template">
                       <Download className="w-3 h-3 mr-1" />{t.downloadTemplate}
                     </Button>
                   </div>

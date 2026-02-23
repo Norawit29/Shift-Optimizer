@@ -88,10 +88,11 @@ export class ShiftOptimizer {
 
   private checkFeasibility(): string | null {
     const warnings: string[] = [];
+    const S = this.config.shiftNames.length;
 
     for (let day = 1; day <= this.daysInMonth; day++) {
       const dayStaffPerShift = this.getStaffPerShiftForDay(day);
-      for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
+      for (let shiftIdx = 0; shiftIdx < S; shiftIdx++) {
         const required = dayStaffPerShift[shiftIdx];
         let available = 0;
         for (const member of this.staff) {
@@ -119,7 +120,7 @@ export class ShiftOptimizer {
     }
 
     if (this.config.staffLevels && this.config.minStaffPerLevel) {
-      for (let shiftIdx = 0; shiftIdx < this.config.shiftNames.length; shiftIdx++) {
+      for (let shiftIdx = 0; shiftIdx < S; shiftIdx++) {
         for (let lvl = 0; lvl < this.config.staffLevels.length; lvl++) {
           const minReq = this.config.minStaffPerLevel[shiftIdx]?.[lvl] || 0;
           if (minReq <= 0) continue;
@@ -131,6 +132,57 @@ export class ShiftOptimizer {
           }
         }
       }
+    }
+
+    for (let i = 0; i < this.staff.length; i++) {
+      const member = this.staff[i];
+      const requested = member.requested || [];
+      if (requested.length === 0) continue;
+
+      for (const rule of this.config.consecutiveRules) {
+        const ruleType = rule.type || 'nextDay';
+        for (const req of requested) {
+          const d = req.date;
+          if (ruleType === 'nextDay') {
+            if (req.shift === rule.from) {
+              const hasNextDay = requested.some(r => r.date === d + 1 && r.shift === rule.to);
+              if (hasNextDay) {
+                warnings.push(
+                  `${member.name}: requested "${this.config.shiftNames[rule.from]}" day ${d} + "${this.config.shiftNames[rule.to]}" day ${d + 1}, violates next-day rule.`
+                );
+              }
+            }
+          } else {
+            if (req.shift === rule.from) {
+              const hasSameDay = requested.some(r => r.date === d && r.shift === rule.to);
+              if (hasSameDay) {
+                warnings.push(
+                  `${member.name}: requested "${this.config.shiftNames[rule.from]}" + "${this.config.shiftNames[rule.to]}" on day ${d}, violates same-day rule.`
+                );
+              }
+            }
+          }
+        }
+      }
+
+      const reqCount = requested.length;
+      if (reqCount > member.maxShifts) {
+        warnings.push(
+          `${member.name}: requested ${reqCount} shifts but maxShifts is ${member.maxShifts}.`
+        );
+      }
+    }
+
+    const totalMaxShifts = this.staff.reduce((sum, s) => sum + s.maxShifts, 0);
+    let totalRequired = 0;
+    for (let d = 0; d < this.daysInMonth; d++) {
+      const req = this.getStaffPerShiftForDay(d + 1);
+      for (let s = 0; s < S; s++) totalRequired += req[s];
+    }
+    if (totalMaxShifts < totalRequired) {
+      warnings.push(
+        `Total staff capacity (${totalMaxShifts} shifts) is less than total required slots (${totalRequired}). Increase maxShifts or add more staff.`
+      );
     }
 
     return warnings.length > 0 ? warnings.join(" ") : null;
