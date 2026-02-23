@@ -251,8 +251,27 @@ export class ShiftOptimizer {
     if (this.config.maxConsecutiveRules) {
       for (const rule of this.config.maxConsecutiveRules) {
         const windowSize = rule.maxDays + 1;
+        const isCombined = rule.shifts.length > 1;
         for (let i = 0; i < N; i++) {
+          const memberRequested = this.staff[i].requested || [];
           for (let dStart = 0; dStart <= D - windowSize; dStart++) {
+            if (isCombined) {
+              const reqShiftsInWindow = new Set<number>();
+              for (let dd = 0; dd < windowSize; dd++) {
+                const dayIdx = dStart + 1 + dd;
+                for (const r of memberRequested) {
+                  if (r.date === dayIdx && rule.shifts.includes(r.shift)) {
+                    reqShiftsInWindow.add(r.shift);
+                  }
+                }
+              }
+              if (reqShiftsInWindow.size <= 1) {
+                const reqCount = memberRequested.filter(r =>
+                  r.date >= dStart + 1 && r.date <= dStart + windowSize && rule.shifts.includes(r.shift)
+                ).length;
+                if (reqCount > rule.maxDays) continue;
+              }
+            }
             const windowVars: string[] = [];
             for (let dd = 0; dd < windowSize; dd++) {
               const d = dStart + dd;

@@ -899,13 +899,15 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     actualShiftsInRun.add(r.shift);
                   }
                 }
-                const actualShiftLabel = Array.from(actualShiftsInRun).map(si => config.shiftNames[si]).join('+');
-                const ruleLabel = rule.shifts.map(si => config.shiftNames[si]).join('+');
-                const shiftDisplay = actualShiftLabel === ruleLabel ? ruleLabel : `${actualShiftLabel} (${lang === "th" ? "ในกลุ่ม" : "in group"} ${ruleLabel})`;
+                if (rule.shifts.length > 1 && actualShiftsInRun.size <= 1) {
+                  runStart = i;
+                  continue;
+                }
+                const shiftLabel = rule.shifts.map(si => config.shiftNames[si]).join('+');
                 conflicts.push(
                   t.maxConsecutiveConflict
                     .replace("{name}", m.name)
-                    .replace("{shifts}", shiftDisplay)
+                    .replace("{shifts}", shiftLabel)
                     .replace("{count}", String(runLen))
                     .replace("{days}", runDays.join(', '))
                     .replace("{max}", String(rule.maxDays))
