@@ -10,11 +10,8 @@ interface StatsCardProps {
 }
 
 export function StatsCard({ result, config }: StatsCardProps) {
-  const { metrics, levelViolations } = result;
+  const { metrics } = result;
   const { t } = useLanguage();
-  const hasLevelViolations = levelViolations && levelViolations.length > 0;
-  const hasUnfilledSlots = result.unfilledSlots && result.unfilledSlots.length > 0;
-  const hasViolations = hasLevelViolations || hasUnfilledSlots;
 
   const data = metrics.perStaff.map(s => ({
     name: s.name,
@@ -76,16 +73,12 @@ export function StatsCard({ result, config }: StatsCardProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className={`${hasViolations ? "bg-amber-100 dark:bg-amber-900/30" : "bg-green-100 dark:bg-green-900/30"} p-2 rounded-full`}>
-                {hasViolations ? (
-                  <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                ) : (
-                  <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
-                )}
+              <div className="bg-green-100 p-2 rounded-full dark:bg-green-900/30">
+                <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <p className="font-semibold">{hasViolations ? t.optimizedWithViolations : t.optimized}</p>
-                <p className="text-xs text-muted-foreground">{hasViolations ? t.levelViolationsFound : t.rulesRespected}</p>
+                <p className="font-semibold">{t.optimized}</p>
+                <p className="text-xs text-muted-foreground">{t.rulesRespected}</p>
               </div>
             </div>
             

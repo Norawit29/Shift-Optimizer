@@ -248,8 +248,7 @@ async function exportToExcel(
       shiftHeaderRow.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF" + shiftColor } };
 
       levelNames.forEach((lvlName, lvlIdx) => {
-        const minReq = config.minStaffPerLevel?.[shiftIdx]?.[lvlIdx] || 0;
-        const rowValues: (string | number)[] = ["", lvlName + (minReq > 0 ? ` (>=${minReq})` : "")];
+        const rowValues: (string | number)[] = ["", lvlName];
         result.forEach((day) => {
           const assignedIds = day.shifts[shiftIdx]?.map(String) || [];
           const count = assignedIds.filter(id => {
@@ -263,10 +262,7 @@ async function exportToExcel(
         for (let ci = 2 + ws3ColOffset; ci <= result.length + 1 + ws3ColOffset; ci++) {
           const cell = lvlRow.getCell(ci);
           const val = cell.value as number;
-          if (minReq > 0 && val < minReq) {
-            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFCCCC" } };
-            cell.font = { bold: true, color: { argb: "FFCC0000" } };
-          } else if (val > 0) {
+          if (val > 0) {
             cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE8F5E9" } };
             cell.font = { bold: true };
           }
@@ -730,7 +726,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     return warnings;
   };
 
-  const executeOptimizer = (_softLevels?: boolean) => {
+  const executeOptimizer = (softLevels: boolean) => {
     setIsOptimizing(true);
     setOptimizeProgress(0);
     const optimizeStartTime = performance.now();
@@ -752,7 +748,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
         for (let v = 0; v < 3; v++) {
           setOptimizeProgress(v + 1);
           await new Promise(r => setTimeout(r, 50));
-          const optimizer = new ShiftOptimizer(optimizerConfig, staff, month, year);
+          const optimizer = new ShiftOptimizer(optimizerConfig, staff, month, year, { softLevelConstraints: softLevels });
           const res = await optimizer.optimize();
           allResults.push(res);
         }
@@ -781,7 +777,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               durationMs: Math.round(performance.now() - optimizeStartTime),
               metadata: {
                 shiftNames: config.shiftNames,
-                softLevels: false,
+                softLevels,
                 versions: allResults.length,
                 hasLevels: !!config.staffLevels?.length,
               },
@@ -812,6 +808,8 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
             description: t.partialScheduleDesc, 
             variant: "destructive" 
           });
+        } else if (softLevels) {
+          toast({ title: t.scheduleGenerated, description: t.softLevelNote, variant: "default" });
         } else {
           toast({ title: t.scheduleGenerated, description: t.optimizationComplete });
         }
@@ -2368,54 +2366,6 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                 </div>
               )}
 
-              {result.levelConstraintsSkipped && (
-                <div className="mb-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg" data-testid="level-constraints-skipped-info">
-                  <div className="p-3">
-                    <div className="flex items-start gap-2">
-                      <AlertTriangle className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-blue-800 dark:text-blue-300 text-sm">
-                          {t.levelConstraintsSkippedTitle}
-                        </p>
-                        <p className="mt-1 text-xs text-blue-700 dark:text-blue-400">
-                          {t.levelConstraintsSkippedDesc}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {result.levelViolations && result.levelViolations.length > 0 && (
-                <div className="mb-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg max-h-48 overflow-y-auto" data-testid="level-violations-warning">
-                  <div className="p-3">
-                    <div className="flex items-start gap-2">
-                      <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-amber-800 dark:text-amber-300 text-sm">
-                          {t.levelViolationTitle} ({result.levelViolations.length})
-                        </p>
-                        <div className="mt-1 text-xs text-amber-700 dark:text-amber-400 space-y-0.5">
-                          {result.levelViolations.slice(0, 20).map((v, i) => (
-                            <div key={i}>
-                              {t.levelViolationItem
-                                .replace("{day}", String(v.day))
-                                .replace("{shift}", v.shiftName)
-                                .replace("{level}", v.levelName)
-                                .replace("{actual}", String(v.actual))
-                                .replace("{required}", String(v.required))}
-                            </div>
-                          ))}
-                          {result.levelViolations.length > 20 && (
-                            <div>... {t.andMore.replace("{count}", String(result.levelViolations.length - 20))}</div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               <Tabs defaultValue="calendar">
                 <TabsList className="mb-4">
                   <TabsTrigger value="calendar" data-testid="tab-calendar"><CalendarIcon className="w-4 h-4 mr-2" />{t.calendarView}</TabsTrigger>
@@ -2718,7 +2668,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
       </Dialog>
 
       <Dialog open={showLevelWarning} onOpenChange={setShowLevelWarning}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-yellow-500 dark:text-yellow-400 shrink-0" />
@@ -2730,13 +2680,13 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           </DialogHeader>
           <div className="space-y-2 text-sm text-muted-foreground">
             {levelWarnings.map((w, i) => (
-              <div key={i} className="pl-3 border-l-2 border-yellow-400 dark:border-yellow-500 py-1 break-words">
+              <div key={i} className="pl-3 border-l-2 border-yellow-400 dark:border-yellow-500 py-1">
                 {w}
               </div>
             ))}
           </div>
-          <p className="text-sm text-muted-foreground italic break-words">{t.hardLevelNote}</p>
-          <div className="flex flex-wrap gap-2 justify-end">
+          <p className="text-sm text-muted-foreground italic">{t.softLevelNote}</p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
             <Button
               variant="outline"
               onClick={() => setShowLevelWarning(false)}
@@ -2747,11 +2697,11 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
             <Button
               onClick={() => {
                 setShowLevelWarning(false);
-                executeOptimizer(false);
+                executeOptimizer(true);
               }}
-              data-testid="button-proceed-hard-levels"
+              data-testid="button-proceed-soft-levels"
             >
-              {t.proceedWithOptimization}
+              {t.proceedWithSoftLevels}
             </Button>
           </div>
         </DialogContent>

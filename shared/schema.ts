@@ -53,16 +53,6 @@ export interface UnfilledSlot {
   assigned: number;
 }
 
-export interface LevelViolation {
-  day: number;
-  shift: number;
-  shiftName: string;
-  level: number;
-  levelName: string;
-  required: number;
-  actual: number;
-}
-
 export interface OptimizerResult {
   schedule: DaySchedule[];
   metrics: {
@@ -72,8 +62,6 @@ export interface OptimizerResult {
   isPartial?: boolean;
   unfilledSlots?: UnfilledSlot[];
   feasibilityWarning?: string;
-  levelViolations?: LevelViolation[];
-  levelConstraintsSkipped?: boolean;
 }
 
 // === TABLE DEFINITIONS ===

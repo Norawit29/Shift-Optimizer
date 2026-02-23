@@ -1,4 +1,4 @@
-import type { StaffMember, SchedulerConfig, DaySchedule, OptimizerResult, UnfilledSlot, LevelViolation } from "@shared/schema";
+import type { StaffMember, SchedulerConfig, DaySchedule, OptimizerResult, UnfilledSlot } from "@shared/schema";
 import { getDaysInMonth, differenceInCalendarDays, addDays, parseISO } from "date-fns";
 
 let highsModule: any = null;
@@ -173,35 +173,6 @@ export class ShiftOptimizer {
       }
     }
 
-    let requestedVarsCreated = 0;
-    let requestedVarsAlreadyExist = 0;
-    let requestedVarsBlocked = 0;
-    for (let i = 0; i < N; i++) {
-      const reqs = this.staff[i].requested || [];
-      for (const req of reqs) {
-        const d = req.date - 1;
-        if (d < 0 || d >= D) continue;
-        const s = req.shift;
-        if (s < 0 || s >= S) continue;
-        const v = this.vn(i, d, s);
-        if (varMap.has(v)) {
-          requestedVarsAlreadyExist++;
-          continue;
-        }
-        if (this.isBlocked(i, d, s)) {
-          console.warn(`[OPT] Requested shift blocked: ${this.staff[i].name} day${req.date} shift${s}(${this.config.shiftNames[s]}) - skipping`);
-          requestedVarsBlocked++;
-          continue;
-        }
-        varMap.set(v, { staff: i, day: d, shift: s });
-        requestedVarsCreated++;
-        console.log(`[OPT] Created variable for requested shift: ${this.staff[i].name} day${req.date} shift${s}(${this.config.shiftNames[s]})`);
-      }
-    }
-    if (requestedVarsCreated > 0 || requestedVarsBlocked > 0) {
-      console.log(`[OPT] Requested shift variables: ${requestedVarsAlreadyExist} already existed, ${requestedVarsCreated} newly created, ${requestedVarsBlocked} blocked`);
-    }
-
     const binaryVars: string[] = [];
     varMap.forEach((_info, vName) => binaryVars.push(vName));
     return { varMap, binaryVars };
@@ -211,7 +182,7 @@ export class ShiftOptimizer {
     lines: string[],
     varMap: Map<string, { staff: number; day: number; shift: number }>,
     cIdx: { val: number },
-    options?: { skipStaffingCap?: boolean; levelSlackVars?: string[]; skipLevelConstraints?: boolean }
+    options?: { skipStaffingCap?: boolean; levelSlackVars?: string[] }
   ): void {
     const N = this.staff.length;
     const D = this.daysInMonth;
@@ -336,8 +307,6 @@ export class ShiftOptimizer {
       }
     }
 
-    let requestedConstraintCount = 0;
-    let requestedConstraintSkipped = 0;
     for (let i = 0; i < N; i++) {
       const requested = this.staff[i].requested || [];
       for (const req of requested) {
@@ -346,31 +315,13 @@ export class ShiftOptimizer {
         const v = this.vn(i, d, req.shift);
         if (varMap.has(v)) {
           lines.push(`  c${cIdx.val++}: ${v} = 1`);
-          requestedConstraintCount++;
-        } else {
-          console.warn(`[OPT] Requested constraint SKIPPED (no variable): ${this.staff[i].name} day${req.date} shift${req.shift}(${this.config.shiftNames[req.shift] || '?'})`);
-          requestedConstraintSkipped++;
         }
       }
-    }
-    if (requestedConstraintCount > 0 || requestedConstraintSkipped > 0) {
-      console.log(`[OPT] Requested shift constraints: ${requestedConstraintCount} created, ${requestedConstraintSkipped} skipped`);
     }
 
-    if (options?.skipLevelConstraints) {
-      console.log(`[OPT] Level constraints SKIPPED (fallback mode)`);
-    } else if (this.config.staffLevels && this.config.staffLevels.length > 0 && this.config.minStaffPerLevel) {
+    if (this.config.staffLevels && this.config.staffLevels.length > 0 && this.config.minStaffPerLevel) {
       const numLevels = this.config.staffLevels.length;
-      const useSoft = !!(this.softLevelConstraints && options?.levelSlackVars);
-      let levelConstraintCount = 0;
-      if (options?.levelSlackVars !== undefined || !this.softLevelConstraints) {
-        console.log(`[OPT] Level constraints: ${numLevels} levels, useSoft=${useSoft}`);
-        console.log(`[OPT] minStaffPerLevel:`, JSON.stringify(this.config.minStaffPerLevel));
-        for (let lvl = 0; lvl < numLevels; lvl++) {
-          const count = this.staff.filter(s => (s.level ?? 0) === lvl).length;
-          console.log(`[OPT] Level ${lvl} (${this.config.staffLevels[lvl]}): ${count} staff`);
-        }
-      }
+      const useSoft = this.softLevelConstraints && options?.levelSlackVars;
       for (let d = 0; d < D; d++) {
         const dayStaffPerShift = this.getStaffPerShiftForDay(d + 1);
         for (let s = 0; s < S; s++) {
@@ -384,11 +335,7 @@ export class ShiftOptimizer {
               const v = this.vn(i, d, s);
               if (varMap.has(v)) levelVars.push(v);
             }
-            if (d === 0) {
-              console.log(`[OPT] Day1 Shift${s}(${this.config.shiftNames[s]}) Level${lvl}(${this.config.staffLevels[lvl]}): minReq=${minRequired}, availableVars=${levelVars.length}`);
-            }
             if (levelVars.length > 0) {
-              levelConstraintCount++;
               if (useSoft) {
                 const slackVar = `lslk_${d}_${s}_${lvl}`;
                 options.levelSlackVars!.push(slackVar);
@@ -403,62 +350,16 @@ export class ShiftOptimizer {
                 lines.push(writeTerms(terms, 10));
                 lines.push(`  >= ${minRequired}`);
               }
-            } else if (d === 0) {
-              console.warn(`[OPT] Day1 Shift${s} Level${lvl}: NO available vars! Constraint skipped.`);
             }
           }
         }
       }
-      console.log(`[OPT] Total level constraints generated: ${levelConstraintCount}`);
     }
-  }
-
-  private buildLevelBalanceConstraints(
-    levelSlackVars: string[],
-    cIdx: { val: number }
-  ): { levelMaxVars: string[]; levelMaxConstraints: string[] } {
-    const levelMaxVars: string[] = [];
-    const levelMaxConstraints: string[] = [];
-    if (levelSlackVars.length === 0) return { levelMaxVars, levelMaxConstraints };
-
-    const byLevel: Record<number, Record<number, string[]>> = {};
-    for (const lv of levelSlackVars) {
-      const parts = lv.split('_');
-      const s = parseInt(parts[2]);
-      const l = parseInt(parts[3]);
-      if (!byLevel[l]) byLevel[l] = {};
-      if (!byLevel[l][s]) byLevel[l][s] = [];
-      byLevel[l][s].push(lv);
-    }
-
-    for (const lStr of Object.keys(byLevel)) {
-      const l = parseInt(lStr);
-      const shiftGroups = byLevel[l];
-      const shiftKeys = Object.keys(shiftGroups);
-      if (shiftKeys.length <= 1) continue;
-      const maxVar = `lvMax_${l}`;
-      levelMaxVars.push(maxVar);
-      for (const sStr of shiftKeys) {
-        const vars = shiftGroups[parseInt(sStr)];
-        const terms = vars.map((v: string, idx: number) => idx === 0 ? v : `+ ${v}`);
-        terms.push(`- ${maxVar}`);
-        levelMaxConstraints.push(`  c${cIdx.val++}:`);
-        levelMaxConstraints.push(writeTerms(terms, 10));
-        levelMaxConstraints.push(`  <= 0`);
-      }
-    }
-
-    if (levelMaxVars.length > 0) {
-      console.log(`[OPT] Level balance: ${levelMaxVars.length} lvMax vars added to distribute violations evenly across shifts`);
-    }
-
-    return { levelMaxVars, levelMaxConstraints };
   }
 
   private buildPhase1Model(
     varMap: Map<string, { staff: number; day: number; shift: number }>,
-    binaryVars: string[],
-    options?: { skipLevelConstraints?: boolean }
+    binaryVars: string[]
   ): { model: string; slackVars: string[]; levelSlackVars: string[] } {
     const N = this.staff.length;
     const D = this.daysInMonth;
@@ -476,7 +377,7 @@ export class ShiftOptimizer {
 
     const constraintLines: string[] = [];
     const cIdx = { val: 0 };
-    this.writeCommonConstraints(constraintLines, varMap, cIdx, { skipStaffingCap: true, levelSlackVars, skipLevelConstraints: options?.skipLevelConstraints });
+    this.writeCommonConstraints(constraintLines, varMap, cIdx, { skipStaffingCap: true, levelSlackVars });
 
     for (let d = 0; d < D; d++) {
       const required = this.getStaffPerShiftForDay(d + 1);
@@ -500,9 +401,6 @@ export class ShiftOptimizer {
       }
     }
 
-    const { levelMaxVars, levelMaxConstraints } = this.buildLevelBalanceConstraints(levelSlackVars, cIdx);
-    constraintLines.push(...levelMaxConstraints);
-
     const lines: string[] = [];
     lines.push("Minimize");
     lines.push("  obj:");
@@ -516,12 +414,8 @@ export class ShiftOptimizer {
       objParts.push(n >= 0 ? `+ ${fmt(n)} ${xv}` : `- ${fmt(-n)} ${xv}`);
     }
     for (const lv of levelSlackVars) {
-      const w = fmt(10000 + (Math.random() - 0.5) * 0.1);
+      const w = fmt(100 + (Math.random() - 0.5) * 0.1);
       objParts.push(`+ ${w} ${lv}`);
-    }
-    for (const mv of levelMaxVars) {
-      const w = fmt(100000 + (Math.random() - 0.5) * 0.1);
-      objParts.push(`+ ${w} ${mv}`);
     }
     lines.push(writeTerms(objParts, 10));
 
@@ -534,9 +428,6 @@ export class ShiftOptimizer {
     }
     for (const lv of levelSlackVars) {
       lines.push(`  ${lv} >= 0`);
-    }
-    for (const mv of levelMaxVars) {
-      lines.push(`  ${mv} >= 0`);
     }
 
     lines.push("Binary");
@@ -585,8 +476,7 @@ export class ShiftOptimizer {
   private buildPhase2Model(
     varMap: Map<string, { staff: number; day: number; shift: number }>,
     binaryVars: string[],
-    phase1Targets: { perShift: number[]; holidayTotal: number; totalCoverage: number; slotCoverage: Map<string, number> },
-    options?: { skipLevelConstraints?: boolean }
+    phase1Targets: { perShift: number[]; holidayTotal: number; totalCoverage: number; slotCoverage: Map<string, number> }
   ): string {
     const N = this.staff.length;
     const D = this.daysInMonth;
@@ -609,7 +499,7 @@ export class ShiftOptimizer {
     const levelSlackVars: string[] = [];
     const constraintLines: string[] = [];
     const cIdx = { val: 0 };
-    this.writeCommonConstraints(constraintLines, varMap, cIdx, { levelSlackVars, skipLevelConstraints: options?.skipLevelConstraints });
+    this.writeCommonConstraints(constraintLines, varMap, cIdx, { levelSlackVars });
 
     {
       const allXVars = Array.from(varMap.keys());
@@ -740,14 +630,8 @@ export class ShiftOptimizer {
       objParts.push(n >= 0 ? `+ ${fmt(n)} ${shuffled[j]}` : `- ${fmt(-n)} ${shuffled[j]}`);
     }
     for (const lv of levelSlackVars) {
-      const w = fmt(10000 + (Math.random() - 0.5) * 0.1);
+      const w = fmt(100 + (Math.random() - 0.5) * 0.1);
       objParts.push(`+ ${w} ${lv}`);
-    }
-    const { levelMaxVars: p2LevelMaxVars, levelMaxConstraints: p2LevelMaxConstraints } = this.buildLevelBalanceConstraints(levelSlackVars, cIdx);
-    constraintLines.push(...p2LevelMaxConstraints);
-    for (const mv of p2LevelMaxVars) {
-      const w = fmt(100000 + (Math.random() - 0.5) * 0.1);
-      objParts.push(`+ ${w} ${mv}`);
     }
     lines.push(writeTerms(objParts, 8));
 
@@ -775,9 +659,6 @@ export class ShiftOptimizer {
     }
     for (const lv of levelSlackVars) {
       lines.push(`  ${lv} >= 0`);
-    }
-    for (const mv of p2LevelMaxVars) {
-      lines.push(`  ${mv} >= 0`);
     }
 
     lines.push("Binary");
@@ -944,149 +825,6 @@ export class ShiftOptimizer {
       }
     }
     return unfilled;
-  }
-
-  private verifyAndForceRequestedShifts(schedule: DaySchedule[]): void {
-    const S = this.config.shiftNames.length;
-    const D = this.daysInMonth;
-    let forced = 0;
-    let alreadyAssigned = 0;
-    let failedToForce = 0;
-
-    const getStaffTotal = (staffId: string): number => {
-      let count = 0;
-      for (let dd = 0; dd < D; dd++) {
-        for (let ss = 0; ss < S; ss++) {
-          if (schedule[dd]?.shifts?.[ss]?.includes(staffId)) count++;
-        }
-      }
-      return count;
-    };
-
-    const getDayShiftCount = (staffId: string, dayIdx: number): number => {
-      let count = 0;
-      for (let ss = 0; ss < S; ss++) {
-        if (schedule[dayIdx]?.shifts?.[ss]?.includes(staffId)) count++;
-      }
-      return count;
-    };
-
-    const violatesConsecutiveRules = (staffIdx: number, dayIdx: number, shiftIdx: number): boolean => {
-      const member = this.staff[staffIdx];
-      for (const rule of this.config.consecutiveRules) {
-        const ruleType = rule.type || 'nextDay';
-        if (ruleType === 'nextDay') {
-          if (rule.to === shiftIdx && dayIdx > 0) {
-            if (schedule[dayIdx - 1]?.shifts?.[rule.from]?.includes(member.id)) return true;
-          }
-          if (rule.from === shiftIdx && dayIdx < D - 1) {
-            if (schedule[dayIdx + 1]?.shifts?.[rule.to]?.includes(member.id)) return true;
-          }
-        } else {
-          if (rule.from === shiftIdx && schedule[dayIdx]?.shifts?.[rule.to]?.includes(member.id)) return true;
-          if (rule.to === shiftIdx && schedule[dayIdx]?.shifts?.[rule.from]?.includes(member.id)) return true;
-        }
-      }
-      if (this.config.maxConsecutiveRules) {
-        for (const rule of this.config.maxConsecutiveRules) {
-          if (!rule.shifts.includes(shiftIdx)) continue;
-          let consecutive = 1;
-          for (let dd = dayIdx - 1; dd >= 0; dd--) {
-            let found = false;
-            for (const rs of rule.shifts) {
-              if (schedule[dd]?.shifts?.[rs]?.includes(member.id)) { found = true; break; }
-            }
-            if (found) consecutive++; else break;
-          }
-          for (let dd = dayIdx + 1; dd < D; dd++) {
-            let found = false;
-            for (const rs of rule.shifts) {
-              if (schedule[dd]?.shifts?.[rs]?.includes(member.id)) { found = true; break; }
-            }
-            if (found) consecutive++; else break;
-          }
-          if (consecutive > rule.maxDays) return true;
-        }
-      }
-      return false;
-    };
-
-    for (let i = 0; i < this.staff.length; i++) {
-      const member = this.staff[i];
-      const reqs = member.requested || [];
-      for (const req of reqs) {
-        const d = req.date - 1;
-        if (d < 0 || d >= D) continue;
-        const s = req.shift;
-        if (s < 0 || s >= S) continue;
-        if (this.isBlocked(i, d, s)) continue;
-
-        const shiftArr = schedule[d]?.shifts?.[s];
-        if (!shiftArr) {
-          console.warn(`[OPT] Requested shift FAILED (no shift array): ${member.name} day${req.date} ${this.config.shiftNames[s]}`);
-          failedToForce++;
-          continue;
-        }
-
-        if (shiftArr.includes(member.id)) {
-          alreadyAssigned++;
-          continue;
-        }
-
-        const currentTotal = getStaffTotal(member.id);
-        if (currentTotal >= member.maxShifts) {
-          console.warn(`[OPT] Requested shift FAILED (maxShifts ${currentTotal}/${member.maxShifts}): ${member.name} day${req.date} ${this.config.shiftNames[s]}`);
-          failedToForce++;
-          continue;
-        }
-
-        const maxPerDay = this.config.shiftsPerDay || S;
-        const dayCount = getDayShiftCount(member.id, d);
-        const memberReqs = member.requested || [];
-        let reqOnDay = 0;
-        for (const r of memberReqs) { if (r.date === d + 1) reqOnDay++; }
-        const effectiveMaxPerDay = Math.max(maxPerDay, reqOnDay);
-        if (dayCount >= effectiveMaxPerDay) {
-          console.warn(`[OPT] Requested shift FAILED (maxPerDay ${dayCount}/${effectiveMaxPerDay}): ${member.name} day${req.date} ${this.config.shiftNames[s]}`);
-          failedToForce++;
-          continue;
-        }
-
-        if (violatesConsecutiveRules(i, d, s)) {
-          console.warn(`[OPT] Requested shift FAILED (consecutive rule): ${member.name} day${req.date} ${this.config.shiftNames[s]}`);
-          failedToForce++;
-          continue;
-        }
-
-        const emptyPos = shiftArr.indexOf("");
-        if (emptyPos !== -1) {
-          shiftArr[emptyPos] = member.id;
-          forced++;
-          console.log(`[OPT] Forced requested shift: ${member.name} → day${req.date} ${this.config.shiftNames[s]} (empty slot)`);
-        } else {
-          const nonRequestedIdx = shiftArr.findIndex(existingId => {
-            if (!existingId) return false;
-            const existingStaffIdx = this.staff.findIndex(m => m.id === existingId);
-            if (existingStaffIdx < 0) return false;
-            return !this.isRequested(existingStaffIdx, d, s);
-          });
-          if (nonRequestedIdx !== -1) {
-            const displaced = shiftArr[nonRequestedIdx];
-            const displacedMember = this.staff.find(m => m.id === displaced);
-            shiftArr[nonRequestedIdx] = member.id;
-            forced++;
-            console.log(`[OPT] Forced requested shift: ${member.name} → day${req.date} ${this.config.shiftNames[s]} (displaced ${displacedMember?.name || displaced})`);
-          } else {
-            console.warn(`[OPT] Requested shift FAILED (all slots occupied by requested staff): ${member.name} day${req.date} ${this.config.shiftNames[s]}`);
-            failedToForce++;
-          }
-        }
-      }
-    }
-
-    if (forced > 0 || failedToForce > 0 || alreadyAssigned > 0) {
-      console.log(`[OPT] Requested shift verification: ${alreadyAssigned} already assigned, ${forced} forced, ${failedToForce} failed`);
-    }
   }
 
   private greedyFillUnfilled(schedule: DaySchedule[]): number {
@@ -1418,11 +1156,8 @@ export class ShiftOptimizer {
     console.log(`[OPT] Setup: ${this.staff.length} staff, ${this.daysInMonth} days, ${this.config.shiftNames.length} shifts`);
     console.log(`[OPT] Total required slots: ${totalRequired}, Total staff capacity (maxShifts): ${totalMaxShifts}, Variables: ${varMap.size}`);
 
-    const origSoftLevel = this.softLevelConstraints;
-    let phase1Solution: any;
-
-    this.softLevelConstraints = false;
     const { model: phase1Model } = this.buildPhase1Model(varMap, binaryVars);
+    let phase1Solution: any;
     try {
       phase1Solution = solver.solve(phase1Model, {
         time_limit: 15.0,
@@ -1433,38 +1168,12 @@ export class ShiftOptimizer {
       console.error("[OPT] Phase 1 solver CRASH:", err);
       return this.makeEmptyResult(`Solver crashed during coverage optimization: ${err?.message || "Unknown error"}.`);
     }
+
     console.log(`[OPT] Phase 1 status: ${phase1Solution.Status}, ObjectiveValue: ${phase1Solution.ObjectiveValue}`);
 
-    let levelConstraintsSkipped = false;
     if (failStatuses.includes(phase1Solution.Status) || !phase1Solution.Columns) {
       console.error(`[OPT] Phase 1 FAILED: ${phase1Solution.Status}`);
-
-      const hasLevelConstraints = this.config.staffLevels && this.config.staffLevels.length > 0 && this.config.minStaffPerLevel;
-      if (hasLevelConstraints) {
-        console.warn(`[OPT] Phase 1 infeasible with hard level constraints — retrying WITHOUT level constraints`);
-        const { model: phase1ModelNoLevel } = this.buildPhase1Model(varMap, binaryVars, { skipLevelConstraints: true });
-        try {
-          phase1Solution = solver.solve(phase1ModelNoLevel, {
-            time_limit: 15.0,
-            presolve: "on",
-            mip_rel_gap: 0.01,
-          });
-        } catch (err: any) {
-          console.error("[OPT] Phase 1 (no-level) solver CRASH:", err);
-          return this.makeEmptyResult(`Solver crashed during coverage optimization: ${err?.message || "Unknown error"}.`);
-        }
-        console.log(`[OPT] Phase 1 (no-level) status: ${phase1Solution.Status}, ObjectiveValue: ${phase1Solution.ObjectiveValue}`);
-
-        if (failStatuses.includes(phase1Solution.Status) || !phase1Solution.Columns) {
-          console.error(`[OPT] Phase 1 (no-level) also FAILED: ${phase1Solution.Status}`);
-          this.softLevelConstraints = origSoftLevel;
-          return this.makeEmptyResult(feasibilityMsg || `Phase 1 solver status: ${phase1Solution.Status}.`);
-        }
-        levelConstraintsSkipped = true;
-      } else {
-        this.softLevelConstraints = origSoftLevel;
-        return this.makeEmptyResult(feasibilityMsg || `Phase 1 solver status: ${phase1Solution.Status}.`);
-      }
+      return this.makeEmptyResult(feasibilityMsg || `Phase 1 solver status: ${phase1Solution.Status}.`);
     }
 
     const phase1Targets = this.extractPhase1Targets(phase1Solution, varMap);
@@ -1486,19 +1195,22 @@ export class ShiftOptimizer {
       return this.makeEmptyResult("No assignments possible with current constraints.");
     }
 
-    this.softLevelConstraints = false;
+    const phase2Model = this.buildPhase2Model(varMap, binaryVars, phase1Targets);
+    console.log(`[OPT] Phase 2 model size: ${phase2Model.length} chars, ${phase2Model.split('\n').length} lines`);
     let finalSolution: any;
     let usedPhase = 2;
-
     try {
-      const phase2Model = this.buildPhase2Model(varMap, binaryVars, phase1Targets, { skipLevelConstraints: levelConstraintsSkipped });
-      console.log(`[OPT] Phase 2 model size: ${phase2Model.length} chars, ${phase2Model.split('\n').length} lines, softLevels=false, levelSkipped=${levelConstraintsSkipped}`);
       const solver2 = await createSolver();
-      let phase2Solution = solver2.solve(phase2Model, { time_limit: 15.0, presolve: "on", mip_rel_gap: 0.01 });
+      const phase2Solution = solver2.solve(phase2Model, {
+        time_limit: 15.0,
+        presolve: "on",
+        mip_rel_gap: 0.01,
+      });
+
       console.log(`[OPT] Phase 2 status: ${phase2Solution.Status}, ObjectiveValue: ${phase2Solution.ObjectiveValue}`);
 
       if (failStatuses.includes(phase2Solution.Status) || !phase2Solution.Columns) {
-        console.warn(`[OPT] Phase 2 FAILED, falling back to Phase 1`);
+        console.warn(`[OPT] Phase 2 FAILED (${phase2Solution.Status}), falling back to Phase 1`);
         finalSolution = phase1Solution;
         usedPhase = 1;
       } else {
@@ -1509,60 +1221,17 @@ export class ShiftOptimizer {
       finalSolution = phase1Solution;
       usedPhase = 1;
     }
-    this.softLevelConstraints = origSoftLevel;
 
     const schedule = this.extractSchedule(finalSolution, varMap);
 
-    this.verifyAndForceRequestedShifts(schedule);
-
     let unfilledBefore = this.findUnfilledSlots(schedule);
     const coverageBefore = totalRequired - unfilledBefore.reduce((sum, u) => sum + (u.required - u.assigned), 0);
-    console.log(`[OPT] Solver result (Phase ${usedPhase}, levelMode=HARD): coverage ${coverageBefore}/${totalRequired}, unfilled slots: ${unfilledBefore.length}`);
+    console.log(`[OPT] Solver result (Phase ${usedPhase}): coverage ${coverageBefore}/${totalRequired}, unfilled slots: ${unfilledBefore.length}`);
 
     if (unfilledBefore.length > 0) {
       const greedyFilled = this.greedyFillUnfilled(schedule);
       if (greedyFilled > 0) {
         console.log(`[OPT] Greedy post-fill: filled ${greedyFilled} slot(s) respecting all hard constraints`);
-      }
-    }
-
-    const detectedLevelViolations: LevelViolation[] = [];
-    if (this.config.staffLevels && this.config.staffLevels.length > 0 && this.config.minStaffPerLevel) {
-      for (let d = 0; d < this.daysInMonth; d++) {
-        const dayReq = this.getStaffPerShiftForDay(d + 1);
-        for (let s = 0; s < this.config.shiftNames.length; s++) {
-          if (dayReq[s] === 0) continue;
-          const assigned = schedule[d].shifts[s].filter(id => id && id.length > 0);
-          for (let lvl = 0; lvl < this.config.staffLevels.length; lvl++) {
-            const minReq = this.config.minStaffPerLevel[s]?.[lvl] || 0;
-            if (minReq <= 0) continue;
-            const lvlCount = assigned.filter(id => {
-              const member = this.staff.find(m => m.id === id);
-              return member && (member.level ?? 0) === lvl;
-            }).length;
-            if (lvlCount < minReq) {
-              detectedLevelViolations.push({
-                day: d + 1,
-                shift: s,
-                shiftName: this.config.shiftNames[s],
-                level: lvl,
-                levelName: this.config.staffLevels[lvl],
-                required: minReq,
-                actual: lvlCount
-              });
-            }
-          }
-        }
-      }
-      if (detectedLevelViolations.length > 0) {
-        console.warn(`[OPT] Level constraint violations (${detectedLevelViolations.length}): ${detectedLevelViolations.slice(0, 10).map(v => `Day${v.day}-${v.shiftName}: ${v.levelName} ${v.actual}/${v.required}`).join(', ')}${detectedLevelViolations.length > 10 ? '...' : ''}`);
-        const perShiftViol: Record<string, number> = {};
-        for (const v of detectedLevelViolations) {
-          perShiftViol[v.shiftName] = (perShiftViol[v.shiftName] || 0) + 1;
-        }
-        console.log(`[OPT] Violations per shift: ${Object.entries(perShiftViol).map(([k, v]) => `${k}=${v}`).join(', ')}`);
-      } else {
-        console.log(`[OPT] All level constraints satisfied`);
       }
     }
 
@@ -1583,14 +1252,6 @@ export class ShiftOptimizer {
       schedule,
       metrics
     };
-
-    if (detectedLevelViolations.length > 0) {
-      result.levelViolations = detectedLevelViolations;
-    }
-
-    if (levelConstraintsSkipped) {
-      result.levelConstraintsSkipped = true;
-    }
 
     if (unfilledSlots.length > 0) {
       result.isPartial = true;

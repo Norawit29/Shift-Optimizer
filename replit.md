@@ -23,8 +23,6 @@ The scheduler supports **consecutive shift rules** with two types:
 The scheduler supports **requested/preferred shifts**:
 - Each StaffMember has optional `requested` array (same format as `blocked`: `{date, shift}[]`)
 - Requested shifts are enforced as HARD constraints in the optimizer (`x[i,d,s] = 1`)
-- Variables for requested shifts are always created in `prepareVariables()` even if the shift would otherwise be skipped (e.g., required=0)
-- Post-solver verification: `verifyAndForceRequestedShifts()` checks all requested shifts are assigned; forces them if solver missed them (respects maxShifts, maxPerDay, consecutive rules)
 - UI has mode toggle: "Block mode" (red) and "Request mode" (green)
 - In request mode, clicking a calendar date adds all non-blocked shifts as requested
 - Blocked and requested are mutually exclusive — blocking a date/shift auto-removes any requests
@@ -43,7 +41,7 @@ The scheduler supports **staff levels** (up to 5 levels):
 - `staffLevels` in SchedulerConfig: array of level names (e.g., ["พยาบาล", "ผู้ช่วยพยาบาล", "คนงาน"])
 - Each StaffMember has an optional `level` field (0-based index into staffLevels)
 - `minStaffPerLevel` in SchedulerConfig: 2D array `[shiftIdx][levelIdx]` for minimum staff of each level per shift
-- The optimizer enforces level minimums as HARD constraints only (LP `>= minRequired`) — no soft fallback
+- The optimizer enforces level minimums as hard constraints (LP `>= minRequired`)
 - Greedy post-processing prioritizes candidates that help meet unmet level requirements
 - Schedule view and Excel export display staff levels when configured
 - Feature is fully optional — backward compatible when `staffLevels` is undefined
