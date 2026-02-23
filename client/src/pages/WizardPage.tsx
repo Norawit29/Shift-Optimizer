@@ -838,6 +838,13 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     for (const m of staff) {
       const requested = m.requested || [];
       if (requested.length === 0) continue;
+      if (requested.length > m.maxShifts) {
+        conflicts.push(
+          (lang === "th"
+            ? `${m.name}: ขอเวร ${requested.length} เวร แต่จำนวนเวรสูงสุดคือ ${m.maxShifts} เวร กรุณาลดจำนวนเวรที่ขอหรือเพิ่มเวรสูงสุด`
+            : `${m.name}: requested ${requested.length} shifts but max shifts is ${m.maxShifts}. Please reduce requests or increase max shifts.`)
+        );
+      }
       for (const rule of config.consecutiveRules) {
         const ruleType = rule.type || 'nextDay';
         if (ruleType === 'sameDay') {
