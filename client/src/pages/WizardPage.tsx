@@ -2668,7 +2668,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
       </Dialog>
 
       <Dialog open={showLevelWarning} onOpenChange={setShowLevelWarning}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <div className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-yellow-500 dark:text-yellow-400 shrink-0" />
@@ -2680,13 +2680,13 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           </DialogHeader>
           <div className="space-y-2 text-sm text-muted-foreground">
             {levelWarnings.map((w, i) => (
-              <div key={i} className="pl-3 border-l-2 border-yellow-400 dark:border-yellow-500 py-1">
+              <div key={i} className="pl-3 border-l-2 border-yellow-400 dark:border-yellow-500 py-1 break-words">
                 {w}
               </div>
             ))}
           </div>
-          <p className="text-sm text-muted-foreground italic">{t.softLevelNote}</p>
-          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <p className="text-sm text-muted-foreground italic break-words">{t.softLevelNote}</p>
+          <div className="flex flex-wrap gap-2 justify-end">
             <Button
               variant="outline"
               onClick={() => setShowLevelWarning(false)}
