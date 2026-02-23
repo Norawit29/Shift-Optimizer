@@ -2498,6 +2498,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     month={month} 
                     year={year}
                     unfilledSlots={result.unfilledSlots}
+                    feasibilityWarning={result.feasibilityWarning}
                   />
                 </TabsContent>
 

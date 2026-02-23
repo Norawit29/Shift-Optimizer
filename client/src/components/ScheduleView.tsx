@@ -22,9 +22,10 @@ interface ScheduleViewProps {
   month: number;
   year: number;
   unfilledSlots?: UnfilledSlot[];
+  feasibilityWarning?: string;
 }
 
-export function ScheduleView({ schedule, config, staff, month, year, unfilledSlots }: ScheduleViewProps) {
+export function ScheduleView({ schedule, config, staff, month, year, unfilledSlots, feasibilityWarning }: ScheduleViewProps) {
   const getStaffName = (id: string) => staff.find(s => s.id === id)?.name || "Unknown";
   const getStaffLevel = (id: string): string | null => {
     if (!config.staffLevels || config.staffLevels.length === 0) return null;
@@ -63,6 +64,11 @@ export function ScheduleView({ schedule, config, staff, month, year, unfilledSlo
             <div className="space-y-2">
               <p className="font-semibold text-red-800 dark:text-red-300" data-testid="text-partial-warning">{t.partialScheduleWarning}</p>
               <p className="text-sm text-red-700 dark:text-red-400">{t.partialScheduleDesc}</p>
+              {feasibilityWarning && (
+                <div className="mt-2 p-2.5 bg-red-100 dark:bg-red-900/40 rounded-md border border-red-200 dark:border-red-800">
+                  <p className="text-xs font-medium text-red-800 dark:text-red-300 whitespace-pre-wrap" data-testid="text-feasibility-warning">{feasibilityWarning}</p>
+                </div>
+              )}
               <div className="text-sm text-red-600 dark:text-red-400 space-y-1 mt-2">
                 <p className="font-medium">Unfilled Shifts: {unfilledSlots.length} / Unfilled Slots: {unfilledSlots.reduce((sum, u) => sum + (u.required - u.assigned), 0)}</p>
                 <div className="flex flex-wrap gap-1.5">

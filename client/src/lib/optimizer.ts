@@ -1317,7 +1317,12 @@ export class ShiftOptimizer {
 
     if (failStatuses.includes(phase1Solution.Status) || !phase1Solution.Columns) {
       console.error(`[OPT] Phase 1 FAILED: ${phase1Solution.Status}`);
-      return this.makeEmptyResult(feasibilityMsg || `Phase 1 solver status: ${phase1Solution.Status}.`);
+      let infeasibleMsg = feasibilityMsg || "";
+      if (phase1Solution.Status === "Infeasible" && !feasibilityMsg) {
+        const totalReq = this.config.staffPerShift.reduce((a, b) => a + b, 0);
+        infeasibleMsg = `Infeasible: constraints conflict. Staff per day: ${totalReq}, Staff count: ${this.staff.length}, Shifts: ${this.config.shiftNames.length}, Rules: ${this.config.consecutiveRules.length} consecutive + ${(this.config.maxConsecutiveRules || []).length} max-consecutive. Try: reduce staff-per-shift, relax consecutive rules, remove conflicting requested shifts, or add more staff.`;
+      }
+      return this.makeEmptyResult(infeasibleMsg || `Phase 1 solver status: ${phase1Solution.Status}.`);
     }
 
     const phase1Targets = this.extractPhase1Targets(phase1Solution, varMap);
