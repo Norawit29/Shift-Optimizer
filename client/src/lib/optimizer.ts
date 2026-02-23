@@ -1,4 +1,4 @@
-import type { StaffMember, SchedulerConfig, DaySchedule, OptimizerResult, UnfilledSlot } from "@shared/schema";
+import type { StaffMember, SchedulerConfig, DaySchedule, OptimizerResult, UnfilledSlot, LevelViolation } from "@shared/schema";
 import { getDaysInMonth, differenceInCalendarDays, addDays, parseISO } from "date-fns";
 
 let highsModule: any = null;
@@ -322,6 +322,15 @@ export class ShiftOptimizer {
     if (this.config.staffLevels && this.config.staffLevels.length > 0 && this.config.minStaffPerLevel) {
       const numLevels = this.config.staffLevels.length;
       const useSoft = this.softLevelConstraints && options?.levelSlackVars;
+      let levelConstraintCount = 0;
+      if (options?.levelSlackVars !== undefined || !this.softLevelConstraints) {
+        console.log(`[OPT] Level constraints: ${numLevels} levels, useSoft=${useSoft}`);
+        console.log(`[OPT] minStaffPerLevel:`, JSON.stringify(this.config.minStaffPerLevel));
+        for (let lvl = 0; lvl < numLevels; lvl++) {
+          const count = this.staff.filter(s => (s.level ?? 0) === lvl).length;
+          console.log(`[OPT] Level ${lvl} (${this.config.staffLevels[lvl]}): ${count} staff`);
+        }
+      }
       for (let d = 0; d < D; d++) {
         const dayStaffPerShift = this.getStaffPerShiftForDay(d + 1);
         for (let s = 0; s < S; s++) {
@@ -335,7 +344,11 @@ export class ShiftOptimizer {
               const v = this.vn(i, d, s);
               if (varMap.has(v)) levelVars.push(v);
             }
+            if (d === 0) {
+              console.log(`[OPT] Day1 Shift${s}(${this.config.shiftNames[s]}) Level${lvl}(${this.config.staffLevels[lvl]}): minReq=${minRequired}, availableVars=${levelVars.length}`);
+            }
             if (levelVars.length > 0) {
+              levelConstraintCount++;
               if (useSoft) {
                 const slackVar = `lslk_${d}_${s}_${lvl}`;
                 options.levelSlackVars!.push(slackVar);
@@ -350,10 +363,13 @@ export class ShiftOptimizer {
                 lines.push(writeTerms(terms, 10));
                 lines.push(`  >= ${minRequired}`);
               }
+            } else if (d === 0) {
+              console.warn(`[OPT] Day1 Shift${s} Level${lvl}: NO available vars! Constraint skipped.`);
             }
           }
         }
       }
+      console.log(`[OPT] Total level constraints generated: ${levelConstraintCount}`);
     }
   }
 
@@ -1235,8 +1251,8 @@ export class ShiftOptimizer {
       }
     }
 
+    const detectedLevelViolations: LevelViolation[] = [];
     if (this.config.staffLevels && this.config.staffLevels.length > 0 && this.config.minStaffPerLevel) {
-      const levelViolations: string[] = [];
       for (let d = 0; d < this.daysInMonth; d++) {
         const dayReq = this.getStaffPerShiftForDay(d + 1);
         for (let s = 0; s < this.config.shiftNames.length; s++) {
@@ -1250,13 +1266,21 @@ export class ShiftOptimizer {
               return member && (member.level ?? 0) === lvl;
             }).length;
             if (lvlCount < minReq) {
-              levelViolations.push(`Day${d + 1}-${this.config.shiftNames[s]}: ${this.config.staffLevels[lvl]} ${lvlCount}/${minReq}`);
+              detectedLevelViolations.push({
+                day: d + 1,
+                shift: s,
+                shiftName: this.config.shiftNames[s],
+                level: lvl,
+                levelName: this.config.staffLevels[lvl],
+                required: minReq,
+                actual: lvlCount
+              });
             }
           }
         }
       }
-      if (levelViolations.length > 0) {
-        console.warn(`[OPT] Level constraint violations (${levelViolations.length}): ${levelViolations.slice(0, 10).join(', ')}${levelViolations.length > 10 ? '...' : ''}`);
+      if (detectedLevelViolations.length > 0) {
+        console.warn(`[OPT] Level constraint violations (${detectedLevelViolations.length}): ${detectedLevelViolations.slice(0, 10).map(v => `Day${v.day}-${v.shiftName}: ${v.levelName} ${v.actual}/${v.required}`).join(', ')}${detectedLevelViolations.length > 10 ? '...' : ''}`);
       } else {
         console.log(`[OPT] All level constraints satisfied`);
       }
@@ -1279,6 +1303,10 @@ export class ShiftOptimizer {
       schedule,
       metrics
     };
+
+    if (detectedLevelViolations.length > 0) {
+      result.levelViolations = detectedLevelViolations;
+    }
 
     if (unfilledSlots.length > 0) {
       result.isPartial = true;

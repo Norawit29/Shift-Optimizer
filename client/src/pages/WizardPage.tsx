@@ -248,7 +248,8 @@ async function exportToExcel(
       shiftHeaderRow.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF" + shiftColor } };
 
       levelNames.forEach((lvlName, lvlIdx) => {
-        const rowValues: (string | number)[] = ["", lvlName];
+        const minReq = config.minStaffPerLevel?.[shiftIdx]?.[lvlIdx] || 0;
+        const rowValues: (string | number)[] = ["", lvlName + (minReq > 0 ? ` (>=${minReq})` : "")];
         result.forEach((day) => {
           const assignedIds = day.shifts[shiftIdx]?.map(String) || [];
           const count = assignedIds.filter(id => {
@@ -262,7 +263,10 @@ async function exportToExcel(
         for (let ci = 2 + ws3ColOffset; ci <= result.length + 1 + ws3ColOffset; ci++) {
           const cell = lvlRow.getCell(ci);
           const val = cell.value as number;
-          if (val > 0) {
+          if (minReq > 0 && val < minReq) {
+            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFCCCC" } };
+            cell.font = { bold: true, color: { argb: "FFCC0000" } };
+          } else if (val > 0) {
             cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE8F5E9" } };
             cell.font = { bold: true };
           }
@@ -2362,6 +2366,34 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                         </Card>
                       );
                     })}
+                  </div>
+                </div>
+              )}
+
+              {result.levelViolations && result.levelViolations.length > 0 && (
+                <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg" data-testid="level-violations-warning">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-amber-800 dark:text-amber-300 text-sm">
+                        {t.levelViolationTitle} ({result.levelViolations.length})
+                      </p>
+                      <div className="mt-1 text-xs text-amber-700 dark:text-amber-400 max-h-32 overflow-y-auto space-y-0.5">
+                        {result.levelViolations.slice(0, 20).map((v, i) => (
+                          <div key={i}>
+                            {t.levelViolationItem
+                              .replace("{day}", String(v.day))
+                              .replace("{shift}", v.shiftName)
+                              .replace("{level}", v.levelName)
+                              .replace("{actual}", String(v.actual))
+                              .replace("{required}", String(v.required))}
+                          </div>
+                        ))}
+                        {result.levelViolations.length > 20 && (
+                          <div>... {t.andMore.replace("{count}", String(result.levelViolations.length - 20))}</div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
