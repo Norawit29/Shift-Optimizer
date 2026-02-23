@@ -118,50 +118,47 @@ async function exportToExcel(
   });
 
   const ws1 = wb.addWorksheet(labels.schedule);
-  ws1.addRow(schedHeaders);
+  const ws1HeaderRow = ws1.addRow(schedHeaders);
+  ws1HeaderRow.font = { bold: true };
+  ws1HeaderRow.eachCell(cell => {
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE0E0E0" } };
+  });
+  const ws1ShiftColMap: { colStart: number; colEnd: number; colorIdx: number }[] = [];
+  let ws1Col = 3;
+  config.shiftNames.forEach((_, shiftIdx) => {
+    const start = ws1Col;
+    for (let p = 0; p < maxPerShift[shiftIdx]; p++) {
+      ws1HeaderRow.getCell(ws1Col).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF" + SHIFT_COLORS[shiftIdx % SHIFT_COLORS.length] } };
+      ws1Col++;
+    }
+    ws1ShiftColMap.push({ colStart: start, colEnd: ws1Col - 1, colorIdx: shiftIdx });
+  });
+
   result.forEach((day) => {
     const currentDate = getDateForIdx(day.date);
     const row: string[] = [format(currentDate, "MMM d"), format(currentDate, "EEEE")];
     config.shiftNames.forEach((_, shiftIdx) => {
-      const names = day.shifts[shiftIdx]?.map(id => getStaffName(String(id))) || [];
+      const names = day.shifts[shiftIdx]?.map(id => getStaffName(String(id))).filter(n => n !== "Unknown") || [];
       for (let p = 0; p < maxPerShift[shiftIdx]; p++) {
         row.push(names[p] || "");
       }
     });
-    ws1.addRow(row);
+    const exRow = ws1.addRow(row);
+    for (const mapping of ws1ShiftColMap) {
+      const bgColor = SHIFT_COLORS[mapping.colorIdx % SHIFT_COLORS.length];
+      for (let c = mapping.colStart; c <= mapping.colEnd; c++) {
+        const cell = exRow.getCell(c);
+        if (cell.value && String(cell.value).length > 0) {
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF" + bgColor } };
+        }
+      }
+    }
   });
   ws1.getColumn(1).width = 8;
   ws1.getColumn(2).width = 12;
   for (let i = 3; i <= schedHeaders.length; i++) ws1.getColumn(i).width = 18;
-  ws1.getRow(1).font = { bold: true };
 
-  const ws2 = wb.addWorksheet(labels.summary);
   const hasLevels = config.staffLevels && config.staffLevels.length > 0;
-  const summaryHeaders = hasLevels
-    ? [labels.staffName, labels.level, ...config.shiftNames, labels.total]
-    : [labels.staffName, ...config.shiftNames, labels.total];
-  ws2.addRow(summaryHeaders);
-  staff.forEach(s => {
-    const row: (string | number)[] = [s.name];
-    if (hasLevels) {
-      row.push(config.staffLevels![(s.level ?? 0)] || config.staffLevels![0] || "");
-    }
-    let total = 0;
-    config.shiftNames.forEach((_, shiftIdx) => {
-      const count = result.reduce((acc, day) =>
-        acc + (day.shifts[shiftIdx]?.map(String).includes(s.id) ? 1 : 0), 0);
-      row.push(count);
-      total += count;
-    });
-    row.push(total);
-    ws2.addRow(row);
-  });
-  ws2.getColumn(1).width = 20;
-  const colOffset = hasLevels ? 1 : 0;
-  if (hasLevels) ws2.getColumn(2).width = 16;
-  for (let i = 2 + colOffset; i <= config.shiftNames.length + 1 + colOffset; i++) ws2.getColumn(i).width = 12;
-  ws2.getColumn(config.shiftNames.length + 2 + colOffset).width = 8;
-  ws2.getRow(1).font = { bold: true };
 
   const dateHeaders = result.map((day) => format(getDateForIdx(day.date), "d MMM"));
   const ws3 = wb.addWorksheet(labels.staffSchedule);
