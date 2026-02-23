@@ -36,7 +36,8 @@ import {
   CalendarDays,
   FileSpreadsheet,
   Layers,
-  AlertTriangle
+  AlertTriangle,
+  Upload
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { nanoid } from "nanoid";
@@ -599,6 +600,42 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     setStaff([...staff, ...newStaff]);
     setShowBulkAdd(false);
     setBulkStartNum(bulkStartNum + bulkCount);
+  };
+
+  const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    try {
+      const buffer = await file.arrayBuffer();
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(buffer);
+      const ws = wb.worksheets[0];
+      if (!ws) {
+        toast({ title: t.uploadExcelError, variant: "destructive" });
+        return;
+      }
+      const names: string[] = [];
+      ws.eachRow((row) => {
+        const val = row.getCell(1).value;
+        const name = val?.toString().trim();
+        if (name && name.length > 0) names.push(name);
+      });
+      if (names.length === 0) {
+        toast({ title: t.uploadExcelEmpty, variant: "destructive" });
+        return;
+      }
+      const newStaff: StaffMember[] = names.map(name => ({
+        id: nanoid(),
+        name,
+        maxShifts: globalMaxShifts,
+        blocked: [],
+      }));
+      setStaff([...staff, ...newStaff]);
+      toast({ title: t.uploadExcelSuccess.replace("{count}", String(names.length)) });
+    } catch {
+      toast({ title: t.uploadExcelError, variant: "destructive" });
+    }
   };
 
   const applyGlobalMaxShifts = () => {
@@ -1511,13 +1548,24 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                 <div className="space-y-4">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <Label className="text-base font-semibold">{t.staff} ({staff.length})</Label>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <Button onClick={addStaff} variant="outline" size="sm" className="border-dashed" data-testid="button-add-staff">
                         <Plus className="w-4 h-4 mr-1" /> {t.add}
                       </Button>
                       <Button onClick={() => setShowBulkAdd(true)} variant="outline" size="sm" data-testid="button-add-multiple">
                         <Users className="w-4 h-4 mr-1" /> {t.addMultiple}
                       </Button>
+                      <Button variant="outline" size="sm" onClick={() => document.getElementById('excel-upload-input')?.click()} data-testid="button-upload-excel">
+                        <Upload className="w-4 h-4 mr-1" /> {t.uploadExcel}
+                      </Button>
+                      <input
+                        id="excel-upload-input"
+                        type="file"
+                        accept=".xlsx"
+                        className="hidden"
+                        onChange={handleExcelUpload}
+                        data-testid="input-upload-excel"
+                      />
                     </div>
                   </div>
 
