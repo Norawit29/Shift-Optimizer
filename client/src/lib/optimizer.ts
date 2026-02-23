@@ -251,48 +251,20 @@ export class ShiftOptimizer {
     if (this.config.maxConsecutiveRules) {
       for (const rule of this.config.maxConsecutiveRules) {
         const windowSize = rule.maxDays + 1;
-        const isCombined = rule.shifts.length > 1;
         for (let i = 0; i < N; i++) {
-          let skipAllWindows = false;
-          if (isCombined) {
-            const memberReqs = this.staff[i].requested || [];
-            const dayTypes: Record<number, number[]> = {};
-            for (let ri = 0; ri < memberReqs.length; ri++) {
-              const r = memberReqs[ri];
-              if (rule.shifts.indexOf(r.shift) >= 0) {
-                if (!dayTypes[r.date]) dayTypes[r.date] = [];
-                if (dayTypes[r.date].indexOf(r.shift) < 0) dayTypes[r.date].push(r.shift);
-              }
-            }
-            const dayKeys = Object.keys(dayTypes);
-            for (let dk = 0; dk < dayKeys.length; dk++) {
-              if (dayTypes[Number(dayKeys[dk])].length >= 2) {
-                skipAllWindows = true;
-                break;
-              }
-            }
-          }
-          if (skipAllWindows) continue;
-
           for (let dStart = 0; dStart <= D - windowSize; dStart++) {
-            if (isCombined) {
-              let reqDaysCount = 0;
-              let singleType = true;
-              let firstType = -1;
-              for (let dd = 0; dd < windowSize; dd++) {
-                const dayIdx = dStart + 1 + dd;
-                const memberReqs = this.staff[i].requested || [];
-                for (let ri = 0; ri < memberReqs.length; ri++) {
-                  const r = memberReqs[ri];
-                  if (r.date === dayIdx && rule.shifts.indexOf(r.shift) >= 0) {
-                    reqDaysCount++;
-                    if (firstType < 0) firstType = r.shift;
-                    else if (r.shift !== firstType) singleType = false;
-                  }
+            let reqCount = 0;
+            const memberReqs = this.staff[i].requested || [];
+            for (let dd = 0; dd < windowSize; dd++) {
+              const dayIdx = dStart + 1 + dd;
+              for (let ri = 0; ri < memberReqs.length; ri++) {
+                const r = memberReqs[ri];
+                if (r.date === dayIdx && rule.shifts.indexOf(r.shift) >= 0) {
+                  reqCount++;
                 }
               }
-              if (singleType && reqDaysCount > rule.maxDays) continue;
             }
+            if (reqCount > rule.maxDays) continue;
             const windowVars: string[] = [];
             for (let dd = 0; dd < windowSize; dd++) {
               const d = dStart + dd;
