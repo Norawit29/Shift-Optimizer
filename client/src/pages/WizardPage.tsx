@@ -2695,16 +2695,6 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               {t.cancelOptimization}
             </Button>
             <Button
-              variant="outline"
-              onClick={() => {
-                setShowLevelWarning(false);
-                executeOptimizer(false);
-              }}
-              data-testid="button-proceed-hard-levels"
-            >
-              {t.proceedWithHardLevels}
-            </Button>
-            <Button
               onClick={() => {
                 setShowLevelWarning(false);
                 executeOptimizer(true);
