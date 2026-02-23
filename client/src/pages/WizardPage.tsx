@@ -37,7 +37,8 @@ import {
   FileSpreadsheet,
   Layers,
   AlertTriangle,
-  Upload
+  Upload,
+  Download
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { nanoid } from "nanoid";
@@ -636,6 +637,24 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     } catch {
       toast({ title: t.uploadExcelError, variant: "destructive" });
     }
+  };
+
+  const downloadExcelTemplate = async () => {
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet(lang === "th" ? "รายชื่อ" : "Staff");
+    ws.getColumn(1).width = 30;
+    const sampleNames = lang === "th"
+      ? ["สมชาย ใจดี", "สมหญิง รักเรียน", "วิชัย สุขสันต์"]
+      : ["John Smith", "Jane Doe", "Mike Johnson"];
+    sampleNames.forEach(name => ws.addRow([name]));
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "staff_template.xlsx";
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const applyGlobalMaxShifts = () => {
@@ -1568,19 +1587,12 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                       />
                     </div>
                   </div>
-                  <div className="flex items-start gap-3 p-2.5 bg-blue-50/60 dark:bg-blue-950/30 rounded-lg border border-blue-100 dark:border-blue-900/50">
-                    <FileSpreadsheet className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
-                    <div className="text-xs text-muted-foreground">
-                      <span>{t.uploadExcelHint}</span>
-                      <div className="mt-1.5 flex gap-0.5">
-                        <div className="border rounded px-2 py-0.5 bg-white dark:bg-slate-900 font-mono text-[10px]">
-                          <div className="text-muted-foreground/60 mb-0.5">A</div>
-                          <div>{lang === "th" ? "สมชาย" : "John"}</div>
-                          <div>{lang === "th" ? "สมหญิง" : "Jane"}</div>
-                          <div>{lang === "th" ? "วิชัย" : "Mike"}</div>
-                        </div>
-                      </div>
-                    </div>
+                  <div className="flex items-center gap-3 p-2 bg-blue-50/60 dark:bg-blue-950/30 rounded-lg border border-blue-100 dark:border-blue-900/50">
+                    <FileSpreadsheet className="w-4 h-4 text-blue-500 shrink-0" />
+                    <span className="text-xs text-muted-foreground flex-1">{t.uploadExcelHint}</span>
+                    <Button variant="link" size="sm" className="text-xs h-auto p-0 text-blue-600 dark:text-blue-400 shrink-0" onClick={downloadExcelTemplate} data-testid="button-download-template">
+                      <Download className="w-3 h-3 mr-1" />{t.downloadTemplate}
+                    </Button>
                   </div>
 
                   <div className="p-2.5 bg-slate-50 dark:bg-slate-900/50 rounded-lg space-y-2">
