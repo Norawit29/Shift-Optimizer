@@ -190,17 +190,23 @@ export class ShiftOptimizer {
 
     const maxPerDay = this.config.shiftsPerDay || S;
     for (let i = 0; i < N; i++) {
+      const memberReqs = this.staff[i].requested || [];
       for (let d = 0; d < D; d++) {
         const dayVars: string[] = [];
         for (let s = 0; s < S; s++) {
           const v = this.vn(i, d, s);
           if (varMap.has(v)) dayVars.push(v);
         }
-        if (dayVars.length > 1 && maxPerDay < dayVars.length) {
+        let reqOnDay = 0;
+        for (let ri = 0; ri < memberReqs.length; ri++) {
+          if (memberReqs[ri].date === d + 1) reqOnDay++;
+        }
+        const effectiveMax = Math.max(maxPerDay, reqOnDay);
+        if (dayVars.length > 1 && effectiveMax < dayVars.length) {
           const terms = dayVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
           lines.push(`  c${cIdx.val++}:`);
           lines.push(writeTerms(terms, 10));
-          lines.push(`  <= ${maxPerDay}`);
+          lines.push(`  <= ${effectiveMax}`);
         }
       }
     }
@@ -264,7 +270,7 @@ export class ShiftOptimizer {
                 }
               }
             }
-            if (reqCount > rule.maxDays) continue;
+            const effectiveMax = Math.max(rule.maxDays, reqCount);
             const windowVars: string[] = [];
             for (let dd = 0; dd < windowSize; dd++) {
               const d = dStart + dd;
@@ -273,11 +279,11 @@ export class ShiftOptimizer {
                 if (varMap.has(v)) windowVars.push(v);
               }
             }
-            if (windowVars.length > 0) {
+            if (windowVars.length > 0 && effectiveMax < windowVars.length) {
               const terms = windowVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
               lines.push(`  c${cIdx.val++}:`);
               lines.push(writeTerms(terms, 10));
-              lines.push(`  <= ${rule.maxDays}`);
+              lines.push(`  <= ${effectiveMax}`);
             }
           }
         }
@@ -303,33 +309,12 @@ export class ShiftOptimizer {
 
     for (let i = 0; i < N; i++) {
       const requested = this.staff[i].requested || [];
-      if (requested.length === 0) continue;
-      const dayShifts: Record<number, number[]> = {};
       for (const req of requested) {
         const d = req.date - 1;
         if (d < 0 || d >= D) continue;
-        if (!dayShifts[d]) dayShifts[d] = [];
-        if (dayShifts[d].indexOf(req.shift) < 0) dayShifts[d].push(req.shift);
-      }
-      const dayKeys = Object.keys(dayShifts);
-      for (let dk = 0; dk < dayKeys.length; dk++) {
-        const d = Number(dayKeys[dk]);
-        const shifts = dayShifts[d];
-        if (shifts.length === 1) {
-          const v = this.vn(i, d, shifts[0]);
-          if (varMap.has(v)) {
-            lines.push(`  c${cIdx.val++}: ${v} = 1`);
-          }
-        } else {
-          const reqVars: string[] = [];
-          for (let si = 0; si < shifts.length; si++) {
-            const v = this.vn(i, d, shifts[si]);
-            if (varMap.has(v)) reqVars.push(v);
-          }
-          if (reqVars.length > 0) {
-            const terms = reqVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
-            lines.push(`  c${cIdx.val++}: ${terms.join(' ')} >= 1`);
-          }
+        const v = this.vn(i, d, req.shift);
+        if (varMap.has(v)) {
+          lines.push(`  c${cIdx.val++}: ${v} = 1`);
         }
       }
     }
@@ -884,13 +869,19 @@ export class ShiftOptimizer {
               if (this.isBlocked(i, d, s)) continue;
 
               const maxPerDay = this.config.shiftsPerDay || S;
+              const memberReqs = member.requested || [];
+              let reqOnDay = 0;
+              for (let ri = 0; ri < memberReqs.length; ri++) {
+                if (memberReqs[ri].date === d + 1) reqOnDay++;
+              }
+              const effectiveMaxPerDay = Math.max(maxPerDay, reqOnDay);
               const dayShifts = dayAssigned.get(member.id);
               if (dayShifts && dayShifts.has(d)) {
                 let dayCount = 0;
                 for (let ss = 0; ss < S; ss++) {
                   if (schedule[d].shifts[ss].includes(member.id)) dayCount++;
                 }
-                if (dayCount >= maxPerDay) continue;
+                if (dayCount >= effectiveMaxPerDay) continue;
               }
 
               let violatesConsecutive = false;
