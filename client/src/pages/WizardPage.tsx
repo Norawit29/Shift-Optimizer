@@ -1901,7 +1901,12 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                 <CardContent className="p-6 space-y-6">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="p-2 bg-amber-100 dark:bg-amber-900/20 rounded-lg">
-                      <Activity className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                      <svg className="w-6 h-6 text-amber-600 dark:text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <line x1="3" y1="12" x2="21" y2="12" />
+                        <circle cx="4" cy="12" r="2.5" fill="currentColor" stroke="none" />
+                        <circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none" />
+                        <circle cx="20" cy="12" r="2.5" fill="currentColor" stroke="none" />
+                      </svg>
                     </div>
                     <h3 className="font-semibold text-lg">{t.maxConsecutiveRules}</h3>
                   </div>
