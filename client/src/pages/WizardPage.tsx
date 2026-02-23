@@ -2368,6 +2368,24 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                 </div>
               )}
 
+              {result.levelConstraintsSkipped && (
+                <div className="mb-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg" data-testid="level-constraints-skipped-info">
+                  <div className="p-3">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-blue-800 dark:text-blue-300 text-sm">
+                          {t.levelConstraintsSkippedTitle}
+                        </p>
+                        <p className="mt-1 text-xs text-blue-700 dark:text-blue-400">
+                          {t.levelConstraintsSkippedDesc}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {result.levelViolations && result.levelViolations.length > 0 && (
                 <div className="mb-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg max-h-48 overflow-y-auto" data-testid="level-violations-warning">
                   <div className="p-3">

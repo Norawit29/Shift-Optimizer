@@ -73,6 +73,7 @@ export interface OptimizerResult {
   unfilledSlots?: UnfilledSlot[];
   feasibilityWarning?: string;
   levelViolations?: LevelViolation[];
+  levelConstraintsSkipped?: boolean;
 }
 
 // === TABLE DEFINITIONS ===

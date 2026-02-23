@@ -211,7 +211,7 @@ export class ShiftOptimizer {
     lines: string[],
     varMap: Map<string, { staff: number; day: number; shift: number }>,
     cIdx: { val: number },
-    options?: { skipStaffingCap?: boolean; levelSlackVars?: string[] }
+    options?: { skipStaffingCap?: boolean; levelSlackVars?: string[]; skipLevelConstraints?: boolean }
   ): void {
     const N = this.staff.length;
     const D = this.daysInMonth;
@@ -357,7 +357,9 @@ export class ShiftOptimizer {
       console.log(`[OPT] Requested shift constraints: ${requestedConstraintCount} created, ${requestedConstraintSkipped} skipped`);
     }
 
-    if (this.config.staffLevels && this.config.staffLevels.length > 0 && this.config.minStaffPerLevel) {
+    if (options?.skipLevelConstraints) {
+      console.log(`[OPT] Level constraints SKIPPED (fallback mode)`);
+    } else if (this.config.staffLevels && this.config.staffLevels.length > 0 && this.config.minStaffPerLevel) {
       const numLevels = this.config.staffLevels.length;
       const useSoft = !!(this.softLevelConstraints && options?.levelSlackVars);
       let levelConstraintCount = 0;
@@ -455,7 +457,8 @@ export class ShiftOptimizer {
 
   private buildPhase1Model(
     varMap: Map<string, { staff: number; day: number; shift: number }>,
-    binaryVars: string[]
+    binaryVars: string[],
+    options?: { skipLevelConstraints?: boolean }
   ): { model: string; slackVars: string[]; levelSlackVars: string[] } {
     const N = this.staff.length;
     const D = this.daysInMonth;
@@ -473,7 +476,7 @@ export class ShiftOptimizer {
 
     const constraintLines: string[] = [];
     const cIdx = { val: 0 };
-    this.writeCommonConstraints(constraintLines, varMap, cIdx, { skipStaffingCap: true, levelSlackVars });
+    this.writeCommonConstraints(constraintLines, varMap, cIdx, { skipStaffingCap: true, levelSlackVars, skipLevelConstraints: options?.skipLevelConstraints });
 
     for (let d = 0; d < D; d++) {
       const required = this.getStaffPerShiftForDay(d + 1);
@@ -582,7 +585,8 @@ export class ShiftOptimizer {
   private buildPhase2Model(
     varMap: Map<string, { staff: number; day: number; shift: number }>,
     binaryVars: string[],
-    phase1Targets: { perShift: number[]; holidayTotal: number; totalCoverage: number; slotCoverage: Map<string, number> }
+    phase1Targets: { perShift: number[]; holidayTotal: number; totalCoverage: number; slotCoverage: Map<string, number> },
+    options?: { skipLevelConstraints?: boolean }
   ): string {
     const N = this.staff.length;
     const D = this.daysInMonth;
@@ -605,7 +609,7 @@ export class ShiftOptimizer {
     const levelSlackVars: string[] = [];
     const constraintLines: string[] = [];
     const cIdx = { val: 0 };
-    this.writeCommonConstraints(constraintLines, varMap, cIdx, { levelSlackVars });
+    this.writeCommonConstraints(constraintLines, varMap, cIdx, { levelSlackVars, skipLevelConstraints: options?.skipLevelConstraints });
 
     {
       const allXVars = Array.from(varMap.keys());
@@ -1431,10 +1435,36 @@ export class ShiftOptimizer {
     }
     console.log(`[OPT] Phase 1 status: ${phase1Solution.Status}, ObjectiveValue: ${phase1Solution.ObjectiveValue}`);
 
+    let levelConstraintsSkipped = false;
     if (failStatuses.includes(phase1Solution.Status) || !phase1Solution.Columns) {
       console.error(`[OPT] Phase 1 FAILED: ${phase1Solution.Status}`);
-      this.softLevelConstraints = origSoftLevel;
-      return this.makeEmptyResult(feasibilityMsg || `Phase 1 solver status: ${phase1Solution.Status}.`);
+
+      const hasLevelConstraints = this.config.staffLevels && this.config.staffLevels.length > 0 && this.config.minStaffPerLevel;
+      if (hasLevelConstraints) {
+        console.warn(`[OPT] Phase 1 infeasible with hard level constraints — retrying WITHOUT level constraints`);
+        const { model: phase1ModelNoLevel } = this.buildPhase1Model(varMap, binaryVars, { skipLevelConstraints: true });
+        try {
+          phase1Solution = solver.solve(phase1ModelNoLevel, {
+            time_limit: 15.0,
+            presolve: "on",
+            mip_rel_gap: 0.01,
+          });
+        } catch (err: any) {
+          console.error("[OPT] Phase 1 (no-level) solver CRASH:", err);
+          return this.makeEmptyResult(`Solver crashed during coverage optimization: ${err?.message || "Unknown error"}.`);
+        }
+        console.log(`[OPT] Phase 1 (no-level) status: ${phase1Solution.Status}, ObjectiveValue: ${phase1Solution.ObjectiveValue}`);
+
+        if (failStatuses.includes(phase1Solution.Status) || !phase1Solution.Columns) {
+          console.error(`[OPT] Phase 1 (no-level) also FAILED: ${phase1Solution.Status}`);
+          this.softLevelConstraints = origSoftLevel;
+          return this.makeEmptyResult(feasibilityMsg || `Phase 1 solver status: ${phase1Solution.Status}.`);
+        }
+        levelConstraintsSkipped = true;
+      } else {
+        this.softLevelConstraints = origSoftLevel;
+        return this.makeEmptyResult(feasibilityMsg || `Phase 1 solver status: ${phase1Solution.Status}.`);
+      }
     }
 
     const phase1Targets = this.extractPhase1Targets(phase1Solution, varMap);
@@ -1461,8 +1491,8 @@ export class ShiftOptimizer {
     let usedPhase = 2;
 
     try {
-      const phase2Model = this.buildPhase2Model(varMap, binaryVars, phase1Targets);
-      console.log(`[OPT] Phase 2 model size: ${phase2Model.length} chars, ${phase2Model.split('\n').length} lines, softLevels=false`);
+      const phase2Model = this.buildPhase2Model(varMap, binaryVars, phase1Targets, { skipLevelConstraints: levelConstraintsSkipped });
+      console.log(`[OPT] Phase 2 model size: ${phase2Model.length} chars, ${phase2Model.split('\n').length} lines, softLevels=false, levelSkipped=${levelConstraintsSkipped}`);
       const solver2 = await createSolver();
       let phase2Solution = solver2.solve(phase2Model, { time_limit: 15.0, presolve: "on", mip_rel_gap: 0.01 });
       console.log(`[OPT] Phase 2 status: ${phase2Solution.Status}, ObjectiveValue: ${phase2Solution.ObjectiveValue}`);
@@ -1556,6 +1586,10 @@ export class ShiftOptimizer {
 
     if (detectedLevelViolations.length > 0) {
       result.levelViolations = detectedLevelViolations;
+    }
+
+    if (levelConstraintsSkipped) {
+      result.levelConstraintsSkipped = true;
     }
 
     if (unfilledSlots.length > 0) {
