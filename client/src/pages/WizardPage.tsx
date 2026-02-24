@@ -1276,6 +1276,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           steps={walkthroughStep1}
           wizardStep={step}
           onComplete={walkthrough.complete}
+          onNeverShow={walkthrough.neverShow}
         />
       )}
       {walkthrough.active && step === 2 && (
@@ -1283,6 +1284,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           steps={walkthroughStep2}
           wizardStep={step}
           onComplete={walkthrough.complete}
+          onNeverShow={walkthrough.neverShow}
         />
       )}
       {walkthrough.active && step === 3 && (
@@ -1290,6 +1292,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           steps={walkthroughStep3}
           wizardStep={step}
           onComplete={walkthrough.complete}
+          onNeverShow={walkthrough.neverShow}
         />
       )}
       {walkthrough.active && step === 4 && (
@@ -1297,6 +1300,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           steps={walkthroughStep4}
           wizardStep={step}
           onComplete={walkthrough.complete}
+          onNeverShow={walkthrough.neverShow}
         />
       )}
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b">

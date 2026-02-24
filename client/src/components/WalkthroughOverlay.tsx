@@ -1,25 +1,24 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/context/LanguageContext";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, EyeOff } from "lucide-react";
 
-const WALKTHROUGH_SEEN_KEY = "shift-scheduler-walkthrough-seen";
+const WALKTHROUGH_HIDDEN_KEY = "shift-scheduler-walkthrough-hidden";
 
-function getSeenSteps(): Record<number, boolean> {
+function getHiddenSteps(): Record<number, boolean> {
   try {
-    const raw = localStorage.getItem(WALKTHROUGH_SEEN_KEY);
+    const raw = localStorage.getItem(WALKTHROUGH_HIDDEN_KEY);
     if (!raw) return {};
-    if (raw === "true") return { 1: true };
     return JSON.parse(raw);
   } catch {
     return {};
   }
 }
 
-function markStepSeen(wizardStep: number) {
-  const seen = getSeenSteps();
-  seen[wizardStep] = true;
-  localStorage.setItem(WALKTHROUGH_SEEN_KEY, JSON.stringify(seen));
+function hideStepPermanently(wizardStep: number) {
+  const hidden = getHiddenSteps();
+  hidden[wizardStep] = true;
+  localStorage.setItem(WALKTHROUGH_HIDDEN_KEY, JSON.stringify(hidden));
 }
 
 export interface WalkthroughStep {
@@ -33,27 +32,32 @@ interface WalkthroughOverlayProps {
   steps: WalkthroughStep[];
   wizardStep: number;
   onComplete: () => void;
+  onNeverShow: () => void;
 }
 
 const WALKTHROUGH_ENABLED_STEPS = new Set([1, 2, 3, 4]);
 
 export function useWalkthrough(wizardStep: number) {
   const [active, setActive] = useState(false);
-  const [seenSteps, setSeenSteps] = useState<Record<number, boolean>>(getSeenSteps);
+  const [hiddenSteps, setHiddenSteps] = useState<Record<number, boolean>>(getHiddenSteps);
 
   useEffect(() => {
-    if (WALKTHROUGH_ENABLED_STEPS.has(wizardStep) && !seenSteps[wizardStep]) {
+    if (WALKTHROUGH_ENABLED_STEPS.has(wizardStep) && !hiddenSteps[wizardStep]) {
       const timer = setTimeout(() => setActive(true), 600);
       return () => clearTimeout(timer);
     } else {
       setActive(false);
     }
-  }, [wizardStep, seenSteps]);
+  }, [wizardStep, hiddenSteps]);
 
   const complete = useCallback(() => {
     setActive(false);
-    markStepSeen(wizardStep);
-    setSeenSteps(prev => ({ ...prev, [wizardStep]: true }));
+  }, []);
+
+  const neverShow = useCallback(() => {
+    setActive(false);
+    hideStepPermanently(wizardStep);
+    setHiddenSteps(prev => ({ ...prev, [wizardStep]: true }));
   }, [wizardStep]);
 
   const start = useCallback(() => {
@@ -62,7 +66,7 @@ export function useWalkthrough(wizardStep: number) {
     }
   }, [wizardStep]);
 
-  return { active, complete, start, wizardStep };
+  return { active, complete, neverShow, start, wizardStep };
 }
 
 interface SpotlightRect {
@@ -79,7 +83,7 @@ function getTooltipWidth() {
   return 340;
 }
 
-export function WalkthroughOverlay({ steps, onComplete }: WalkthroughOverlayProps) {
+export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: WalkthroughOverlayProps) {
   const { t } = useLanguage();
   const [currentStep, setCurrentStep] = useState(0);
   const [spotlight, setSpotlight] = useState<SpotlightRect | null>(null);
@@ -369,6 +373,17 @@ export function WalkthroughOverlay({ steps, onComplete }: WalkthroughOverlayProp
               {currentStep < steps.length - 1 && <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-0.5 sm:ml-1" />}
             </Button>
           </div>
+        </div>
+
+        <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+          <button
+            onClick={onNeverShow}
+            className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-slate-400 hover:text-slate-500 dark:hover:text-slate-300 transition-colors w-full justify-center"
+            data-testid="button-walkthrough-never-show"
+          >
+            <EyeOff className="w-3 h-3" />
+            {(t as any).walkthroughNeverShow || "Don't show this again"}
+          </button>
         </div>
       </div>
     </div>
