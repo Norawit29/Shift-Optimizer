@@ -3,13 +3,11 @@ import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
   Scale,
-  Zap,
   FileSpreadsheet,
   Settings,
   Users,
   Download,
   Clock,
-  ShieldCheck,
   Puzzle,
   Globe,
   ChevronDown,
@@ -69,40 +67,17 @@ export default function HomePage() {
   const { user, loading } = useAuth();
 
   const features = [
-    {
-      icon: Scale,
-      title: t.featureFairTitle,
-      desc: t.featureFairDesc,
-      bg: "bg-blue-50 dark:bg-blue-950/40",
-      iconColor: "text-blue-600 dark:text-blue-400",
-    },
-    {
-      icon: Zap,
-      title: t.featureSmartTitle,
-      desc: t.featureSmartDesc,
-      bg: "bg-amber-50 dark:bg-amber-950/40",
-      iconColor: "text-amber-600 dark:text-amber-400",
-    },
-    {
-      icon: FileSpreadsheet,
-      title: t.featureExportTitle,
-      desc: t.featureExportDesc,
-      bg: "bg-emerald-50 dark:bg-emerald-950/40",
-      iconColor: "text-emerald-600 dark:text-emerald-400",
-    },
+    { icon: Clock, title: t.benefit1Title, desc: t.benefit1Desc, bg: "bg-amber-50 dark:bg-amber-950/40", iconColor: "text-amber-600 dark:text-amber-400" },
+    { icon: Scale, title: t.benefit2Title, desc: t.benefit2Desc, bg: "bg-blue-50 dark:bg-blue-950/40", iconColor: "text-blue-600 dark:text-blue-400" },
+    { icon: Puzzle, title: t.benefit3Title, desc: t.benefit3Desc, bg: "bg-violet-50 dark:bg-violet-950/40", iconColor: "text-violet-600 dark:text-violet-400" },
+    { icon: FileSpreadsheet, title: t.featureExportTitle, desc: t.featureExportDesc, bg: "bg-emerald-50 dark:bg-emerald-950/40", iconColor: "text-emerald-600 dark:text-emerald-400" },
+    { icon: Globe, title: t.benefit4Title, desc: t.benefit4Desc, bg: "bg-teal-50 dark:bg-teal-950/40", iconColor: "text-teal-600 dark:text-teal-400" },
   ];
 
   const steps = [
     { icon: Settings, title: t.howStep1Title, desc: t.howStep1Desc, num: "01" },
     { icon: Users, title: t.howStep2Title, desc: t.howStep2Desc, num: "02" },
     { icon: Download, title: t.howStep3Title, desc: t.howStep3Desc, num: "03" },
-  ];
-
-  const benefits = [
-    { icon: Clock, title: t.benefit1Title, desc: t.benefit1Desc },
-    { icon: Scale, title: t.benefit2Title, desc: t.benefit2Desc },
-    { icon: Puzzle, title: t.benefit3Title, desc: t.benefit3Desc },
-    { icon: Globe, title: t.benefit4Title, desc: t.benefit4Desc },
   ];
 
   const faqs = [
@@ -237,7 +212,7 @@ export default function HomePage() {
               </p>
             </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
               {features.map((feature, i) => (
                 <motion.div
                   key={i}
@@ -281,39 +256,6 @@ export default function HomePage() {
               <p data-testid="text-what-is-desc2">{t.whatIsDesc2}</p>
               <p data-testid="text-what-is-desc3">{t.whatIsDesc3}</p>
             </motion.div>
-          </motion.div>
-        </div>
-      </section>
-
-      <section className="py-20 sm:py-28 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-y border-slate-100 dark:border-slate-800/50">
-        <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={staggerContainer}
-          >
-            <motion.div variants={fadeUp} custom={0} className="text-center mb-14 sm:mb-16">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-benefits-title">
-                {t.benefitsTitle}
-              </h2>
-            </motion.div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
-              {benefits.map((b, i) => (
-                <motion.div key={i} variants={fadeUp} custom={i + 1} data-testid={`card-benefit-${i}`}>
-                  <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 sm:p-7 h-full flex gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 dark:bg-primary/15 flex items-center justify-center shrink-0 mt-0.5">
-                      <b.icon className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-base text-slate-900 dark:text-white mb-1" data-testid={`text-benefit-title-${i}`}>{b.title}</h3>
-                      <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed" data-testid={`text-benefit-desc-${i}`}>{b.desc}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
           </motion.div>
         </div>
       </section>
