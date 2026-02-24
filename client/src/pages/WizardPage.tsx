@@ -2509,7 +2509,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                         {t.regenerate}
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>
+                    <TooltipContent className="bg-white dark:bg-gray-800 border shadow-lg">
                       <p>{t.regenerateTooltip}</p>
                     </TooltipContent>
                   </Tooltip>
