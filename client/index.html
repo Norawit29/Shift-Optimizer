@@ -36,9 +36,9 @@
         "price": "0",
         "priceCurrency": "USD"
       },
-      "description": "AI-powered shift scheduling software that automatically creates fair, balanced duty rosters for hospitals and healthcare facilities. Supports up to 5 staff levels, complex constraints, and Excel export.",
+      "description": "Free shift scheduling software that automatically creates fair, balanced duty rosters for hospitals and healthcare facilities. Supports up to 5 staff levels, complex constraints, and Excel export.",
       "featureList": [
-        "Fair shift distribution using Mixed Integer Programming",
+        "Fair and balanced shift distribution",
         "Support for up to 5 staff levels",
         "Consecutive shift rules (same-day and next-day)",
         "Requested and blocked shift management",
@@ -55,26 +55,18 @@
       "mainEntity": [
         {
           "@type": "Question",
-          "name": "What is Shift Optimizer?",
+          "name": "How many staff members can Shift Optimizer handle?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Shift Optimizer is a free, AI-powered shift scheduling tool designed for hospitals and healthcare facilities. It uses Mixed Integer Programming to automatically generate fair, balanced duty rosters while respecting complex constraints like staff availability, consecutive shift rules, and staffing requirements."
+            "text": "There is no fixed limit. Shift Optimizer works well for small teams of 5–10 people and scales up to large departments with 50+ staff across multiple levels. Scheduling typically completes within seconds regardless of team size."
           }
         },
         {
           "@type": "Question",
-          "name": "How does the scheduling algorithm work?",
+          "name": "Can staff request specific shifts they want to work?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "The scheduler uses a 2-phase optimization approach. Phase 1 maximizes total shift coverage subject to hard constraints. Phase 2 minimizes fairness deviations to ensure workload is balanced across all staff members. The algorithm runs entirely in your browser using WebAssembly for fast results."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Is Shift Optimizer free to use?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes, Shift Optimizer is completely free. There are no hidden fees, subscriptions, or usage limits. You can generate unlimited schedules and export them to Excel at no cost."
+            "text": "Yes. Each staff member can mark preferred shifts on the calendar, and the system will assign those shifts whenever possible. You can also block dates when someone is unavailable."
           }
         },
         {
