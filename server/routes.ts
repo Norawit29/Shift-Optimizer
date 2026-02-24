@@ -11,6 +11,12 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  app.get("/robots.txt", (_req, res) => {
+    res.type("text/plain").send(
+      "User-agent: *\nAllow: /\nSitemap: https://shift-optimizer.com/sitemap.xml\n"
+    );
+  });
+
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok" });
   });
