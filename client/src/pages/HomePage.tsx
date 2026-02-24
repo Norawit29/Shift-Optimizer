@@ -72,8 +72,8 @@ export default function HomePage() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg border-b border-slate-100 dark:border-slate-800/50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0" data-testid="logo-icon">
-              <Grid3X3 className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 shrink-0" data-testid="logo-icon">
+              <img src="/favicon.svg" alt="Logo" className="w-8 h-8 rounded-lg" />
             </div>
             <span className="font-display font-bold text-lg text-slate-900 dark:text-white hidden sm:inline truncate" data-testid="text-app-name">
               {t.appName}
@@ -220,8 +220,8 @@ export default function HomePage() {
       <footer className="border-t border-slate-100 dark:border-slate-800/50 py-8 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 flex-wrap text-sm text-slate-400 dark:text-slate-500">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <Grid3X3 className="w-3 h-3 text-white" />
+            <div className="w-6 h-6">
+              <img src="/favicon.svg" alt="Logo" className="w-6 h-6 rounded-md" />
             </div>
             <span className="font-medium" data-testid="text-footer-app-name">{t.appName}</span>
           </div>
