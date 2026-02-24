@@ -153,25 +153,29 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
       const topVal = clampTop(r.bottom + gap);
       style = { top: topVal, left: tooltipLeft };
       aDir = "top";
-      aStyle = { top: -8, left: Math.min(Math.max(centerX - tooltipLeft - 8, 16), tw - 32) };
+      const arrowLeft = centerX - tooltipLeft - 8;
+      aStyle = { top: -8, left: Math.min(Math.max(arrowLeft, 20), tw - 36) };
     } else if (pos === "top") {
       const tooltipLeft = clampLeft(centerX - tw / 2);
       const topVal = clampTop(r.top - gap - tooltipH);
       style = { top: topVal, left: tooltipLeft };
       aDir = "bottom";
-      aStyle = { bottom: -8, left: Math.min(Math.max(centerX - tooltipLeft - 8, 16), tw - 32) };
+      const arrowLeft = centerX - tooltipLeft - 8;
+      aStyle = { bottom: -8, left: Math.min(Math.max(arrowLeft, 20), tw - 36) };
     } else if (pos === "right") {
       const leftVal = Math.min(r.right + gap, vw - tw - SAFE_MARGIN);
-      const topVal = clampTop(centerY - tooltipH / 2);
+      const topVal = clampTop(r.top);
       style = { top: topVal, left: leftVal };
       aDir = "left";
-      aStyle = { left: -8, top: Math.min(Math.max(centerY - topVal - 8, 16), tooltipH - 32) };
+      const arrowTop = centerY - topVal - 8;
+      aStyle = { left: -8, top: Math.min(Math.max(arrowTop, 20), tooltipH - 36) };
     } else {
       const leftVal = Math.max(SAFE_MARGIN, r.left - gap - tw);
-      const topVal = clampTop(centerY - tooltipH / 2);
+      const topVal = clampTop(r.top);
       style = { top: topVal, left: leftVal };
       aDir = "right";
-      aStyle = { right: -8, top: Math.min(Math.max(centerY - topVal - 8, 16), tooltipH - 32) };
+      const arrowTop = centerY - topVal - 8;
+      aStyle = { right: -8, top: Math.min(Math.max(arrowTop, 20), tooltipH - 36) };
     }
 
     setTooltipPos(style);
