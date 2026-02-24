@@ -210,10 +210,13 @@ export default function HomePage() {
               <p className="mt-3 text-slate-500 dark:text-slate-400 text-base sm:text-lg max-w-xl mx-auto">
                 {t.featureSectionDesc}
               </p>
+              <p className="mt-1 text-slate-400 dark:text-slate-500 text-sm sm:text-base">
+                {t.featureSectionSubtitle}
+              </p>
             </motion.div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-              {features.map((feature, i) => (
+              {features.slice(0, 3).map((feature, i) => (
                 <motion.div
                   key={i}
                   variants={fadeUp}
@@ -228,6 +231,29 @@ export default function HomePage() {
                       {feature.title}
                     </h3>
                     <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed" data-testid={`text-feature-desc-${i}`}>
+                      {feature.desc}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+            <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 justify-center mt-6 sm:mt-8">
+              {features.slice(3).map((feature, i) => (
+                <motion.div
+                  key={i + 3}
+                  variants={fadeUp}
+                  custom={i + 3}
+                  className="w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.333rem)]"
+                  data-testid={`card-feature-${i + 3}`}
+                >
+                  <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-7 sm:p-8 h-full transition-shadow duration-300 hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50">
+                    <div className={`w-12 h-12 rounded-xl ${feature.bg} flex items-center justify-center mb-5`}>
+                      <feature.icon className={`w-6 h-6 ${feature.iconColor}`} />
+                    </div>
+                    <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-2" data-testid={`text-feature-title-${i + 3}`}>
+                      {feature.title}
+                    </h3>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed" data-testid={`text-feature-desc-${i + 3}`}>
                       {feature.desc}
                     </p>
                   </div>
