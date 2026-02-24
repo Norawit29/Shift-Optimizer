@@ -87,10 +87,10 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
   const { t } = useLanguage();
   const [currentStep, setCurrentStep] = useState(0);
   const [spotlight, setSpotlight] = useState<SpotlightRect | null>(null);
-  const [tooltipPos, setTooltipPos] = useState<React.CSSProperties>({});
+  const [tooltipPos, setTooltipPos] = useState<React.CSSProperties>({ top: -9999, left: -9999 });
   const [arrowPos, setArrowPos] = useState<React.CSSProperties>({});
   const [arrowDir, setArrowDir] = useState<"top" | "bottom" | "left" | "right">("top");
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   const [tooltipW, setTooltipW] = useState(getTooltipWidth);
   const rafRef = useRef<number>(0);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -195,14 +195,16 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
       return;
     }
 
+    setIsReady(false);
     el.scrollIntoView({ behavior: "smooth", block: "center" });
 
-    setIsTransitioning(true);
     const timer = setTimeout(() => {
       computePositions();
-      requestAnimationFrame(() => computePositions());
-      setIsTransitioning(false);
-    }, 400);
+      requestAnimationFrame(() => {
+        computePositions();
+        setIsReady(true);
+      });
+    }, 350);
     return () => clearTimeout(timer);
   }, [currentStep, step, steps.length, computePositions, onComplete]);
 
@@ -250,8 +252,15 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
   const descText = (t as any)[step.descKey] || step.descKey;
 
   return (
-    <div className="fixed inset-0 z-[9999]" data-testid="walkthrough-overlay">
-      <div className="absolute inset-0" style={{ pointerEvents: "auto" }}>
+    <div
+      className="fixed inset-0 z-[9999]"
+      data-testid="walkthrough-overlay"
+      style={{
+        opacity: isReady ? 1 : 0,
+        transition: "opacity 0.25s ease",
+      }}
+    >
+      <div className="absolute inset-0" style={{ pointerEvents: isReady ? "auto" : "none" }}>
         <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <mask id="wk-mask">
@@ -311,9 +320,8 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
         className="fixed bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 p-4 sm:p-5 z-[10001] max-h-[80vh] overflow-y-auto"
         style={{
           width: tooltipW,
-          opacity: isTransitioning ? 0 : 1,
           ...tooltipPos,
-          transition: "opacity 0.3s ease, top 0.4s cubic-bezier(0.4,0,0.2,1), left 0.4s cubic-bezier(0.4,0,0.2,1)",
+          transition: isReady ? "top 0.4s cubic-bezier(0.4,0,0.2,1), left 0.4s cubic-bezier(0.4,0,0.2,1)" : "none",
         }}
         data-testid="walkthrough-tooltip"
       >
