@@ -269,6 +269,14 @@ const translations = {
     wk2CalendarDesc: "Select a staff member, then click dates on the calendar to block days off or request preferred shifts.",
     wk2BlockRequestTitle: "Block or Request mode",
     wk2BlockRequestDesc: "Switch between Block mode (red — days off) and Request mode (green — preferred shifts). Blocked and requested are mutually exclusive.",
+    wk3ConsecutiveTitle: "Consecutive shift rules",
+    wk3ConsecutiveDesc: "Prevent unsafe shift combos. Same-day rules block overlapping shifts (e.g., no Afternoon + Night). Next-day rules block back-to-back shifts (e.g., no Night then Morning).",
+    wk3MaxConsecutiveTitle: "Max consecutive shift rules",
+    wk3MaxConsecutiveDesc: "Limit how many days in a row a person can work a specific shift. For example, no more than 3 consecutive Night shifts, or no more than 1 consecutive Morning+Afternoon combo.",
+    wk3HolidayBalancingTitle: "Holiday balancing & public holidays",
+    wk3HolidayBalancingDesc: "Enable fair distribution of weekend/holiday shifts. Click dates on the calendar to mark public holidays so the optimizer balances them evenly across staff.",
+    wk3OptimizeTitle: "Generate schedule",
+    wk3OptimizeDesc: "When all rules are set, click here to run the optimizer. It creates 3 schedule versions and auto-selects the fairest one.",
 
     // Language
     language: "Language",
@@ -541,6 +549,14 @@ const translations = {
     wk2CalendarDesc: "เลือกบุคลากร แล้วคลิกวันที่ในปฏิทินเพื่อบล็อกวันหยุด หรือขอเวรที่ต้องการ",
     wk2BlockRequestTitle: "โหมดบล็อก หรือ ขอเวร",
     wk2BlockRequestDesc: "สลับระหว่างโหมดบล็อก (แดง — วันหยุด) กับโหมดขอเวร (เขียว — เวรที่อยากได้) บล็อกกับขอเวรจะใช้พร้อมกันในวันเดียวกันไม่ได้",
+    wk3ConsecutiveTitle: "กฎเวรต่อเนื่อง",
+    wk3ConsecutiveDesc: "ป้องกันเวรที่ซ้อนทับ เช่น ห้ามบ่ายกับดึกวันเดียวกัน (กฎวันเดียวกัน) หรือห้ามดึกต่อเช้าวันถัดไป (กฎวันถัดไป)",
+    wk3MaxConsecutiveTitle: "กฎเวรติดต่อกัน",
+    wk3MaxConsecutiveDesc: "จำกัดจำนวนวันที่อยู่เวรเดียวกันติดต่อกัน เช่น ห้ามอยู่ดึกติดกันเกิน 3 เวร หรือห้ามเช้า+บ่ายติดกันเกิน 1 เวร",
+    wk3HolidayBalancingTitle: "เกลี่ยเวรวันหยุด & วันหยุดนักขัตฤกษ์",
+    wk3HolidayBalancingDesc: "เปิดการเกลี่ยเวรวันหยุด/สุดสัปดาห์ให้ทุกคนได้เท่าๆ กัน คลิกวันที่ในปฏิทินเพื่อเพิ่มวันหยุดนักขัตฤกษ์",
+    wk3OptimizeTitle: "สร้างตารางเวร",
+    wk3OptimizeDesc: "เมื่อตั้งกฎเรียบร้อยแล้ว กดปุ่มนี้เพื่อให้ระบบคำนวณ ระบบจะสร้าง 3 เวอร์ชันและเลือกเวอร์ชันที่ยุติธรรมที่สุดให้อัตโนมัติ",
 
     // Language
     language: "ภาษา",

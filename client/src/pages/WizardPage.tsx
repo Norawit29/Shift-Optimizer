@@ -330,6 +330,13 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     { targetSelector: '[data-walkthrough="calendar-panel"]', titleKey: "wk2CalendarTitle", descKey: "wk2CalendarDesc", position: "left" },
     { targetSelector: '[data-walkthrough="block-request-mode"]', titleKey: "wk2BlockRequestTitle", descKey: "wk2BlockRequestDesc", position: "left" },
   ];
+
+  const walkthroughStep3: WalkthroughStep[] = [
+    { targetSelector: '[data-walkthrough="consecutive-rules"]', titleKey: "wk3ConsecutiveTitle", descKey: "wk3ConsecutiveDesc", position: "right" },
+    { targetSelector: '[data-walkthrough="max-consecutive-rules"]', titleKey: "wk3MaxConsecutiveTitle", descKey: "wk3MaxConsecutiveDesc", position: "right" },
+    { targetSelector: '[data-walkthrough="holiday-balancing"]', titleKey: "wk3HolidayBalancingTitle", descKey: "wk3HolidayBalancingDesc", position: "right" },
+    { targetSelector: '[data-walkthrough="optimize-button"]', titleKey: "wk3OptimizeTitle", descKey: "wk3OptimizeDesc", position: "left" },
+  ];
   const [month, setMonth] = useState(() => {
     const now = new Date();
     const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
@@ -1271,6 +1278,13 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           onComplete={walkthrough.complete}
         />
       )}
+      {walkthrough.active && step === 3 && (
+        <WalkthroughOverlay
+          steps={walkthroughStep3}
+          wizardStep={step}
+          onComplete={walkthrough.complete}
+        />
+      )}
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-2">
           <div className="flex items-center gap-4">
@@ -2108,7 +2122,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-6">
-              <Card className="shadow-md">
+              <Card className="shadow-md" data-walkthrough="consecutive-rules">
                 <CardContent className="p-6 space-y-6">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="p-2 bg-orange-100 dark:bg-orange-900/20 rounded-lg">
@@ -2215,7 +2229,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                 </CardContent>
               </Card>
 
-              <Card className="shadow-md">
+              <Card className="shadow-md" data-walkthrough="max-consecutive-rules">
                 <CardContent className="p-6 space-y-6">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="p-2 bg-amber-100 dark:bg-amber-900/20 rounded-lg">
@@ -2344,7 +2358,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                 </CardContent>
               </Card>
 
-              <Card className="shadow-md">
+              <Card className="shadow-md" data-walkthrough="holiday-balancing">
                 <CardContent className="p-6 space-y-6">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
@@ -2465,7 +2479,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               </Card>
             </div>
 
-            <div className="flex items-center justify-center p-8">
+            <div className="flex items-center justify-center p-8" data-walkthrough="optimize-button">
               {isOptimizing ? (
                 <div className="text-center space-y-6 max-w-sm mx-auto">
                   <div className="relative inline-flex items-center justify-center">

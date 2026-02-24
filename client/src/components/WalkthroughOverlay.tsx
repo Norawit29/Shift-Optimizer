@@ -35,7 +35,7 @@ interface WalkthroughOverlayProps {
   onComplete: () => void;
 }
 
-const WALKTHROUGH_ENABLED_STEPS = new Set([1, 2]);
+const WALKTHROUGH_ENABLED_STEPS = new Set([1, 2, 3]);
 
 export function useWalkthrough(wizardStep: number) {
   const [active, setActive] = useState(false);
