@@ -210,9 +210,6 @@ export default function HomePage() {
               <p className="mt-3 text-slate-500 dark:text-slate-400 text-base sm:text-lg max-w-xl mx-auto">
                 {t.featureSectionDesc}
               </p>
-              <p className="mt-1 text-slate-400 dark:text-slate-500 text-sm sm:text-base">
-                {t.featureSectionSubtitle}
-              </p>
             </motion.div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
