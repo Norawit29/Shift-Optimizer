@@ -314,13 +314,21 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const [step, setStep] = useState(1);
   const walkthrough = useWalkthrough(step);
 
-  const walkthroughSteps: WalkthroughStep[] = [
+  const walkthroughStep1: WalkthroughStep[] = [
     { targetSelector: '[data-walkthrough="shifts-per-day"]', titleKey: "wkShiftsPerDayTitle", descKey: "wkShiftsPerDayDesc", position: "right" },
     { targetSelector: '[data-walkthrough="timeline"]', titleKey: "wkTimelineTitle", descKey: "wkTimelineDesc", position: "right" },
     { targetSelector: '[data-walkthrough="shift-details"]', titleKey: "wkShiftDetailsTitle", descKey: "wkShiftDetailsDesc", position: "left" },
     { targetSelector: '[data-walkthrough="holiday-toggle"]', titleKey: "wkHolidayToggleTitle", descKey: "wkHolidayToggleDesc", position: "left" },
     { targetSelector: '[data-walkthrough="staff-levels"]', titleKey: "wkStaffLevelsTitle", descKey: "wkStaffLevelsDesc", position: "top" },
     { targetSelector: '[data-testid="button-next-step"]', titleKey: "wkNextStepTitle", descKey: "wkNextStepDesc", position: "top" },
+  ];
+
+  const walkthroughStep2: WalkthroughStep[] = [
+    { targetSelector: '[data-walkthrough="add-staff-buttons"]', titleKey: "wk2AddStaffTitle", descKey: "wk2AddStaffDesc", position: "bottom" },
+    { targetSelector: '[data-walkthrough="staff-list"]', titleKey: "wk2StaffListTitle", descKey: "wk2StaffListDesc", position: "right" },
+    { targetSelector: '[data-walkthrough="max-shifts-global"]', titleKey: "wk2MaxShiftsTitle", descKey: "wk2MaxShiftsDesc", position: "right" },
+    { targetSelector: '[data-walkthrough="calendar-panel"]', titleKey: "wk2CalendarTitle", descKey: "wk2CalendarDesc", position: "left" },
+    { targetSelector: '[data-walkthrough="block-request-mode"]', titleKey: "wk2BlockRequestTitle", descKey: "wk2BlockRequestDesc", position: "left" },
   ];
   const [month, setMonth] = useState(() => {
     const now = new Date();
@@ -1228,6 +1236,12 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
 
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const [calendarMode, setCalendarMode] = useState<'block' | 'request'>('block');
+
+  useEffect(() => {
+    if (step === 2 && walkthrough.active && !selectedStaffId && staff.length > 0) {
+      setSelectedStaffId(staff[0].id);
+    }
+  }, [step, walkthrough.active, selectedStaffId, staff]);
   const selectedStaffMember = staff.find(s => s.id === selectedStaffId) || null;
   const baseDate = useCustomRange && customStartDate
     ? parseISO(customStartDate)
@@ -1245,7 +1259,14 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
       {walkthrough.active && step === 1 && (
         <WalkthroughOverlay
-          steps={walkthroughSteps}
+          steps={walkthroughStep1}
+          wizardStep={step}
+          onComplete={walkthrough.complete}
+        />
+      )}
+      {walkthrough.active && step === 2 && (
+        <WalkthroughOverlay
+          steps={walkthroughStep2}
           wizardStep={step}
           onComplete={walkthrough.complete}
         />
@@ -1662,7 +1683,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                 <div className="space-y-4">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <Label className="text-base font-semibold">{t.staff} ({staff.length})</Label>
-                    <div className="flex items-center gap-1.5 flex-wrap">
+                    <div className="flex items-center gap-1.5 flex-wrap" data-walkthrough="add-staff-buttons">
                       <Button onClick={addStaff} variant="outline" size="sm" className="border-dashed" data-testid="button-add-staff">
                         <Plus className="w-4 h-4 mr-1" /> {t.add}
                       </Button>
@@ -1690,7 +1711,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     </Button>
                   </div>
 
-                  <div className="p-2.5 bg-slate-50 dark:bg-slate-900/50 rounded-lg space-y-2">
+                  <div className="p-2.5 bg-slate-50 dark:bg-slate-900/50 rounded-lg space-y-2" data-walkthrough="max-shifts-global">
                     <Label className="text-xs text-muted-foreground">{t.setAllMaxShifts}</Label>
                     <div className="flex items-center gap-2">
                       <Input
@@ -1721,7 +1742,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     </div>
                   )}
                   
-                  <div className="space-y-1 max-h-[420px] overflow-y-auto pr-1">
+                  <div className="space-y-1 max-h-[420px] overflow-y-auto pr-1" data-walkthrough="staff-list">
                     {staff.map((s) => {
                       const blockedCount = s.blocked?.length || 0;
                       const requestedCount = s.requested?.length || 0;
@@ -1791,7 +1812,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               </CardContent>
             </Card>
 
-            <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800 lg:col-span-3">
+            <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800 lg:col-span-3" data-walkthrough="calendar-panel">
               <CardContent className="p-6">
                 {selectedStaffMember ? (
                   <div className="space-y-4">
@@ -1822,7 +1843,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                       </div>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-2" data-walkthrough="block-request-mode">
                       <Button
                         variant={calendarMode === 'block' ? 'default' : 'outline'}
                         size="sm"

@@ -259,6 +259,16 @@ const translations = {
     wkStaffLevelsDesc: "Optionally define staff levels (e.g. Senior Nurse, Junior Nurse) and set minimum requirements per shift.",
     wkNextStepTitle: "Go to next step",
     wkNextStepDesc: "Once you're done configuring, click here to proceed to the next step.",
+    wk2AddStaffTitle: "Add staff",
+    wk2AddStaffDesc: "Add staff one by one, add multiple at once, or import from an Excel file.",
+    wk2StaffListTitle: "Staff list",
+    wk2StaffListDesc: "Click a staff member to select them. You can edit their name, set their level, and adjust max shifts for each person.",
+    wk2MaxShiftsTitle: "Max shifts per person",
+    wk2MaxShiftsDesc: "Set the maximum number of shifts each person can work this period. Use 'Apply to all' to set the same limit for everyone.",
+    wk2CalendarTitle: "Block & request dates",
+    wk2CalendarDesc: "Select a staff member, then click dates on the calendar to block days off or request preferred shifts.",
+    wk2BlockRequestTitle: "Block or Request mode",
+    wk2BlockRequestDesc: "Switch between Block mode (red — days off) and Request mode (green — preferred shifts). Blocked and requested are mutually exclusive.",
 
     // Language
     language: "Language",
@@ -521,6 +531,16 @@ const translations = {
     wkStaffLevelsDesc: "กำหนดระดับบุคลากร (เช่น พยาบาลอาวุโส, ผู้ช่วย) และจำนวนขั้นต่ำที่ต้องมีในแต่ละเวร",
     wkNextStepTitle: "ไปขั้นตอนถัดไป",
     wkNextStepDesc: "เมื่อตั้งค่าเสร็จแล้ว กดปุ่มนี้เพื่อไปขั้นตอนถัดไป",
+    wk2AddStaffTitle: "เพิ่มบุคลากร",
+    wk2AddStaffDesc: "เพิ่มทีละคน เพิ่มหลายคนพร้อมกัน หรืออัปโหลดจากไฟล์ Excel ก็ได้",
+    wk2StaffListTitle: "รายชื่อบุคลากร",
+    wk2StaffListDesc: "คลิกเลือกบุคลากรเพื่อแก้ไขชื่อ กำหนดระดับ และปรับจำนวนเวรสูงสุดของแต่ละคน",
+    wk2MaxShiftsTitle: "จำนวนเวรสูงสุดต่อคน",
+    wk2MaxShiftsDesc: "กำหนดจำนวนเวรสูงสุดที่แต่ละคนจะขึ้นได้ในรอบนี้ กด 'ใช้กับทุกคน' เพื่อตั้งค่าเท่ากันหมด",
+    wk2CalendarTitle: "บล็อกวันหยุด & ขอวันทำงาน",
+    wk2CalendarDesc: "เลือกบุคลากร แล้วคลิกวันที่ในปฏิทินเพื่อบล็อกวันหยุด หรือขอเวรที่ต้องการ",
+    wk2BlockRequestTitle: "โหมดบล็อก หรือ ขอเวร",
+    wk2BlockRequestDesc: "สลับระหว่างโหมดบล็อก (แดง — วันหยุด) กับโหมดขอเวร (เขียว — เวรที่อยากได้) บล็อกกับขอเวรจะใช้พร้อมกันในวันเดียวกันไม่ได้",
 
     // Language
     language: "ภาษา",

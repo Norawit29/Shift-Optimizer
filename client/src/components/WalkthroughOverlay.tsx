@@ -5,6 +5,23 @@ import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
 const WALKTHROUGH_SEEN_KEY = "shift-scheduler-walkthrough-seen";
 
+function getSeenSteps(): Record<number, boolean> {
+  try {
+    const raw = localStorage.getItem(WALKTHROUGH_SEEN_KEY);
+    if (!raw) return {};
+    if (raw === "true") return { 1: true };
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+function markStepSeen(wizardStep: number) {
+  const seen = getSeenSteps();
+  seen[wizardStep] = true;
+  localStorage.setItem(WALKTHROUGH_SEEN_KEY, JSON.stringify(seen));
+}
+
 export interface WalkthroughStep {
   targetSelector: string;
   titleKey: string;
@@ -18,30 +35,34 @@ interface WalkthroughOverlayProps {
   onComplete: () => void;
 }
 
+const WALKTHROUGH_ENABLED_STEPS = new Set([1, 2]);
+
 export function useWalkthrough(wizardStep: number) {
   const [active, setActive] = useState(false);
-  const [hasSeenWalkthrough, setHasSeenWalkthrough] = useState(() => {
-    return !!localStorage.getItem(WALKTHROUGH_SEEN_KEY);
-  });
+  const [seenSteps, setSeenSteps] = useState<Record<number, boolean>>(getSeenSteps);
 
   useEffect(() => {
-    if (!hasSeenWalkthrough && wizardStep === 1) {
+    if (WALKTHROUGH_ENABLED_STEPS.has(wizardStep) && !seenSteps[wizardStep]) {
       const timer = setTimeout(() => setActive(true), 600);
       return () => clearTimeout(timer);
+    } else {
+      setActive(false);
     }
-  }, [hasSeenWalkthrough, wizardStep]);
+  }, [wizardStep, seenSteps]);
 
   const complete = useCallback(() => {
     setActive(false);
-    setHasSeenWalkthrough(true);
-    localStorage.setItem(WALKTHROUGH_SEEN_KEY, "true");
-  }, []);
+    markStepSeen(wizardStep);
+    setSeenSteps(prev => ({ ...prev, [wizardStep]: true }));
+  }, [wizardStep]);
 
   const start = useCallback(() => {
-    setActive(true);
-  }, []);
+    if (WALKTHROUGH_ENABLED_STEPS.has(wizardStep)) {
+      setActive(true);
+    }
+  }, [wizardStep]);
 
-  return { active, complete, start };
+  return { active, complete, start, wizardStep };
 }
 
 interface SpotlightRect {
