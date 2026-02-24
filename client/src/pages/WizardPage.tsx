@@ -49,7 +49,8 @@ import { useLanguage } from "@/context/LanguageContext";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import ExcelJS from "exceljs";
 import { FeedbackWidget } from "@/components/FeedbackWidget";
-import { TutorialWelcome, TutorialBanner } from "@/components/TutorialDialog";
+import { WalkthroughOverlay, useWalkthrough } from "@/components/WalkthroughOverlay";
+import type { WalkthroughStep } from "@/components/WalkthroughOverlay";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June", 
@@ -311,6 +312,16 @@ async function exportToExcel(
 export default function WizardPage(props: { exportOnly?: boolean } & Record<string, any>) {
   const exportOnly = props.exportOnly ?? false;
   const [step, setStep] = useState(1);
+  const walkthrough = useWalkthrough(step);
+
+  const walkthroughSteps: WalkthroughStep[] = [
+    { targetSelector: '[data-walkthrough="shifts-per-day"]', titleKey: "wkShiftsPerDayTitle", descKey: "wkShiftsPerDayDesc", position: "right" },
+    { targetSelector: '[data-walkthrough="timeline"]', titleKey: "wkTimelineTitle", descKey: "wkTimelineDesc", position: "right" },
+    { targetSelector: '[data-walkthrough="shift-details"]', titleKey: "wkShiftDetailsTitle", descKey: "wkShiftDetailsDesc", position: "left" },
+    { targetSelector: '[data-walkthrough="holiday-toggle"]', titleKey: "wkHolidayToggleTitle", descKey: "wkHolidayToggleDesc", position: "left" },
+    { targetSelector: '[data-walkthrough="staff-levels"]', titleKey: "wkStaffLevelsTitle", descKey: "wkStaffLevelsDesc", position: "top" },
+    { targetSelector: '[data-testid="button-next-step"]', titleKey: "wkNextStepTitle", descKey: "wkNextStepDesc", position: "top" },
+  ];
   const [month, setMonth] = useState(() => {
     const now = new Date();
     const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
@@ -1232,7 +1243,13 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
-      <TutorialWelcome />
+      {walkthrough.active && step === 1 && (
+        <WalkthroughOverlay
+          steps={walkthroughSteps}
+          wizardStep={step}
+          onComplete={walkthrough.complete}
+        />
+      )}
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-2">
           <div className="flex items-center gap-4">
@@ -1290,11 +1307,10 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           title={t.basicConfig} 
           description={t.basicConfigDesc}
         >
-          <TutorialBanner wizardStep={1} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800">
               <CardContent className="p-6 space-y-6">
-                <div className="space-y-4">
+                <div className="space-y-4" data-walkthrough="shifts-per-day">
                   <Label className="text-base font-semibold">{t.shiftsPerDay}</Label>
                   <div className="flex items-center gap-3">
                     <Button 
@@ -1324,7 +1340,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
 
                 <Separator />
 
-                <div className="space-y-4">
+                <div className="space-y-4" data-walkthrough="timeline">
                   <Label className="text-base font-semibold">{t.timeline}</Label>
                   <Tabs value={useCustomRange ? "custom" : "month"} onValueChange={handleModeSwitch}>
                     <TabsList className="w-full">
@@ -1392,7 +1408,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               </CardContent>
             </Card>
 
-            <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800">
+            <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800" data-walkthrough="shift-details">
               <CardContent className="p-6 space-y-6">
                 <div className="space-y-1">
                   <Label className="text-base font-semibold">{t.shiftDetails}</Label>
@@ -1423,7 +1439,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
 
                 <Separator />
 
-                <div className="space-y-4">
+                <div className="space-y-4" data-walkthrough="holiday-toggle">
                   <div className="flex items-start gap-3">
                     <Checkbox
                       id="separateHolidayConfig"
@@ -1469,7 +1485,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
             </Card>
           </div>
 
-          <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800 mt-6">
+          <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800 mt-6" data-walkthrough="staff-levels">
             <CardContent className="p-6 space-y-4">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="space-y-1">
@@ -1567,7 +1583,6 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           title={t.staffAvailability} 
           description={t.staffAvailabilityDesc}
         >
-          <TutorialBanner wizardStep={2} />
           <Dialog open={showBulkAdd} onOpenChange={setShowBulkAdd}>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
@@ -2070,7 +2085,6 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           title={t.rulesConstraints} 
           description={t.rulesConstraintsDesc}
         >
-          <TutorialBanner wizardStep={3} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-6">
               <Card className="shadow-md">
@@ -2486,7 +2500,6 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
             title={t.generatedSchedule}
             className="max-w-6xl"
           >
-            <TutorialBanner wizardStep={4} />
             <div className="space-y-8">
               <div className="flex items-center gap-4 bg-white dark:bg-zinc-900 p-4 rounded-xl border flex-wrap">
                 <div className="flex-1 min-w-[200px]">
