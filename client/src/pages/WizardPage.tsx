@@ -813,7 +813,19 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           allResults.push(res);
         }
         setResults(allResults);
-        setSelectedVersion(0);
+        let bestIdx = 0;
+        let bestRange = Infinity;
+        for (let i = 0; i < allResults.length; i++) {
+          const ps = allResults[i]?.metrics?.perStaff;
+          if (ps && ps.length > 0) {
+            const range = Math.max(...ps.map(s => s.total)) - Math.min(...ps.map(s => s.total));
+            if (range < bestRange) {
+              bestRange = range;
+              bestIdx = i;
+            }
+          }
+        }
+        setSelectedVersion(bestIdx);
         setStep(4);
         savePreset();
 
