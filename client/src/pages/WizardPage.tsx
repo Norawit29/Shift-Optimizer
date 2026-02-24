@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -2500,10 +2501,19 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                 <Button variant="outline" onClick={() => setStep(3)} data-testid="button-adjust-rules">
                   <Settings2 className="w-4 h-4 mr-2" /> {t.adjustRules}
                 </Button>
-                <Button variant="outline" onClick={runOptimizer} disabled={isOptimizing} data-testid="button-regenerate">
-                  {isOptimizing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <History className="w-4 h-4 mr-2" />}
-                  {t.regenerate}
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" onClick={runOptimizer} disabled={isOptimizing} data-testid="button-regenerate">
+                        {isOptimizing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <History className="w-4 h-4 mr-2" />}
+                        {t.regenerate}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{t.regenerateTooltip}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
 
               {results.length > 1 && (
