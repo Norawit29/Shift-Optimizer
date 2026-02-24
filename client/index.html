@@ -3,7 +3,100 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <title>Shift Optimizer – Free Shift Scheduling Software</title>
+    <meta name="description" content="Free AI-powered shift scheduling software for hospitals. Create fair, balanced duty rosters automatically. Workforce scheduling tool with Excel export." />
+    <meta name="keywords" content="shift scheduling software, shift optimizer, workforce scheduling tool, duty roster, hospital scheduling, nurse scheduling" />
+    <link rel="canonical" href="https://shift-optimizer.com/" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://shift-optimizer.com/" />
+    <meta property="og:title" content="Shift Optimizer – Automated Shift Scheduling Software" />
+    <meta property="og:description" content="Free AI-powered shift scheduling tool. Create fair, balanced duty rosters for hospitals and healthcare teams in minutes." />
+    <meta property="og:image" content="https://shift-optimizer.com/favicon.svg" />
+    <meta property="og:site_name" content="Shift Optimizer" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="th_TH" />
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Shift Optimizer – Automated Shift Scheduling" />
+    <meta name="twitter:description" content="Free AI-powered shift scheduling tool. Create fair duty rosters for healthcare teams in minutes." />
+    <meta name="twitter:image" content="https://shift-optimizer.com/favicon.svg" />
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Shift Optimizer",
+      "url": "https://shift-optimizer.com",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "description": "AI-powered shift scheduling software that automatically creates fair, balanced duty rosters for hospitals and healthcare facilities. Supports up to 5 staff levels, complex constraints, and Excel export.",
+      "featureList": [
+        "Fair shift distribution using Mixed Integer Programming",
+        "Support for up to 5 staff levels",
+        "Consecutive shift rules (same-day and next-day)",
+        "Requested and blocked shift management",
+        "Excel export with color-coded rosters",
+        "Weekend and holiday staffing configuration"
+      ]
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is Shift Optimizer?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Shift Optimizer is a free, AI-powered shift scheduling tool designed for hospitals and healthcare facilities. It uses Mixed Integer Programming to automatically generate fair, balanced duty rosters while respecting complex constraints like staff availability, consecutive shift rules, and staffing requirements."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does the scheduling algorithm work?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The scheduler uses a 2-phase optimization approach. Phase 1 maximizes total shift coverage subject to hard constraints. Phase 2 minimizes fairness deviations to ensure workload is balanced across all staff members. The algorithm runs entirely in your browser using WebAssembly for fast results."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is Shift Optimizer free to use?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, Shift Optimizer is completely free. There are no hidden fees, subscriptions, or usage limits. You can generate unlimited schedules and export them to Excel at no cost."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What constraints does the scheduler support?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The scheduler supports blocked dates, requested shifts, consecutive shift rules (same-day and next-day), maximum consecutive working days, separate weekend/holiday staffing, up to 5 staff levels with minimum per-level requirements, and maximum shifts per person."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I export the schedule?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, you can export the generated schedule to Excel with color-coded cells, staff level indicators, and fulfilled request markers. The export is print-ready and includes all shift assignments."
+          }
+        }
+      ]
+    }
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Fira+Code:wght@300..700&family=Geist+Mono:wght@100..900&family=Geist:wght@100..900&family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400..700;1,400..700&family=Merriweather:ital,opsz,wght@0,18..144,300..900;1,18..144,300..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Outfit:wght@100..900&family=Oxanium:wght@200..800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto+Mono:ital,wght@0,100..700;1,100..700&family=Roboto:ital,wght@0,100..900;1,100..900&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&family=Space+Grotesk:wght@300..700&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">

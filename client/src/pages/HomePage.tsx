@@ -8,9 +8,14 @@ import {
   Settings,
   Users,
   Download,
-  Grid3X3,
+  Clock,
+  ShieldCheck,
+  Puzzle,
+  Globe,
+  ChevronDown,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { useAuth } from "@/context/AuthContext";
@@ -30,6 +35,35 @@ const staggerContainer = {
   visible: { transition: { staggerChildren: 0.1 } },
 };
 
+function FAQItem({ q, a, testId }: { q: string; a: string; testId: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden" data-testid={testId}>
+      <button
+        className="w-full flex items-center justify-between gap-4 p-5 sm:p-6 text-left"
+        onClick={() => setOpen(!open)}
+        data-testid={`${testId}-toggle`}
+      >
+        <h3 className="font-semibold text-base text-slate-900 dark:text-white">{q}</h3>
+        <ChevronDown className={`w-5 h-5 shrink-0 text-slate-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <p className="px-5 sm:px-6 pb-5 sm:pb-6 text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{a}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export default function HomePage() {
   const { t } = useLanguage();
   const { user, loading } = useAuth();
@@ -39,7 +73,6 @@ export default function HomePage() {
       icon: Scale,
       title: t.featureFairTitle,
       desc: t.featureFairDesc,
-      color: "from-blue-500 to-blue-600",
       bg: "bg-blue-50 dark:bg-blue-950/40",
       iconColor: "text-blue-600 dark:text-blue-400",
     },
@@ -47,7 +80,6 @@ export default function HomePage() {
       icon: Zap,
       title: t.featureSmartTitle,
       desc: t.featureSmartDesc,
-      color: "from-amber-500 to-orange-500",
       bg: "bg-amber-50 dark:bg-amber-950/40",
       iconColor: "text-amber-600 dark:text-amber-400",
     },
@@ -55,7 +87,6 @@ export default function HomePage() {
       icon: FileSpreadsheet,
       title: t.featureExportTitle,
       desc: t.featureExportDesc,
-      color: "from-emerald-500 to-teal-500",
       bg: "bg-emerald-50 dark:bg-emerald-950/40",
       iconColor: "text-emerald-600 dark:text-emerald-400",
     },
@@ -67,13 +98,28 @@ export default function HomePage() {
     { icon: Download, title: t.howStep3Title, desc: t.howStep3Desc, num: "03" },
   ];
 
+  const benefits = [
+    { icon: Clock, title: t.benefit1Title, desc: t.benefit1Desc },
+    { icon: Scale, title: t.benefit2Title, desc: t.benefit2Desc },
+    { icon: Puzzle, title: t.benefit3Title, desc: t.benefit3Desc },
+    { icon: Globe, title: t.benefit4Title, desc: t.benefit4Desc },
+  ];
+
+  const faqs = [
+    { q: t.faq1Q, a: t.faq1A },
+    { q: t.faq2Q, a: t.faq2A },
+    { q: t.faq3Q, a: t.faq3A },
+    { q: t.faq4Q, a: t.faq4A },
+    { q: t.faq5Q, a: t.faq5A },
+  ];
+
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950 overflow-x-hidden">
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg border-b border-slate-100 dark:border-slate-800/50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-8 h-8 shrink-0" data-testid="logo-icon">
-              <img src="/favicon.svg" alt="Logo" className="w-8 h-8 rounded-lg" />
+              <img src="/favicon.svg" alt="Shift Optimizer Logo" className="w-8 h-8 rounded-lg" />
             </div>
             <span className="font-display font-bold text-lg text-slate-900 dark:text-white hidden sm:inline truncate" data-testid="text-app-name">
               {t.appName}
@@ -217,11 +263,115 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section className="py-20 sm:py-28 px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={staggerContainer}
+          >
+            <motion.div variants={fadeUp} custom={0} className="text-center mb-10 sm:mb-12">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-what-is-title">
+                {t.whatIsTitle}
+              </h2>
+            </motion.div>
+            <motion.div variants={fadeUp} custom={1} className="space-y-5 text-slate-600 dark:text-slate-400 text-base sm:text-lg leading-relaxed max-w-3xl mx-auto">
+              <p data-testid="text-what-is-desc">{t.whatIsDesc}</p>
+              <p data-testid="text-what-is-desc2">{t.whatIsDesc2}</p>
+              <p data-testid="text-what-is-desc3">{t.whatIsDesc3}</p>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      <section className="py-20 sm:py-28 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-y border-slate-100 dark:border-slate-800/50">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={staggerContainer}
+          >
+            <motion.div variants={fadeUp} custom={0} className="text-center mb-14 sm:mb-16">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-benefits-title">
+                {t.benefitsTitle}
+              </h2>
+            </motion.div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
+              {benefits.map((b, i) => (
+                <motion.div key={i} variants={fadeUp} custom={i + 1} data-testid={`card-benefit-${i}`}>
+                  <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 sm:p-7 h-full flex gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 dark:bg-primary/15 flex items-center justify-center shrink-0 mt-0.5">
+                      <b.icon className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-base text-slate-900 dark:text-white mb-1" data-testid={`text-benefit-title-${i}`}>{b.title}</h3>
+                      <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed" data-testid={`text-benefit-desc-${i}`}>{b.desc}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      <section className="py-20 sm:py-28 px-4 sm:px-6">
+        <div className="max-w-3xl mx-auto">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={staggerContainer}
+          >
+            <motion.div variants={fadeUp} custom={0} className="text-center mb-10 sm:mb-12">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-faq-title">
+                {t.faqTitle}
+              </h2>
+            </motion.div>
+
+            <motion.div variants={fadeUp} custom={1} className="space-y-3">
+              {faqs.map((faq, i) => (
+                <FAQItem key={i} q={faq.q} a={faq.a} testId={`faq-item-${i}`} />
+              ))}
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      <section className="py-16 sm:py-20 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800/50">
+        <div className="max-w-3xl mx-auto text-center">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={staggerContainer}
+          >
+            <motion.h2 variants={fadeUp} custom={0} className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-cta-title">
+              {t.heroTitle1}
+            </motion.h2>
+            <motion.p variants={fadeUp} custom={1} className="mt-4 text-slate-500 dark:text-slate-400 text-base sm:text-lg">
+              {t.heroTitle2}
+            </motion.p>
+            <motion.div variants={fadeUp} custom={2} className="mt-8">
+              <Link href="/create">
+                <Button size="lg" className="shadow-lg shadow-primary/25" data-testid="button-cta-bottom">
+                  {t.getStartedFree}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
       <footer className="border-t border-slate-100 dark:border-slate-800/50 py-8 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 flex-wrap text-sm text-slate-400 dark:text-slate-500">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6">
-              <img src="/favicon.svg" alt="Logo" className="w-6 h-6 rounded-md" />
+              <img src="/favicon.svg" alt="Shift Optimizer Logo" className="w-6 h-6 rounded-md" />
             </div>
             <span className="font-medium" data-testid="text-footer-app-name">{t.appName}</span>
           </div>
