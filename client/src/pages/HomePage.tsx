@@ -8,6 +8,7 @@ import {
   Settings,
   Users,
   Download,
+  Grid3X3,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/context/LanguageContext";
@@ -72,7 +73,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0" data-testid="logo-icon">
-              <Zap className="w-4 h-4 text-white" />
+              <Grid3X3 className="w-4 h-4 text-white" />
             </div>
             <span className="font-display font-bold text-lg text-slate-900 dark:text-white hidden sm:inline truncate" data-testid="text-app-name">
               {t.appName}
@@ -220,7 +221,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 flex-wrap text-sm text-slate-400 dark:text-slate-500">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-md bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <Zap className="w-3 h-3 text-white" />
+              <Grid3X3 className="w-3 h-3 text-white" />
             </div>
             <span className="font-medium" data-testid="text-footer-app-name">{t.appName}</span>
           </div>
