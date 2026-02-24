@@ -44,113 +44,114 @@ export function useWalkthrough(wizardStep: number) {
   return { active, complete, start };
 }
 
-export function WalkthroughOverlay({ steps, wizardStep, onComplete }: WalkthroughOverlayProps) {
+interface SpotlightRect {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+export function WalkthroughOverlay({ steps, onComplete }: WalkthroughOverlayProps) {
   const { t } = useLanguage();
   const [currentStep, setCurrentStep] = useState(0);
-  const [rect, setRect] = useState<DOMRect | null>(null);
-  const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({});
-  const [arrowStyle, setArrowStyle] = useState<React.CSSProperties>({});
+  const [spotlight, setSpotlight] = useState<SpotlightRect | null>(null);
+  const [tooltipPos, setTooltipPos] = useState<React.CSSProperties>({});
+  const [arrowPos, setArrowPos] = useState<React.CSSProperties>({});
   const [arrowDir, setArrowDir] = useState<"top" | "bottom" | "left" | "right">("top");
-  const overlayRef = useRef<HTMLDivElement>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const rafRef = useRef<number>(0);
 
   const step = steps[currentStep];
+  const PAD = 10;
+  const TOOLTIP_W = 340;
 
-  const positionTooltip = useCallback(() => {
+  const computePositions = useCallback(() => {
     if (!step) return;
-    const el = document.querySelector(step.targetSelector);
+    const el = document.querySelector(step.targetSelector) as HTMLElement | null;
     if (!el) {
-      setRect(null);
+      setSpotlight(null);
       return;
     }
 
     const r = el.getBoundingClientRect();
-    setRect(r);
+    const spot: SpotlightRect = {
+      left: r.left - PAD,
+      top: r.top - PAD,
+      width: r.width + PAD * 2,
+      height: r.height + PAD * 2,
+    };
+    setSpotlight(spot);
 
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const gap = 16;
 
-    setTimeout(() => {
-      const updatedR = el.getBoundingClientRect();
-      setRect(updatedR);
+    const preferred = step.position || "bottom";
+    let pos = preferred;
 
-      const pad = 12;
-      const tooltipW = 340;
-      const tooltipH = 180;
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
+    if (pos === "bottom" && r.bottom + gap + 200 > vh) pos = "top";
+    if (pos === "top" && r.top - gap - 200 < 0) pos = "bottom";
+    if (pos === "right" && r.right + gap + TOOLTIP_W > vw) pos = "left";
+    if (pos === "left" && r.left - gap - TOOLTIP_W < 0) pos = "right";
 
-      const preferred = step.position || "bottom";
-      let pos = preferred;
+    const centerX = r.left + r.width / 2;
+    const centerY = r.top + r.height / 2;
+    let style: React.CSSProperties = {};
+    let aStyle: React.CSSProperties = {};
+    let aDir: typeof arrowDir = "top";
 
-      if (pos === "bottom" && updatedR.bottom + pad + tooltipH > vh) pos = "top";
-      if (pos === "top" && updatedR.top - pad - tooltipH < 0) pos = "bottom";
-      if (pos === "right" && updatedR.right + pad + tooltipW > vw) pos = "left";
-      if (pos === "left" && updatedR.left - pad - tooltipW < 0) pos = "right";
+    if (pos === "bottom") {
+      const tooltipLeft = Math.max(16, Math.min(centerX - TOOLTIP_W / 2, vw - TOOLTIP_W - 16));
+      style = { top: r.bottom + gap, left: tooltipLeft };
+      aDir = "top";
+      aStyle = { top: -8, left: Math.min(Math.max(centerX - tooltipLeft - 8, 20), TOOLTIP_W - 40) };
+    } else if (pos === "top") {
+      const tooltipLeft = Math.max(16, Math.min(centerX - TOOLTIP_W / 2, vw - TOOLTIP_W - 16));
+      style = { top: r.top - gap, left: tooltipLeft, transform: "translateY(-100%)" };
+      aDir = "bottom";
+      aStyle = { bottom: -8, left: Math.min(Math.max(centerX - tooltipLeft - 8, 20), TOOLTIP_W - 40) };
+    } else if (pos === "right") {
+      style = { top: Math.max(16, Math.min(centerY - 100, vh - 220)), left: r.right + gap };
+      aDir = "left";
+      aStyle = { left: -8, top: Math.min(Math.max(centerY - (style.top as number) - 8, 20), 180) };
+    } else {
+      style = { top: Math.max(16, Math.min(centerY - 100, vh - 220)), left: r.left - gap - TOOLTIP_W };
+      aDir = "right";
+      aStyle = { right: -8, top: Math.min(Math.max(centerY - (style.top as number) - 8, 20), 180) };
+    }
 
-      let style: React.CSSProperties = {};
-      let aStyle: React.CSSProperties = {};
-      let aDir: "top" | "bottom" | "left" | "right" = "top";
-
-      const centerX = updatedR.left + updatedR.width / 2;
-      const centerY = updatedR.top + updatedR.height / 2;
-
-      if (pos === "bottom") {
-        style = {
-          top: updatedR.bottom + pad + 8,
-          left: Math.max(16, Math.min(centerX - tooltipW / 2, vw - tooltipW - 16)),
-        };
-        aDir = "top";
-        aStyle = {
-          top: -8,
-          left: Math.min(Math.max(centerX - (style.left as number) - 8, 16), tooltipW - 32),
-        };
-      } else if (pos === "top") {
-        style = {
-          bottom: vh - updatedR.top + pad + 8,
-          left: Math.max(16, Math.min(centerX - tooltipW / 2, vw - tooltipW - 16)),
-        };
-        aDir = "bottom";
-        aStyle = {
-          bottom: -8,
-          left: Math.min(Math.max(centerX - (style.left as number) - 8, 16), tooltipW - 32),
-        };
-      } else if (pos === "right") {
-        style = {
-          top: Math.max(16, Math.min(centerY - tooltipH / 2, vh - tooltipH - 16)),
-          left: updatedR.right + pad + 8,
-        };
-        aDir = "left";
-        aStyle = {
-          left: -8,
-          top: Math.min(Math.max(centerY - (style.top as number) - 8, 16), tooltipH - 32),
-        };
-      } else {
-        style = {
-          top: Math.max(16, Math.min(centerY - tooltipH / 2, vh - tooltipH - 16)),
-          right: vw - updatedR.left + pad + 8,
-        };
-        aDir = "right";
-        aStyle = {
-          right: -8,
-          top: Math.min(Math.max(centerY - (style.top as number) - 8, 16), tooltipH - 32),
-        };
-      }
-
-      setTooltipStyle(style);
-      setArrowStyle(aStyle);
-      setArrowDir(aDir);
-    }, 350);
+    setTooltipPos(style);
+    setArrowPos(aStyle);
+    setArrowDir(aDir);
   }, [step]);
 
   useEffect(() => {
-    positionTooltip();
-    const handleResize = () => positionTooltip();
-    window.addEventListener("resize", handleResize);
-    window.addEventListener("scroll", handleResize, true);
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener("scroll", handleResize, true);
+    if (!step) return;
+    const el = document.querySelector(step.targetSelector) as HTMLElement | null;
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    setIsTransitioning(true);
+    const timer = setTimeout(() => {
+      computePositions();
+      setIsTransitioning(false);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [currentStep, step, computePositions]);
+
+  useEffect(() => {
+    const update = () => {
+      rafRef.current = requestAnimationFrame(() => computePositions());
     };
-  }, [currentStep, positionTooltip]);
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [computePositions]);
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
@@ -172,7 +173,7 @@ export function WalkthroughOverlay({ steps, wizardStep, onComplete }: Walkthroug
 
   if (!step) return null;
 
-  const arrowBorder = {
+  const arrowClasses: Record<string, string> = {
     top: "border-l-8 border-r-8 border-b-8 border-l-transparent border-r-transparent border-b-white dark:border-b-slate-800",
     bottom: "border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-white dark:border-t-slate-800",
     left: "border-t-8 border-b-8 border-r-8 border-t-transparent border-b-transparent border-r-white dark:border-r-slate-800",
@@ -183,65 +184,89 @@ export function WalkthroughOverlay({ steps, wizardStep, onComplete }: Walkthroug
   const descText = (t as any)[step.descKey] || step.descKey;
 
   return (
-    <div ref={overlayRef} className="fixed inset-0 z-[9999]" data-testid="walkthrough-overlay">
-      <svg className="absolute inset-0 w-full h-full" style={{ pointerEvents: "none" }}>
-        <defs>
-          <mask id="walkthrough-mask">
-            <rect x="0" y="0" width="100%" height="100%" fill="white" />
-            {rect && (
-              <rect
-                x={rect.left - 8}
-                y={rect.top - 8}
-                width={rect.width + 16}
-                height={rect.height + 16}
-                rx="8"
-                fill="black"
-              />
-            )}
-          </mask>
-        </defs>
-        <rect
-          x="0" y="0" width="100%" height="100%"
-          fill="rgba(0,0,0,0.5)"
-          mask="url(#walkthrough-mask)"
-          style={{ pointerEvents: "auto" }}
-          onClick={handleSkip}
-        />
-      </svg>
+    <div className="fixed inset-0 z-[9999]" data-testid="walkthrough-overlay">
+      {/* Dark overlay - blocks all clicks outside spotlight */}
+      <div className="absolute inset-0" style={{ pointerEvents: "auto" }}>
+        <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <mask id="wk-mask">
+              <rect x="0" y="0" width="100%" height="100%" fill="white" />
+              {spotlight && (
+                <rect
+                  x={spotlight.left}
+                  y={spotlight.top}
+                  width={spotlight.width}
+                  height={spotlight.height}
+                  rx="12"
+                  fill="black"
+                  style={{ transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)" }}
+                />
+              )}
+            </mask>
+          </defs>
+          <rect
+            x="0" y="0" width="100%" height="100%"
+            fill="rgba(0,0,0,0.45)"
+            mask="url(#wk-mask)"
+          />
+        </svg>
+      </div>
 
-      {rect && (
+      {/* Spotlight border glow - allows pointer events through to the element */}
+      {spotlight && (
         <div
-          className="absolute rounded-lg ring-2 ring-blue-400 ring-offset-2 pointer-events-none"
+          className="absolute rounded-xl pointer-events-none"
           style={{
-            left: rect.left - 8,
-            top: rect.top - 8,
-            width: rect.width + 16,
-            height: rect.height + 16,
-            boxShadow: "0 0 0 4px rgba(59, 130, 246, 0.3)",
-            transition: "all 0.3s ease",
+            left: spotlight.left,
+            top: spotlight.top,
+            width: spotlight.width,
+            height: spotlight.height,
+            boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.5), 0 0 20px 4px rgba(59, 130, 246, 0.15)",
+            transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         />
       )}
 
+      {/* Clickable area over spotlight so user can interact with highlighted element */}
+      {spotlight && (
+        <div
+          className="absolute"
+          style={{
+            left: spotlight.left,
+            top: spotlight.top,
+            width: spotlight.width,
+            height: spotlight.height,
+            pointerEvents: "auto",
+            zIndex: 1,
+            transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+          }}
+        />
+      )}
+
+      {/* Tooltip card */}
       <div
-        className="fixed bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 p-5 z-[10000]"
+        className="fixed bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 p-5 z-[10001]"
         style={{
-          width: 340,
-          ...tooltipStyle,
-          transition: "all 0.3s ease",
+          width: TOOLTIP_W,
+          opacity: isTransitioning ? 0 : 1,
+          ...tooltipPos,
+          transition: "opacity 0.3s ease, top 0.4s cubic-bezier(0.4,0,0.2,1), left 0.4s cubic-bezier(0.4,0,0.2,1), transform 0.4s cubic-bezier(0.4,0,0.2,1)",
         }}
         data-testid="walkthrough-tooltip"
       >
-        <div className={`absolute w-0 h-0 ${arrowBorder[arrowDir]}`} style={arrowStyle} />
+        <div
+          className={`absolute w-0 h-0 ${arrowClasses[arrowDir]}`}
+          style={{ ...arrowPos, transition: "all 0.4s cubic-bezier(0.4,0,0.2,1)" }}
+        />
 
         <div className="flex items-center justify-between mb-3">
-          <span className="text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-2 py-1 rounded-full">
+          <span className="text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-2.5 py-1 rounded-full">
             {currentStep + 1} / {steps.length}
           </span>
           <button
             onClick={handleSkip}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-            data-testid="button-walkthrough-skip"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700"
+            data-testid="button-walkthrough-close"
           >
             <X className="w-4 h-4" />
           </button>
@@ -250,7 +275,7 @@ export function WalkthroughOverlay({ steps, wizardStep, onComplete }: Walkthroug
         <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
           {titleText}
         </h3>
-        <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-4">
+        <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-5">
           {descText}
         </p>
 
@@ -259,8 +284,8 @@ export function WalkthroughOverlay({ steps, wizardStep, onComplete }: Walkthroug
             variant="ghost"
             size="sm"
             onClick={handleSkip}
-            className="text-xs text-slate-500 hover:text-slate-700"
-            data-testid="button-walkthrough-skip-text"
+            className="text-xs text-slate-400 hover:text-slate-600"
+            data-testid="button-walkthrough-skip"
           >
             {(t as any).walkthroughSkip || "Skip"}
           </Button>
