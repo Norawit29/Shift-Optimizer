@@ -337,6 +337,13 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     { targetSelector: '[data-walkthrough="holiday-balancing"]', titleKey: "wk3HolidayBalancingTitle", descKey: "wk3HolidayBalancingDesc", position: "right" },
     { targetSelector: '[data-walkthrough="optimize-button"]', titleKey: "wk3OptimizeTitle", descKey: "wk3OptimizeDesc", position: "left" },
   ];
+
+  const walkthroughStep4: WalkthroughStep[] = [
+    { targetSelector: '[data-walkthrough="version-selector"]', titleKey: "wk4VersionTitle", descKey: "wk4VersionDesc", position: "bottom" },
+    { targetSelector: '[data-walkthrough="view-tabs"]', titleKey: "wk4ViewTabsTitle", descKey: "wk4ViewTabsDesc", position: "bottom" },
+    { targetSelector: '[data-walkthrough="regenerate-btn"]', titleKey: "wk4RegenerateTitle", descKey: "wk4RegenerateDesc", position: "bottom" },
+    { targetSelector: '[data-walkthrough="export-btn"]', titleKey: "wk4ExportTitle", descKey: "wk4ExportDesc", position: "bottom" },
+  ];
   const [month, setMonth] = useState(() => {
     const now = new Date();
     const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
@@ -1285,6 +1292,13 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           onComplete={walkthrough.complete}
         />
       )}
+      {walkthrough.active && step === 4 && (
+        <WalkthroughOverlay
+          steps={walkthroughStep4}
+          wizardStep={step}
+          onComplete={walkthrough.complete}
+        />
+      )}
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-md border-b">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-2">
           <div className="flex items-center gap-4">
@@ -1313,7 +1327,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           
           <div className="flex items-center gap-2">
             {step === 4 && (
-              <Button onClick={handleSaveClick} disabled={!exportOnly && createMutation.isPending} className="bg-green-600 hover:bg-green-700" data-testid="button-save-schedule">
+              <Button onClick={handleSaveClick} disabled={!exportOnly && createMutation.isPending} className="bg-green-600 hover:bg-green-700" data-testid="button-save-schedule" data-walkthrough="export-btn">
                 {!exportOnly && createMutation.isPending
                   ? <Loader2 className="w-4 h-4 mr-2 animate-spin"/>
                   : exportOnly
@@ -2552,7 +2566,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button variant="outline" onClick={runOptimizer} disabled={isOptimizing} data-testid="button-regenerate">
+                      <Button variant="outline" onClick={runOptimizer} disabled={isOptimizing} data-testid="button-regenerate" data-walkthrough="regenerate-btn">
                         {isOptimizing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <History className="w-4 h-4 mr-2" />}
                         {t.regenerate}
                       </Button>
@@ -2565,7 +2579,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               </div>
 
               {results.length > 1 && (
-                <div className="space-y-2">
+                <div className="space-y-2" data-walkthrough="version-selector">
                   <p className="text-sm text-muted-foreground">{t.selectVersion}</p>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {results.map((r, idx) => {
@@ -2616,7 +2630,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               )}
 
               <Tabs defaultValue="calendar">
-                <TabsList className="mb-4">
+                <TabsList className="mb-4" data-walkthrough="view-tabs">
                   <TabsTrigger value="calendar" data-testid="tab-calendar"><CalendarIcon className="w-4 h-4 mr-2" />{t.calendarView}</TabsTrigger>
                   <TabsTrigger value="summary" data-testid="tab-summary"><Check className="w-4 h-4 mr-2" />{t.summary}</TabsTrigger>
                   <TabsTrigger value="stats" data-testid="tab-stats"><Activity className="w-4 h-4 mr-2" />{t.statistics}</TabsTrigger>

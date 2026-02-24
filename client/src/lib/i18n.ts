@@ -277,6 +277,14 @@ const translations = {
     wk3HolidayBalancingDesc: "Enable fair distribution of weekend/holiday shifts. Click dates on the calendar to mark public holidays so the optimizer balances them evenly across staff.",
     wk3OptimizeTitle: "Generate schedule",
     wk3OptimizeDesc: "When all rules are set, click here to run the optimizer. It creates 3 schedule versions and auto-selects the fairest one.",
+    wk4VersionTitle: "Choose a version",
+    wk4VersionDesc: "The system generates 3 versions and auto-selects the fairest one (smallest min-max shift range). Click any version to compare coverage and fairness.",
+    wk4ViewTabsTitle: "Calendar, Summary & Stats",
+    wk4ViewTabsDesc: "Switch between Calendar view (daily schedule grid), Summary (shift counts per person), and Statistics (workload distribution charts).",
+    wk4RegenerateTitle: "Regenerate",
+    wk4RegenerateDesc: "Not satisfied? Click here to generate 3 new schedule versions using the same rules and settings.",
+    wk4ExportTitle: "Export to Excel",
+    wk4ExportDesc: "When you're happy with the schedule, click here to export it as an Excel file ready to print or share.",
 
     // Language
     language: "Language",
@@ -557,6 +565,14 @@ const translations = {
     wk3HolidayBalancingDesc: "เปิดการเกลี่ยเวรวันหยุด/สุดสัปดาห์ให้ทุกคนได้เท่าๆ กัน คลิกวันที่ในปฏิทินเพื่อเพิ่มวันหยุดนักขัตฤกษ์",
     wk3OptimizeTitle: "สร้างตารางเวร",
     wk3OptimizeDesc: "เมื่อตั้งกฎเรียบร้อยแล้ว กดปุ่มนี้เพื่อให้ระบบคำนวณ ระบบจะสร้าง 3 เวอร์ชันและเลือกเวอร์ชันที่ยุติธรรมที่สุดให้อัตโนมัติ",
+    wk4VersionTitle: "เลือกเวอร์ชัน",
+    wk4VersionDesc: "ระบบสร้าง 3 เวอร์ชันและเลือกเวอร์ชันที่ยุติธรรมที่สุดให้อัตโนมัติ (ค่า min-max ต่างกันน้อยที่สุด) คลิกเวอร์ชันอื่นเพื่อเปรียบเทียบ",
+    wk4ViewTabsTitle: "มุมมองปฏิทิน สรุป และสถิติ",
+    wk4ViewTabsDesc: "สลับระหว่างมุมมองปฏิทิน (ตารางเวรรายวัน) สรุป (จำนวนเวรแต่ละคน) และสถิติ (กราฟการกระจายเวร)",
+    wk4RegenerateTitle: "สร้างตารางใหม่",
+    wk4RegenerateDesc: "ไม่พอใจ? กดปุ่มนี้เพื่อสร้างตาราง 3 เวอร์ชันใหม่ภายใต้เงื่อนไขเดิม",
+    wk4ExportTitle: "ส่งออก Excel",
+    wk4ExportDesc: "เมื่อพอใจกับตารางแล้ว กดปุ่มนี้เพื่อส่งออกเป็นไฟล์ Excel พร้อมพิมพ์หรือแชร์ได้ทันที",
 
     // Language
     language: "ภาษา",

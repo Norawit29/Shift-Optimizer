@@ -35,7 +35,7 @@ interface WalkthroughOverlayProps {
   onComplete: () => void;
 }
 
-const WALKTHROUGH_ENABLED_STEPS = new Set([1, 2, 3]);
+const WALKTHROUGH_ENABLED_STEPS = new Set([1, 2, 3, 4]);
 
 export function useWalkthrough(wizardStep: number) {
   const [active, setActive] = useState(false);
@@ -149,9 +149,16 @@ export function WalkthroughOverlay({ steps, onComplete }: WalkthroughOverlayProp
   useEffect(() => {
     if (!step) return;
     const el = document.querySelector(step.targetSelector) as HTMLElement | null;
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (!el) {
+      if (currentStep < steps.length - 1) {
+        setCurrentStep(prev => prev + 1);
+      } else {
+        onComplete();
+      }
+      return;
     }
+
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
 
     setIsTransitioning(true);
     const timer = setTimeout(() => {
@@ -159,7 +166,7 @@ export function WalkthroughOverlay({ steps, onComplete }: WalkthroughOverlayProp
       setIsTransitioning(false);
     }, 400);
     return () => clearTimeout(timer);
-  }, [currentStep, step, computePositions]);
+  }, [currentStep, step, steps.length, computePositions, onComplete]);
 
   useEffect(() => {
     const update = () => {
