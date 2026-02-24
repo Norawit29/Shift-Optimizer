@@ -85,7 +85,7 @@ export default function HomePage() {
         </div>
       </nav>
 
-      <section className="relative pt-32 pb-20 sm:pt-40 sm:pb-28 px-4 sm:px-6">
+      <section className="relative min-h-screen flex flex-col justify-center pt-20 pb-10 px-4 sm:px-6">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-gradient-radial from-primary/8 via-transparent to-transparent rounded-full" />
           <div className="absolute top-1/4 right-0 w-[400px] h-[400px] bg-blue-100/40 dark:bg-blue-900/10 rounded-full blur-3xl" />
@@ -122,7 +122,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="how-it-works" className="py-20 sm:py-28 px-4 sm:px-6">
+      <section id="how-it-works" className="min-h-screen flex flex-col justify-center py-16 sm:py-20 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
           <motion.div
             initial="hidden"
@@ -173,7 +173,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="py-20 sm:py-28 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-y border-slate-100 dark:border-slate-800/50">
+      <section className="min-h-screen flex flex-col justify-center py-16 sm:py-20 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-y border-slate-100 dark:border-slate-800/50">
         <div className="max-w-6xl mx-auto">
           <motion.div
             initial="hidden"
