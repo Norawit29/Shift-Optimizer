@@ -95,11 +95,6 @@ export default function HomePage() {
 
         <div className="relative max-w-4xl mx-auto text-center">
           <motion.div initial="hidden" animate="visible" variants={staggerContainer}>
-            <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/5 dark:bg-primary/10 border border-primary/15 dark:border-primary/20 text-sm font-medium text-primary mb-6" data-testid="badge-tagline">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-              {t.heroTagline}
-            </motion.div>
-
             <motion.h1 variants={fadeUp} custom={1} className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold text-slate-900 dark:text-white leading-[1.1] tracking-tight" data-testid="text-hero-title">
               {t.heroTitle1}
             </motion.h1>
@@ -123,9 +118,6 @@ export default function HomePage() {
               </Link>
             </motion.div>
 
-            <motion.p variants={fadeUp} custom={5} className="mt-8 text-xs sm:text-sm text-slate-400 dark:text-slate-500" data-testid="text-trusted-by">
-              {t.trustedBy}
-            </motion.p>
           </motion.div>
         </div>
       </section>
