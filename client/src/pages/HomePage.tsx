@@ -181,6 +181,15 @@ export default function HomePage() {
             viewport={{ once: true, margin: "-100px" }}
             variants={staggerContainer}
           >
+            <motion.div variants={fadeUp} custom={0} className="text-center mb-14 sm:mb-16">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-features-title">
+                {t.featureSectionTitle}
+              </h2>
+              <p className="mt-3 text-slate-500 dark:text-slate-400 text-base sm:text-lg max-w-xl mx-auto">
+                {t.featureSectionDesc}
+              </p>
+            </motion.div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
               {features.map((feature, i) => (
                 <motion.div
