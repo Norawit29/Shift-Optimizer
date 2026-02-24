@@ -320,7 +320,7 @@ const translations = {
     createNewSchedule: "สร้างตารางเวรใหม่",
     viewHistory: "ดูประวัติ",
     featureFairTitle: "กระจายเวรยุติธรรม",
-    featureFairDesc: "กระจายเวรให้สมดุลระหว่างบุคลากรทุกคนโดยอัตโนมัติ",
+    featureFairDesc: "กระจายเวรให้สมดุลระหว่างบุคลากรทุกคนภายใต้เงื่อนไขที่ซับซ้อนโดยอัตโนมัติ",
     featureSmartTitle: "ลดเวลาจัดเวรลง 90%",
     featureSmartDesc: "จากหลายชั่วโมงต่อเดือน เหลือเพียงไม่กี่นาที",
     featureExportTitle: "ส่งออกทันที",
