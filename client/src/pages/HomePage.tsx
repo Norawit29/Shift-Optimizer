@@ -8,10 +8,6 @@ import {
   Settings,
   Users,
   Download,
-  Shield,
-  Clock,
-  Layers,
-  CheckCircle2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/context/LanguageContext";
@@ -62,13 +58,6 @@ export default function HomePage() {
       bg: "bg-emerald-50 dark:bg-emerald-950/40",
       iconColor: "text-emerald-600 dark:text-emerald-400",
     },
-  ];
-
-  const stats = [
-    { value: "99%", label: t.statsCoverage, icon: CheckCircle2 },
-    { value: "90%", label: t.statsTime, icon: Clock },
-    { value: "5", label: t.statsStaff, icon: Layers },
-    { value: "10+", label: t.statsConstraints, icon: Shield },
   ];
 
   const steps = [
@@ -132,42 +121,11 @@ export default function HomePage() {
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
-              <a href="#how-it-works" className="w-full sm:w-auto">
-                <Button variant="outline" size="lg" className="w-full sm:w-auto" data-testid="button-learn-more">
-                  {t.learnMore}
-                </Button>
-              </a>
             </motion.div>
 
             <motion.p variants={fadeUp} custom={5} className="mt-8 text-xs sm:text-sm text-slate-400 dark:text-slate-500" data-testid="text-trusted-by">
               {t.trustedBy}
             </motion.p>
-          </motion.div>
-        </div>
-      </section>
-
-      <section className="relative py-16 sm:py-20 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-y border-slate-100 dark:border-slate-800/50">
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={staggerContainer}
-            className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8"
-          >
-            {stats.map((stat, i) => (
-              <motion.div key={i} variants={fadeUp} custom={i} className="text-center" data-testid={`stat-item-${i}`}>
-                <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-primary/10 dark:bg-primary/15 mb-3">
-                  <stat.icon className="w-5 h-5 text-primary" />
-                </div>
-                <div className="text-3xl sm:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid={`text-stat-value-${i}`}>
-                  {stat.value}
-                </div>
-                <div className="mt-1 text-sm text-slate-500 dark:text-slate-400 font-medium">
-                  {stat.label}
-                </div>
-              </motion.div>
-            ))}
           </motion.div>
         </div>
       </section>
@@ -253,32 +211,6 @@ export default function HomePage() {
                 </motion.div>
               ))}
             </div>
-          </motion.div>
-        </div>
-      </section>
-
-      <section className="py-20 sm:py-28 px-4 sm:px-6">
-        <div className="max-w-3xl mx-auto text-center">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={staggerContainer}
-          >
-            <motion.h2 variants={fadeUp} custom={0} className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white">
-              {t.heroTitle1}
-            </motion.h2>
-            <motion.p variants={fadeUp} custom={1} className="mt-4 text-slate-500 dark:text-slate-400 text-base sm:text-lg">
-              {t.heroTitle2}
-            </motion.p>
-            <motion.div variants={fadeUp} custom={2} className="mt-8">
-              <Link href="/create">
-                <Button size="lg" className="shadow-lg shadow-primary/25" data-testid="button-cta-bottom">
-                  {t.getStartedFree}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-            </motion.div>
           </motion.div>
         </div>
       </section>
