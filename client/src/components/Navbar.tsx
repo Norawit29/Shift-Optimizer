@@ -26,16 +26,25 @@ export function Navbar({ isHomePage }: NavbarProps) {
     { label: t.navFaq, href: "#faq", id: "faq" },
   ];
 
-  const handleSectionClick = (e: React.MouseEvent, href: string) => {
+  const scrollToSection = (sectionId: string) => {
+    const el = document.getElementById(sectionId);
+    if (el) {
+      const top = el.getBoundingClientRect().top + window.scrollY - 96;
+      window.scrollTo({ top, behavior: "smooth" });
+    }
+  };
+
+  const handleSectionClick = (e: React.MouseEvent, href: string, sectionId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMobileMenuOpen(false);
     if (isHomePage) {
-      e.preventDefault();
-      setMobileMenuOpen(false);
       history.replaceState(null, "", href);
-      setTimeout(() => {
-        document.querySelector(href)?.scrollIntoView({ behavior: "smooth" });
-      }, 50);
+      requestAnimationFrame(() => {
+        scrollToSection(sectionId);
+      });
     } else {
-      setMobileMenuOpen(false);
+      window.location.href = `/${href}`;
     }
   };
 
@@ -78,7 +87,7 @@ export function Navbar({ isHomePage }: NavbarProps) {
               <a
                 key={item.id}
                 href={isHomePage ? item.href : `/${item.href}`}
-                onClick={(e) => handleSectionClick(e, item.href)}
+                onClick={(e) => handleSectionClick(e, item.href, item.id)}
                 className="px-3.5 py-2 text-[15px] font-medium text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors rounded-lg"
                 data-testid={`nav-link-${item.id}`}
               >
@@ -125,7 +134,7 @@ export function Navbar({ isHomePage }: NavbarProps) {
                     <a
                       key={item.id}
                       href={isHomePage ? item.href : `/${item.href}`}
-                      onClick={(e) => handleSectionClick(e, item.href)}
+                      onClick={(e) => handleSectionClick(e, item.href, item.id)}
                       className="px-3 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors rounded-lg"
                     >
                       {item.label}
