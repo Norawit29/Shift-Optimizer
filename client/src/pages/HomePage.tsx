@@ -96,18 +96,18 @@ export default function HomePage() {
     <LazyMotion features={domAnimation}>
     <div className="min-h-screen bg-white dark:bg-slate-950 overflow-x-hidden">
       <header>
-        <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg border-b border-slate-100 dark:border-slate-800/50" style={{ minHeight: "64px" }} aria-label="Main navigation">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-            <a href="#" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="flex items-center gap-2.5 min-w-0 shrink-0">
-              <div className="w-8 h-8 shrink-0" data-testid="logo-icon">
-                <img src="/favicon.svg" alt="Shift Optimizer Logo" width="32" height="32" className="w-8 h-8 rounded-lg" />
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg border-b border-slate-100 dark:border-slate-800/50" style={{ minHeight: "72px" }} aria-label="Main navigation">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-[72px] flex items-center justify-between gap-6">
+            <a href="#" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="flex items-center gap-3 min-w-0 shrink-0">
+              <div className="w-10 h-10 shrink-0" data-testid="logo-icon">
+                <img src="/favicon.svg" alt="Shift Optimizer Logo" width="40" height="40" className="w-10 h-10 rounded-lg" />
               </div>
               <div className="hidden sm:flex flex-col leading-tight min-w-0" data-testid="text-app-name">
-                <span className="font-display font-bold text-sm text-slate-900 dark:text-white truncate">{t.appName}</span>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{t.appTagline}</span>
+                <span className="font-display font-bold text-base text-slate-900 dark:text-white truncate">{t.appName}</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 truncate">{t.appTagline}</span>
               </div>
             </a>
-            <div className="hidden lg:flex items-center gap-1">
+            <div className="hidden lg:flex items-center gap-1.5">
               {[
                 { label: t.navHowItWorks, href: "#how-it-works" },
                 { label: t.navFeatures, href: "#features" },
@@ -118,17 +118,17 @@ export default function HomePage() {
                   key={item.href}
                   href={item.href}
                   onClick={(e) => { e.preventDefault(); document.querySelector(item.href)?.scrollIntoView({ behavior: "smooth" }); }}
-                  className="px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors rounded-lg"
+                  className="px-3.5 py-2 text-[15px] font-medium text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors rounded-lg"
                   data-testid={`nav-link-${item.href.slice(1)}`}
                 >
                   {item.label}
                 </a>
               ))}
-              <Link href="/articles" className="px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors rounded-lg" data-testid="nav-link-articles">
+              <Link href="/articles" className="px-3.5 py-2 text-[15px] font-medium text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors rounded-lg" data-testid="nav-link-articles">
                 {t.navArticles}
               </Link>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2.5 shrink-0">
               <button
                 className="lg:hidden p-2 text-slate-600 dark:text-slate-300 hover:text-primary transition-colors"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -136,7 +136,7 @@ export default function HomePage() {
                 aria-label="Toggle menu"
                 data-testid="button-mobile-menu"
               >
-                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
               <LanguageToggle />
               {!loading && (user ? <UserMenu /> : <GoogleSignInButton />)}
@@ -214,7 +214,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="how-it-works" className="scroll-mt-20 min-h-screen flex flex-col justify-center py-16 sm:py-20 px-4 sm:px-6">
+        <section id="how-it-works" className="scroll-mt-24 min-h-screen flex flex-col justify-center py-16 sm:py-20 px-4 sm:px-6">
           <div className="max-w-6xl mx-auto">
             <m.div
               initial="hidden"
@@ -265,7 +265,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="features" className="scroll-mt-20 min-h-screen flex flex-col justify-center py-16 sm:py-20 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-y border-slate-100 dark:border-slate-800/50">
+        <section id="features" className="scroll-mt-24 min-h-screen flex flex-col justify-center py-16 sm:py-20 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-y border-slate-100 dark:border-slate-800/50">
           <div className="max-w-6xl mx-auto">
             <m.div
               initial="hidden"
@@ -331,7 +331,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="about" className="scroll-mt-20 min-h-screen flex flex-col justify-center py-20 sm:py-28 px-4 sm:px-6">
+        <section id="about" className="scroll-mt-24 min-h-screen flex flex-col justify-center py-20 sm:py-28 px-4 sm:px-6">
           <div className="max-w-4xl mx-auto">
             <m.div
               initial="hidden"
@@ -353,7 +353,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="faq" className="scroll-mt-20 py-20 sm:py-28 px-4 sm:px-6">
+        <section id="faq" className="scroll-mt-24 py-20 sm:py-28 px-4 sm:px-6">
           <div className="max-w-3xl mx-auto">
             <m.div
               initial="hidden"
