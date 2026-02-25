@@ -331,7 +331,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="about" className="scroll-mt-20 py-20 sm:py-28 px-4 sm:px-6">
+        <section id="about" className="scroll-mt-20 min-h-screen flex flex-col justify-center py-20 sm:py-28 px-4 sm:px-6">
           <div className="max-w-4xl mx-auto">
             <m.div
               initial="hidden"
