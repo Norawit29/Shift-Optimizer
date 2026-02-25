@@ -90,11 +90,11 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950 overflow-x-hidden">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg border-b border-slate-100 dark:border-slate-800/50">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg border-b border-slate-100 dark:border-slate-800/50" style={{ minHeight: "64px" }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-8 h-8 shrink-0" data-testid="logo-icon">
-              <img src="/favicon.svg" alt="Shift Optimizer Logo" className="w-8 h-8 rounded-lg" />
+              <img src="/favicon.svg" alt="Shift Optimizer Logo" width="32" height="32" className="w-8 h-8 rounded-lg" />
             </div>
             <span className="font-display font-bold text-lg text-slate-900 dark:text-white hidden sm:inline truncate" data-testid="text-app-name">
               {t.appName}
@@ -107,7 +107,7 @@ export default function HomePage() {
         </div>
       </nav>
 
-      <section className="relative min-h-screen flex flex-col justify-center pt-20 pb-10 px-4 sm:px-6">
+      <section className="relative min-h-[100svh] flex flex-col justify-center pt-20 pb-10 px-4 sm:px-6">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-gradient-radial from-primary/8 via-transparent to-transparent rounded-full" />
           <div className="absolute top-1/4 right-0 w-[400px] h-[400px] bg-blue-100/40 dark:bg-blue-900/10 rounded-full blur-3xl" />
@@ -336,7 +336,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 flex-wrap text-sm text-slate-400 dark:text-slate-500">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6">
-              <img src="/favicon.svg" alt="Shift Optimizer Logo" className="w-6 h-6 rounded-md" />
+              <img src="/favicon.svg" alt="Shift Optimizer Logo" width="24" height="24" className="w-6 h-6 rounded-md" />
             </div>
             <span className="font-medium" data-testid="text-footer-app-name">{t.appName}</span>
           </div>

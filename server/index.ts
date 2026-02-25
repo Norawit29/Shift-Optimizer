@@ -31,6 +31,11 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
+app.use((_req, res, next) => {
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+  next();
+});
+
 app.set("trust proxy", 1);
 
 const PgSession = connectPgSimple(session);
