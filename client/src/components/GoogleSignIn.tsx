@@ -41,8 +41,8 @@ function loadGsiScript(): Promise<void> {
 export function GoogleSignInButton({ className }: { className?: string }) {
   const { login, clientId } = useAuth();
   const buttonRef = useRef<HTMLDivElement>(null);
-  const [gsiLoaded, setGsiLoaded] = useState(false);
-  const [gsiLoading, setGsiLoading] = useState(false);
+  const [scriptReady, setScriptReady] = useState(false);
+  const [showGoogleBtn, setShowGoogleBtn] = useState(false);
 
   const handleCredentialResponse = useCallback((response: any) => {
     if (response.credential) {
@@ -50,42 +50,33 @@ export function GoogleSignInButton({ className }: { className?: string }) {
     }
   }, [login]);
 
-  const initializeButton = useCallback(() => {
-    if (window.google && buttonRef.current && clientId) {
-      window.google.accounts.id.initialize({
-        client_id: clientId,
-        callback: handleCredentialResponse,
-      });
-      window.google.accounts.id.renderButton(buttonRef.current, {
-        theme: "outline",
-        size: "large",
-        shape: "pill",
-        text: "signin_with",
-      });
-      setGsiLoaded(true);
-    }
-  }, [clientId, handleCredentialResponse]);
-
   const handleClick = useCallback(async () => {
-    if (gsiLoaded || gsiLoading || !clientId) return;
-    setGsiLoading(true);
+    if (showGoogleBtn || !clientId) return;
+    setShowGoogleBtn(true);
     try {
       await loadGsiScript();
-      initializeButton();
+      setScriptReady(true);
     } catch {
-      setGsiLoading(false);
+      setShowGoogleBtn(false);
     }
-  }, [gsiLoaded, gsiLoading, clientId, initializeButton]);
+  }, [showGoogleBtn, clientId]);
 
   useEffect(() => {
-    if (gsiLoaded || !clientId) return;
-    if (window.google?.accounts?.id) {
-      initializeButton();
-    }
-  }, [clientId, gsiLoaded, initializeButton]);
+    if (!scriptReady || !clientId || !buttonRef.current || !window.google) return;
+    window.google.accounts.id.initialize({
+      client_id: clientId,
+      callback: handleCredentialResponse,
+    });
+    window.google.accounts.id.renderButton(buttonRef.current, {
+      theme: "outline",
+      size: "large",
+      shape: "pill",
+      text: "signin_with",
+    });
+  }, [scriptReady, clientId, handleCredentialResponse]);
 
-  if (gsiLoaded) {
-    return <div ref={buttonRef} className={className} data-testid="button-google-signin" />;
+  if (showGoogleBtn) {
+    return <div ref={buttonRef} className={className} data-testid="button-google-signin" style={{ minHeight: 40, minWidth: 100 }} />;
   }
 
   return (
@@ -93,13 +84,12 @@ export function GoogleSignInButton({ className }: { className?: string }) {
       variant="outline"
       size="sm"
       onClick={handleClick}
-      disabled={gsiLoading}
       className={className}
       aria-label="Sign in with Google"
       data-testid="button-google-signin"
     >
       <LogIn className="h-4 w-4 mr-1.5" aria-hidden="true" />
-      {gsiLoading ? "Loading..." : "Sign in"}
+      Sign in
     </Button>
   );
 }
