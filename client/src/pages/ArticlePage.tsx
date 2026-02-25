@@ -92,8 +92,8 @@ export default function ArticlePage() {
       <main className="pt-28 pb-16 px-4 sm:px-6">
         <div className="max-w-3xl mx-auto">
           <Link href="/articles">
-            <Button variant="ghost" size="sm" className="mb-6 gap-1.5" data-testid="button-back-articles">
-              <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+            <Button variant="ghost" size="default" className="mb-8 gap-2 text-base px-4 py-2" data-testid="button-back-articles">
+              <ArrowLeft className="w-5 h-5" aria-hidden="true" />
               {t.articlesBackToList}
             </Button>
           </Link>
