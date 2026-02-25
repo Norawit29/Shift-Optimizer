@@ -1,7 +1,7 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import { LogOut, LogIn } from "lucide-react";
 
 declare global {
   interface Window {
@@ -17,10 +17,32 @@ declare global {
   }
 }
 
+function loadGsiScript(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (window.google?.accounts?.id) {
+      resolve();
+      return;
+    }
+    const existing = document.querySelector('script[src*="accounts.google.com/gsi/client"]');
+    if (existing) {
+      existing.addEventListener("load", () => resolve());
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Failed to load Google Sign-In"));
+    document.head.appendChild(script);
+  });
+}
+
 export function GoogleSignInButton({ className }: { className?: string }) {
   const { login, clientId } = useAuth();
   const buttonRef = useRef<HTMLDivElement>(null);
-  const scriptLoaded = useRef(false);
+  const [gsiLoaded, setGsiLoaded] = useState(false);
+  const [gsiLoading, setGsiLoading] = useState(false);
 
   const handleCredentialResponse = useCallback((response: any) => {
     if (response.credential) {
@@ -28,37 +50,8 @@ export function GoogleSignInButton({ className }: { className?: string }) {
     }
   }, [login]);
 
-  useEffect(() => {
-    if (!clientId || scriptLoaded.current) return;
-
-    const script = document.createElement("script");
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.defer = true;
-    script.onload = () => {
-      scriptLoaded.current = true;
-      if (window.google && buttonRef.current) {
-        window.google.accounts.id.initialize({
-          client_id: clientId,
-          callback: handleCredentialResponse,
-        });
-        window.google.accounts.id.renderButton(buttonRef.current, {
-          theme: "outline",
-          size: "large",
-          shape: "pill",
-          text: "signin_with",
-        });
-      }
-    };
-    document.head.appendChild(script);
-
-    return () => {
-      if (script.parentNode) script.parentNode.removeChild(script);
-    };
-  }, [clientId, handleCredentialResponse]);
-
-  useEffect(() => {
-    if (scriptLoaded.current && window.google && buttonRef.current) {
+  const initializeButton = useCallback(() => {
+    if (window.google && buttonRef.current && clientId) {
       window.google.accounts.id.initialize({
         client_id: clientId,
         callback: handleCredentialResponse,
@@ -69,10 +62,46 @@ export function GoogleSignInButton({ className }: { className?: string }) {
         shape: "pill",
         text: "signin_with",
       });
+      setGsiLoaded(true);
     }
   }, [clientId, handleCredentialResponse]);
 
-  return <div ref={buttonRef} className={className} data-testid="button-google-signin" />;
+  const handleClick = useCallback(async () => {
+    if (gsiLoaded || gsiLoading || !clientId) return;
+    setGsiLoading(true);
+    try {
+      await loadGsiScript();
+      initializeButton();
+    } catch {
+      setGsiLoading(false);
+    }
+  }, [gsiLoaded, gsiLoading, clientId, initializeButton]);
+
+  useEffect(() => {
+    if (gsiLoaded || !clientId) return;
+    if (window.google?.accounts?.id) {
+      initializeButton();
+    }
+  }, [clientId, gsiLoaded, initializeButton]);
+
+  if (gsiLoaded) {
+    return <div ref={buttonRef} className={className} data-testid="button-google-signin" />;
+  }
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleClick}
+      disabled={gsiLoading}
+      className={className}
+      aria-label="Sign in with Google"
+      data-testid="button-google-signin"
+    >
+      <LogIn className="h-4 w-4 mr-1.5" aria-hidden="true" />
+      {gsiLoading ? "Loading..." : "Sign in"}
+    </Button>
+  );
 }
 
 export function UserMenu() {

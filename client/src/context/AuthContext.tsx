@@ -33,14 +33,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [clientId, setClientId] = useState("");
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/auth/me").then(r => r.json()),
-      fetch("/api/auth/google-client-id").then(r => r.json()),
-    ]).then(([me, cid]) => {
-      if (me) setUser(me);
-      if (cid?.clientId) setClientId(cid.clientId);
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    if (typeof requestIdleCallback !== "undefined") {
+      requestIdleCallback(() => fetchAuth());
+    } else {
+      setTimeout(() => fetchAuth(), 100);
+    }
+
+    function fetchAuth() {
+      Promise.all([
+        fetch("/api/auth/me").then(r => r.json()),
+        fetch("/api/auth/google-client-id").then(r => r.json()),
+      ]).then(([me, cid]) => {
+        if (me) setUser(me);
+        if (cid?.clientId) setClientId(cid.clientId);
+        setLoading(false);
+      }).catch(() => setLoading(false));
+    }
   }, []);
 
   const login = useCallback(async (credential: string) => {

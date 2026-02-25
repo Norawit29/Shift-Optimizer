@@ -1,0 +1,155 @@
+🔥 PRIORITY 1: ลด LCP (ตอนนี้ 4.8s ช้าเกินไป)
+
+FCP = 2.6s
+LCP = 4.8s (ตัวถ่วงหลัก) 
+
+download
+
+🎯 Key Issue
+
+JS bundle ใหญ่
+
+Google Sign-In โหลดตั้งแต่แรก
+
+มี unused JS ~564KB 
+
+download
+
+Main thread ทำงาน 1.5s 
+
+download
+
+✅ สิ่งที่ควรทำทันที
+1️⃣ Code Splitting + Lazy Load
+
+แยก auth / dashboard ออกจาก landing page
+
+หน้าแรกควรโหลดแค่ Hero + CTA
+
+Login script โหลดเมื่อ user กดปุ่ม
+
+const LoginModal = React.lazy(() => import('./LoginModal'))
+
+2️⃣ Delay Google Sign-In (gsi/client)
+
+ตอนนี้โหลดตั้งแต่ initial render (~90KB+) 
+
+download
+
+ให้เปลี่ยนเป็นโหลดเมื่อกดปุ่ม:
+
+<script async defer src="https://accounts.google.com/gsi/client"></script>
+
+
+หรือ dynamic import
+
+3️⃣ ลด Unused JS (564KB)
+
+download
+
+ตรวจ tree-shaking
+
+ปิด dev tools library
+
+เอา dependency ที่ไม่ได้ใช้ทิ้ง
+
+ตรวจว่ามี duplicate module หรือไม่
+
+ถ้าลดได้ LCP จะลงทันที
+
+⚡ PRIORITY 2: ลด Render Blocking
+
+ใน report มี CSS block render 
+
+download
+
+✅ แก้โดย
+
+Inline critical CSS
+
+defer non-critical CSS
+
+ใช้ preload สำหรับ hero font
+
+<link rel="preload" href="/assets/index.css" as="style">
+
+🧠 PRIORITY 3: ลด Main Thread Work (1.5s)
+
+download
+
+ปัญหา
+
+Script Evaluation 477ms
+
+JS execution 0.6s
+
+แก้โดย
+
+ลด bundle size
+
+ใช้ ESBuild / Vite production mode
+
+ไม่ transpile เกินจำเป็น (ตัด legacy JS)
+
+🚨 PRIORITY 4: Best Practice (คะแนน 73)
+1️⃣ CSP อ่อนเกินไป
+
+พบ:
+
+ใช้ 'unsafe-inline'
+
+ไม่มี Trusted Types
+
+preload directive หาย 
+
+download
+
+✅ แนะนำ
+
+ใช้ CSP nonce
+
+ตัด unsafe-inline
+
+เพิ่ม:
+
+Content-Security-Policy:
+  script-src 'self' 'nonce-xxxxx' https://accounts.google.com
+  require-trusted-types-for 'script';
+
+2️⃣ Third-party cookies (Google GSI)
+
+พบ 33 cookies 
+
+download
+
+ไม่ critical แต่:
+
+อย่าโหลดก่อน user interaction
+
+แยก auth page ออกจาก landing
+
+3️⃣ Console Errors (CSP block Cloudflare script)
+
+มี error เรื่อง Cloudflare beacon ถูก block 
+
+download
+
+เลือกอย่างใดอย่างหนึ่ง:
+
+เอา script ออก
+
+หรือ whitelist ใน CSP
+
+🟡 PRIORITY 5: SEO Fix เล็กน้อย
+
+SEO ได้ 92 ดีมาก
+แต่ robots.txt มี error 
+
+download
+
+Unknown directive:
+Content-Signal: search=yes,ai-train=no
+
+✅ แก้
+
+ลบบรรทัดนี้ออกจาก robots.txt

@@ -12,7 +12,7 @@ import {
   Globe,
   ChevronDown,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { LazyMotion, domAnimation, m, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 import { LanguageToggle } from "@/components/LanguageToggle";
@@ -48,7 +48,7 @@ function FAQItem({ q, a, testId }: { q: string; a: string; testId: string }) {
       </button>
       <AnimatePresence initial={false}>
         {open && (
-          <motion.div
+          <m.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
@@ -56,7 +56,7 @@ function FAQItem({ q, a, testId }: { q: string; a: string; testId: string }) {
             className="overflow-hidden"
           >
             <p className="px-5 sm:px-6 pb-5 sm:pb-6 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{a}</p>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </div>
@@ -90,6 +90,7 @@ export default function HomePage() {
   ];
 
   return (
+    <LazyMotion features={domAnimation}>
     <div className="min-h-screen bg-white dark:bg-slate-950 overflow-x-hidden">
       <header>
         <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg border-b border-slate-100 dark:border-slate-800/50" style={{ minHeight: "64px" }} aria-label="Main navigation">
@@ -120,54 +121,54 @@ export default function HomePage() {
           </div>
 
           <div className="relative max-w-4xl mx-auto text-center">
-            <motion.div initial="hidden" animate="visible" variants={staggerContainer}>
-              <motion.h1 variants={fadeUp} custom={1} className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold text-slate-900 dark:text-white leading-[1.1] tracking-tight" data-testid="text-hero-title">
+            <m.div initial="hidden" animate="visible" variants={staggerContainer}>
+              <m.h1 variants={fadeUp} custom={1} className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold text-slate-900 dark:text-white leading-[1.1] tracking-tight" data-testid="text-hero-title">
                 {t.heroTitle1}
-              </motion.h1>
+              </m.h1>
 
-              <motion.p variants={fadeUp} custom={2} className="mt-4 text-lg sm:text-xl md:text-2xl font-medium text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent" data-testid="text-hero-subtitle">
+              <m.p variants={fadeUp} custom={2} className="mt-4 text-lg sm:text-xl md:text-2xl font-medium text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent" data-testid="text-hero-subtitle">
                 {t.heroTitle2}
-              </motion.p>
+              </m.p>
 
-              <motion.p variants={fadeUp} custom={3} className="mt-6 text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed" data-testid="text-hero-desc">
+              <m.p variants={fadeUp} custom={3} className="mt-6 text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed" data-testid="text-hero-desc">
                 {t.heroDesc.split("\n").map((line: string, i: number) => (
                   <span key={i}>{line}{i < t.heroDesc.split("\n").length - 1 && <br />}</span>
                 ))}
-              </motion.p>
+              </m.p>
 
-              <motion.div variants={fadeUp} custom={4} className="mt-10 flex flex-col sm:flex-row gap-3 justify-center items-center flex-wrap">
+              <m.div variants={fadeUp} custom={4} className="mt-10 flex flex-col sm:flex-row gap-3 justify-center items-center flex-wrap">
                 <Link href="/create" className="w-full sm:w-auto">
                   <Button size="lg" className="w-full sm:w-auto shadow-lg shadow-primary/25" data-testid="button-create-schedule">
                     {t.getStartedFree}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
-              </motion.div>
+              </m.div>
 
-            </motion.div>
+            </m.div>
           </div>
         </section>
 
         <section id="how-it-works" className="min-h-screen flex flex-col justify-center py-16 sm:py-20 px-4 sm:px-6">
           <div className="max-w-6xl mx-auto">
-            <motion.div
+            <m.div
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, margin: "-100px" }}
               variants={staggerContainer}
             >
-              <motion.div variants={fadeUp} custom={0} className="text-center mb-14 sm:mb-16">
+              <m.div variants={fadeUp} custom={0} className="text-center mb-14 sm:mb-16">
                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-how-it-works-title">
                   {t.howItWorksTitle}
                 </h2>
                 <p className="mt-3 text-slate-600 dark:text-slate-300 text-base sm:text-lg max-w-xl mx-auto">
                   {t.howItWorksDesc}
                 </p>
-              </motion.div>
+              </m.div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
                 {steps.map((step, i) => (
-                  <motion.div
+                  <m.div
                     key={i}
                     variants={fadeUp}
                     custom={i + 1}
@@ -192,33 +193,33 @@ export default function HomePage() {
                     {i < steps.length - 1 && (
                       <div className="hidden md:block absolute top-1/2 -right-4 sm:-right-5 w-8 sm:w-10 h-px bg-slate-200 dark:bg-slate-700" aria-hidden="true" />
                     )}
-                  </motion.div>
+                  </m.div>
                 ))}
               </div>
-            </motion.div>
+            </m.div>
           </div>
         </section>
 
         <section className="min-h-screen flex flex-col justify-center py-16 sm:py-20 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-y border-slate-100 dark:border-slate-800/50">
           <div className="max-w-6xl mx-auto">
-            <motion.div
+            <m.div
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, margin: "-100px" }}
               variants={staggerContainer}
             >
-              <motion.div variants={fadeUp} custom={0} className="text-center mb-14 sm:mb-16">
+              <m.div variants={fadeUp} custom={0} className="text-center mb-14 sm:mb-16">
                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-features-title">
                   {t.featureSectionTitle}
                 </h2>
                 <p className="mt-3 text-slate-600 dark:text-slate-300 text-base sm:text-lg max-w-xl mx-auto">
                   {t.featureSectionDesc}
                 </p>
-              </motion.div>
+              </m.div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
                 {features.slice(0, 3).map((feature, i) => (
-                  <motion.div
+                  <m.div
                     key={i}
                     variants={fadeUp}
                     custom={i}
@@ -235,12 +236,12 @@ export default function HomePage() {
                         {feature.desc}
                       </p>
                     </div>
-                  </motion.div>
+                  </m.div>
                 ))}
               </div>
               <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 justify-center mt-6 sm:mt-8">
                 {features.slice(3).map((feature, i) => (
-                  <motion.div
+                  <m.div
                     key={i + 3}
                     variants={fadeUp}
                     custom={i + 3}
@@ -258,81 +259,81 @@ export default function HomePage() {
                         {feature.desc}
                       </p>
                     </div>
-                  </motion.div>
+                  </m.div>
                 ))}
               </div>
-            </motion.div>
+            </m.div>
           </div>
         </section>
 
         <section className="py-20 sm:py-28 px-4 sm:px-6">
           <div className="max-w-4xl mx-auto">
-            <motion.div
+            <m.div
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, margin: "-100px" }}
               variants={staggerContainer}
             >
-              <motion.div variants={fadeUp} custom={0} className="text-center mb-10 sm:mb-12">
+              <m.div variants={fadeUp} custom={0} className="text-center mb-10 sm:mb-12">
                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-what-is-title">
                   {t.whatIsTitle}
                 </h2>
-              </motion.div>
-              <motion.div variants={fadeUp} custom={1} className="space-y-5 text-slate-700 dark:text-slate-300 text-base sm:text-lg leading-relaxed max-w-3xl mx-auto">
+              </m.div>
+              <m.div variants={fadeUp} custom={1} className="space-y-5 text-slate-700 dark:text-slate-300 text-base sm:text-lg leading-relaxed max-w-3xl mx-auto">
                 <p data-testid="text-what-is-desc">{t.whatIsDesc}</p>
                 <p data-testid="text-what-is-desc2">{t.whatIsDesc2}</p>
                 <p data-testid="text-what-is-desc3">{t.whatIsDesc3}</p>
-              </motion.div>
-            </motion.div>
+              </m.div>
+            </m.div>
           </div>
         </section>
 
         <section className="py-20 sm:py-28 px-4 sm:px-6">
           <div className="max-w-3xl mx-auto">
-            <motion.div
+            <m.div
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, margin: "-100px" }}
               variants={staggerContainer}
             >
-              <motion.div variants={fadeUp} custom={0} className="text-center mb-10 sm:mb-12">
+              <m.div variants={fadeUp} custom={0} className="text-center mb-10 sm:mb-12">
                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-faq-title">
                   {t.faqTitle}
                 </h2>
-              </motion.div>
+              </m.div>
 
-              <motion.div variants={fadeUp} custom={1} className="space-y-3">
+              <m.div variants={fadeUp} custom={1} className="space-y-3">
                 {faqs.map((faq, i) => (
                   <FAQItem key={i} q={faq.q} a={faq.a} testId={`faq-item-${i}`} />
                 ))}
-              </motion.div>
-            </motion.div>
+              </m.div>
+            </m.div>
           </div>
         </section>
 
         <section className="py-16 sm:py-20 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800/50">
           <div className="max-w-3xl mx-auto text-center">
-            <motion.div
+            <m.div
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, margin: "-100px" }}
               variants={staggerContainer}
             >
-              <motion.h2 variants={fadeUp} custom={0} className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-cta-title">
+              <m.h2 variants={fadeUp} custom={0} className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-cta-title">
                 {t.heroTitle1}
-              </motion.h2>
-              <motion.p variants={fadeUp} custom={1} className="mt-4 text-slate-600 dark:text-slate-300 text-base sm:text-lg">
+              </m.h2>
+              <m.p variants={fadeUp} custom={1} className="mt-4 text-slate-600 dark:text-slate-300 text-base sm:text-lg">
                 {t.heroTitle2}
-              </motion.p>
-              <motion.div variants={fadeUp} custom={2} className="mt-8">
+              </m.p>
+              <m.div variants={fadeUp} custom={2} className="mt-8">
                 <Link href="/create">
                   <Button size="lg" className="shadow-lg shadow-primary/25" data-testid="button-cta-bottom">
                     {t.getStartedFree}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
-              </motion.div>
-            </motion.div>
+              </m.div>
+            </m.div>
           </div>
         </section>
       </main>
@@ -349,5 +350,6 @@ export default function HomePage() {
         </div>
       </footer>
     </div>
+    </LazyMotion>
   );
 }
