@@ -11,9 +11,11 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  app.get("/robots.txt", (_req, res) => {
-    res.type("text/plain").send(
-      "User-agent: *\nAllow: /\nSitemap: https://shift-optimizer.com/sitemap.xml\n"
+  app.get("/robots.txt", (req, res) => {
+    const host = req.get("host") || "shift-optimizer.com";
+    const protocol = req.protocol === "https" || req.get("x-forwarded-proto") === "https" ? "https" : "http";
+    res.type("text/plain; charset=utf-8").send(
+      `User-agent: *\nAllow: /\n\nSitemap: ${protocol}://${host}/sitemap.xml\n`
     );
   });
 

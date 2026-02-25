@@ -85,6 +85,8 @@ export function UserMenu() {
         <img
           src={user.picture}
           alt={user.name}
+          width="32"
+          height="32"
           className="w-8 h-8 rounded-full"
           referrerPolicy="no-referrer"
           data-testid="img-user-avatar"
@@ -97,9 +99,10 @@ export function UserMenu() {
         variant="ghost"
         size="icon"
         onClick={logout}
+        aria-label="Logout"
         data-testid="button-logout"
       >
-        <LogOut className="h-4 w-4" />
+        <LogOut className="h-4 w-4" aria-hidden="true" />
       </Button>
     </div>
   );

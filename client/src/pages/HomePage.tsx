@@ -40,10 +40,11 @@ function FAQItem({ q, a, testId }: { q: string; a: string; testId: string }) {
       <button
         className="w-full flex items-center justify-between gap-4 p-5 sm:p-6 text-left"
         onClick={() => setOpen(!open)}
+        aria-expanded={open}
         data-testid={`${testId}-toggle`}
       >
         <h3 className="font-semibold text-base text-slate-900 dark:text-white">{q}</h3>
-        <ChevronDown className={`w-5 h-5 shrink-0 text-slate-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+        <ChevronDown className={`w-5 h-5 shrink-0 text-slate-500 dark:text-slate-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`} aria-hidden="true" />
       </button>
       <AnimatePresence initial={false}>
         {open && (
@@ -54,7 +55,7 @@ function FAQItem({ q, a, testId }: { q: string; a: string; testId: string }) {
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <p className="px-5 sm:px-6 pb-5 sm:pb-6 text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{a}</p>
+            <p className="px-5 sm:px-6 pb-5 sm:pb-6 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{a}</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -90,250 +91,254 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950 overflow-x-hidden">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg border-b border-slate-100 dark:border-slate-800/50" style={{ minHeight: "64px" }}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 shrink-0" data-testid="logo-icon">
-              <img src="/favicon.svg" alt="Shift Optimizer Logo" width="32" height="32" className="w-8 h-8 rounded-lg" />
+      <header>
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg border-b border-slate-100 dark:border-slate-800/50" style={{ minHeight: "64px" }} aria-label="Main navigation">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 shrink-0" data-testid="logo-icon">
+                <img src="/favicon.svg" alt="Shift Optimizer Logo" width="32" height="32" className="w-8 h-8 rounded-lg" />
+              </div>
+              <span className="font-display font-bold text-lg text-slate-900 dark:text-white hidden sm:inline truncate" data-testid="text-app-name">
+                {t.appName}
+              </span>
             </div>
-            <span className="font-display font-bold text-lg text-slate-900 dark:text-white hidden sm:inline truncate" data-testid="text-app-name">
-              {t.appName}
-            </span>
+            <div className="flex items-center gap-3 shrink-0">
+              <LanguageToggle />
+              {!loading && (user ? <UserMenu /> : <GoogleSignInButton />)}
+            </div>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <LanguageToggle />
-            {!loading && (user ? <UserMenu /> : <GoogleSignInButton />)}
+        </nav>
+      </header>
+
+      <main>
+        <section className="relative min-h-[100svh] flex flex-col justify-center pt-20 pb-10 px-4 sm:px-6">
+          <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+            <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-gradient-radial from-primary/8 via-transparent to-transparent rounded-full" />
+            <div className="absolute top-1/4 right-0 w-[400px] h-[400px] bg-blue-100/40 dark:bg-blue-900/10 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-teal-100/40 dark:bg-teal-900/10 rounded-full blur-3xl" />
+            <div className="absolute inset-0" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, rgba(148,163,184,0.08) 1px, transparent 0)", backgroundSize: "40px 40px" }} />
           </div>
-        </div>
-      </nav>
 
-      <section className="relative min-h-[100svh] flex flex-col justify-center pt-20 pb-10 px-4 sm:px-6">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-gradient-radial from-primary/8 via-transparent to-transparent rounded-full" />
-          <div className="absolute top-1/4 right-0 w-[400px] h-[400px] bg-blue-100/40 dark:bg-blue-900/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-teal-100/40 dark:bg-teal-900/10 rounded-full blur-3xl" />
-          <div className="absolute inset-0" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, rgba(148,163,184,0.08) 1px, transparent 0)", backgroundSize: "40px 40px" }} />
-        </div>
+          <div className="relative max-w-4xl mx-auto text-center">
+            <motion.div initial="hidden" animate="visible" variants={staggerContainer}>
+              <motion.h1 variants={fadeUp} custom={1} className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold text-slate-900 dark:text-white leading-[1.1] tracking-tight" data-testid="text-hero-title">
+                {t.heroTitle1}
+              </motion.h1>
 
-        <div className="relative max-w-4xl mx-auto text-center">
-          <motion.div initial="hidden" animate="visible" variants={staggerContainer}>
-            <motion.h1 variants={fadeUp} custom={1} className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold text-slate-900 dark:text-white leading-[1.1] tracking-tight" data-testid="text-hero-title">
-              {t.heroTitle1}
-            </motion.h1>
+              <motion.p variants={fadeUp} custom={2} className="mt-4 text-lg sm:text-xl md:text-2xl font-medium text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent" data-testid="text-hero-subtitle">
+                {t.heroTitle2}
+              </motion.p>
 
-            <motion.p variants={fadeUp} custom={2} className="mt-4 text-lg sm:text-xl md:text-2xl font-medium text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent" data-testid="text-hero-subtitle">
-              {t.heroTitle2}
-            </motion.p>
+              <motion.p variants={fadeUp} custom={3} className="mt-6 text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed" data-testid="text-hero-desc">
+                {t.heroDesc.split("\n").map((line: string, i: number) => (
+                  <span key={i}>{line}{i < t.heroDesc.split("\n").length - 1 && <br />}</span>
+                ))}
+              </motion.p>
 
-            <motion.p variants={fadeUp} custom={3} className="mt-6 text-base sm:text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed" data-testid="text-hero-desc">
-              {t.heroDesc.split("\n").map((line: string, i: number) => (
-                <span key={i}>{line}{i < t.heroDesc.split("\n").length - 1 && <br />}</span>
-              ))}
-            </motion.p>
+              <motion.div variants={fadeUp} custom={4} className="mt-10 flex flex-col sm:flex-row gap-3 justify-center items-center flex-wrap">
+                <Link href="/create" className="w-full sm:w-auto">
+                  <Button size="lg" className="w-full sm:w-auto shadow-lg shadow-primary/25" data-testid="button-create-schedule">
+                    {t.getStartedFree}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              </motion.div>
 
-            <motion.div variants={fadeUp} custom={4} className="mt-10 flex flex-col sm:flex-row gap-3 justify-center items-center flex-wrap">
-              <Link href="/create" className="w-full sm:w-auto">
-                <Button size="lg" className="w-full sm:w-auto shadow-lg shadow-primary/25" data-testid="button-create-schedule">
-                  {t.getStartedFree}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
             </motion.div>
+          </div>
+        </section>
 
-          </motion.div>
-        </div>
-      </section>
+        <section id="how-it-works" className="min-h-screen flex flex-col justify-center py-16 sm:py-20 px-4 sm:px-6">
+          <div className="max-w-6xl mx-auto">
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-100px" }}
+              variants={staggerContainer}
+            >
+              <motion.div variants={fadeUp} custom={0} className="text-center mb-14 sm:mb-16">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-how-it-works-title">
+                  {t.howItWorksTitle}
+                </h2>
+                <p className="mt-3 text-slate-600 dark:text-slate-300 text-base sm:text-lg max-w-xl mx-auto">
+                  {t.howItWorksDesc}
+                </p>
+              </motion.div>
 
-      <section id="how-it-works" className="min-h-screen flex flex-col justify-center py-16 sm:py-20 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={staggerContainer}
-          >
-            <motion.div variants={fadeUp} custom={0} className="text-center mb-14 sm:mb-16">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-how-it-works-title">
-                {t.howItWorksTitle}
-              </h2>
-              <p className="mt-3 text-slate-500 dark:text-slate-400 text-base sm:text-lg max-w-xl mx-auto">
-                {t.howItWorksDesc}
-              </p>
-            </motion.div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-              {steps.map((step, i) => (
-                <motion.div
-                  key={i}
-                  variants={fadeUp}
-                  custom={i + 1}
-                  className="relative group"
-                >
-                  <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-7 sm:p-8 h-full transition-shadow duration-300 hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50">
-                    <div className="flex items-start gap-4 mb-4">
-                      <span className="text-4xl font-display font-bold text-slate-100 dark:text-slate-800 select-none leading-none" data-testid={`text-step-num-${step.num}`}>
-                        {step.num}
-                      </span>
-                      <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0 shadow-md shadow-primary/20">
-                        <step.icon className="w-5 h-5 text-white" />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+                {steps.map((step, i) => (
+                  <motion.div
+                    key={i}
+                    variants={fadeUp}
+                    custom={i + 1}
+                    className="relative group"
+                  >
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-7 sm:p-8 h-full transition-shadow duration-300 hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50">
+                      <div className="flex items-start gap-4 mb-4">
+                        <span className="text-4xl font-display font-bold text-slate-200 dark:text-slate-700 select-none leading-none" aria-hidden="true" data-testid={`text-step-num-${step.num}`}>
+                          {step.num}
+                        </span>
+                        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0 shadow-md shadow-primary/20">
+                          <step.icon className="w-5 h-5 text-white" aria-hidden="true" />
+                        </div>
                       </div>
+                      <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-2" data-testid={`text-step-title-${step.num}`}>
+                        {step.title}
+                      </h3>
+                      <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed" data-testid={`text-step-desc-${step.num}`}>
+                        {step.desc}
+                      </p>
                     </div>
-                    <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-2" data-testid={`text-step-title-${step.num}`}>
-                      {step.title}
-                    </h3>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed" data-testid={`text-step-desc-${step.num}`}>
-                      {step.desc}
-                    </p>
-                  </div>
-                  {i < steps.length - 1 && (
-                    <div className="hidden md:block absolute top-1/2 -right-4 sm:-right-5 w-8 sm:w-10 h-px bg-slate-200 dark:bg-slate-700" />
-                  )}
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      <section className="min-h-screen flex flex-col justify-center py-16 sm:py-20 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-y border-slate-100 dark:border-slate-800/50">
-        <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={staggerContainer}
-          >
-            <motion.div variants={fadeUp} custom={0} className="text-center mb-14 sm:mb-16">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-features-title">
-                {t.featureSectionTitle}
-              </h2>
-              <p className="mt-3 text-slate-500 dark:text-slate-400 text-base sm:text-lg max-w-xl mx-auto">
-                {t.featureSectionDesc}
-              </p>
+                    {i < steps.length - 1 && (
+                      <div className="hidden md:block absolute top-1/2 -right-4 sm:-right-5 w-8 sm:w-10 h-px bg-slate-200 dark:bg-slate-700" aria-hidden="true" />
+                    )}
+                  </motion.div>
+                ))}
+              </div>
             </motion.div>
+          </div>
+        </section>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-              {features.slice(0, 3).map((feature, i) => (
-                <motion.div
-                  key={i}
-                  variants={fadeUp}
-                  custom={i}
-                  data-testid={`card-feature-${i}`}
-                >
-                  <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-7 sm:p-8 h-full transition-shadow duration-300 hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50">
-                    <div className={`w-12 h-12 rounded-xl ${feature.bg} flex items-center justify-center mb-5`}>
-                      <feature.icon className={`w-6 h-6 ${feature.iconColor}`} />
+        <section className="min-h-screen flex flex-col justify-center py-16 sm:py-20 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-y border-slate-100 dark:border-slate-800/50">
+          <div className="max-w-6xl mx-auto">
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-100px" }}
+              variants={staggerContainer}
+            >
+              <motion.div variants={fadeUp} custom={0} className="text-center mb-14 sm:mb-16">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-features-title">
+                  {t.featureSectionTitle}
+                </h2>
+                <p className="mt-3 text-slate-600 dark:text-slate-300 text-base sm:text-lg max-w-xl mx-auto">
+                  {t.featureSectionDesc}
+                </p>
+              </motion.div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+                {features.slice(0, 3).map((feature, i) => (
+                  <motion.div
+                    key={i}
+                    variants={fadeUp}
+                    custom={i}
+                    data-testid={`card-feature-${i}`}
+                  >
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-7 sm:p-8 h-full transition-shadow duration-300 hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50">
+                      <div className={`w-12 h-12 rounded-xl ${feature.bg} flex items-center justify-center mb-5`}>
+                        <feature.icon className={`w-6 h-6 ${feature.iconColor}`} aria-hidden="true" />
+                      </div>
+                      <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-2" data-testid={`text-feature-title-${i}`}>
+                        {feature.title}
+                      </h3>
+                      <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed" data-testid={`text-feature-desc-${i}`}>
+                        {feature.desc}
+                      </p>
                     </div>
-                    <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-2" data-testid={`text-feature-title-${i}`}>
-                      {feature.title}
-                    </h3>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed" data-testid={`text-feature-desc-${i}`}>
-                      {feature.desc}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-            <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 justify-center mt-6 sm:mt-8">
-              {features.slice(3).map((feature, i) => (
-                <motion.div
-                  key={i + 3}
-                  variants={fadeUp}
-                  custom={i + 3}
-                  className="w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.333rem)]"
-                  data-testid={`card-feature-${i + 3}`}
-                >
-                  <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-7 sm:p-8 h-full transition-shadow duration-300 hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50">
-                    <div className={`w-12 h-12 rounded-xl ${feature.bg} flex items-center justify-center mb-5`}>
-                      <feature.icon className={`w-6 h-6 ${feature.iconColor}`} />
+                  </motion.div>
+                ))}
+              </div>
+              <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 justify-center mt-6 sm:mt-8">
+                {features.slice(3).map((feature, i) => (
+                  <motion.div
+                    key={i + 3}
+                    variants={fadeUp}
+                    custom={i + 3}
+                    className="w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.333rem)]"
+                    data-testid={`card-feature-${i + 3}`}
+                  >
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-7 sm:p-8 h-full transition-shadow duration-300 hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50">
+                      <div className={`w-12 h-12 rounded-xl ${feature.bg} flex items-center justify-center mb-5`}>
+                        <feature.icon className={`w-6 h-6 ${feature.iconColor}`} aria-hidden="true" />
+                      </div>
+                      <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-2" data-testid={`text-feature-title-${i + 3}`}>
+                        {feature.title}
+                      </h3>
+                      <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed" data-testid={`text-feature-desc-${i + 3}`}>
+                        {feature.desc}
+                      </p>
                     </div>
-                    <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-2" data-testid={`text-feature-title-${i + 3}`}>
-                      {feature.title}
-                    </h3>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed" data-testid={`text-feature-desc-${i + 3}`}>
-                      {feature.desc}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-      </section>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        </section>
 
-      <section className="py-20 sm:py-28 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={staggerContainer}
-          >
-            <motion.div variants={fadeUp} custom={0} className="text-center mb-10 sm:mb-12">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-what-is-title">
-                {t.whatIsTitle}
-              </h2>
+        <section className="py-20 sm:py-28 px-4 sm:px-6">
+          <div className="max-w-4xl mx-auto">
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-100px" }}
+              variants={staggerContainer}
+            >
+              <motion.div variants={fadeUp} custom={0} className="text-center mb-10 sm:mb-12">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-what-is-title">
+                  {t.whatIsTitle}
+                </h2>
+              </motion.div>
+              <motion.div variants={fadeUp} custom={1} className="space-y-5 text-slate-700 dark:text-slate-300 text-base sm:text-lg leading-relaxed max-w-3xl mx-auto">
+                <p data-testid="text-what-is-desc">{t.whatIsDesc}</p>
+                <p data-testid="text-what-is-desc2">{t.whatIsDesc2}</p>
+                <p data-testid="text-what-is-desc3">{t.whatIsDesc3}</p>
+              </motion.div>
             </motion.div>
-            <motion.div variants={fadeUp} custom={1} className="space-y-5 text-slate-600 dark:text-slate-400 text-base sm:text-lg leading-relaxed max-w-3xl mx-auto">
-              <p data-testid="text-what-is-desc">{t.whatIsDesc}</p>
-              <p data-testid="text-what-is-desc2">{t.whatIsDesc2}</p>
-              <p data-testid="text-what-is-desc3">{t.whatIsDesc3}</p>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
+          </div>
+        </section>
 
-      <section className="py-20 sm:py-28 px-4 sm:px-6">
-        <div className="max-w-3xl mx-auto">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={staggerContainer}
-          >
-            <motion.div variants={fadeUp} custom={0} className="text-center mb-10 sm:mb-12">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-faq-title">
-                {t.faqTitle}
-              </h2>
-            </motion.div>
+        <section className="py-20 sm:py-28 px-4 sm:px-6">
+          <div className="max-w-3xl mx-auto">
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-100px" }}
+              variants={staggerContainer}
+            >
+              <motion.div variants={fadeUp} custom={0} className="text-center mb-10 sm:mb-12">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-faq-title">
+                  {t.faqTitle}
+                </h2>
+              </motion.div>
 
-            <motion.div variants={fadeUp} custom={1} className="space-y-3">
-              {faqs.map((faq, i) => (
-                <FAQItem key={i} q={faq.q} a={faq.a} testId={`faq-item-${i}`} />
-              ))}
+              <motion.div variants={fadeUp} custom={1} className="space-y-3">
+                {faqs.map((faq, i) => (
+                  <FAQItem key={i} q={faq.q} a={faq.a} testId={`faq-item-${i}`} />
+                ))}
+              </motion.div>
             </motion.div>
-          </motion.div>
-        </div>
-      </section>
+          </div>
+        </section>
 
-      <section className="py-16 sm:py-20 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800/50">
-        <div className="max-w-3xl mx-auto text-center">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={staggerContainer}
-          >
-            <motion.h2 variants={fadeUp} custom={0} className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-cta-title">
-              {t.heroTitle1}
-            </motion.h2>
-            <motion.p variants={fadeUp} custom={1} className="mt-4 text-slate-500 dark:text-slate-400 text-base sm:text-lg">
-              {t.heroTitle2}
-            </motion.p>
-            <motion.div variants={fadeUp} custom={2} className="mt-8">
-              <Link href="/create">
-                <Button size="lg" className="shadow-lg shadow-primary/25" data-testid="button-cta-bottom">
-                  {t.getStartedFree}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
+        <section className="py-16 sm:py-20 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800/50">
+          <div className="max-w-3xl mx-auto text-center">
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-100px" }}
+              variants={staggerContainer}
+            >
+              <motion.h2 variants={fadeUp} custom={0} className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-cta-title">
+                {t.heroTitle1}
+              </motion.h2>
+              <motion.p variants={fadeUp} custom={1} className="mt-4 text-slate-600 dark:text-slate-300 text-base sm:text-lg">
+                {t.heroTitle2}
+              </motion.p>
+              <motion.div variants={fadeUp} custom={2} className="mt-8">
+                <Link href="/create">
+                  <Button size="lg" className="shadow-lg shadow-primary/25" data-testid="button-cta-bottom">
+                    {t.getStartedFree}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        </div>
-      </section>
+          </div>
+        </section>
+      </main>
 
       <footer className="border-t border-slate-100 dark:border-slate-800/50 py-8 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 flex-wrap text-sm text-slate-400 dark:text-slate-500">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 flex-wrap text-sm text-slate-500 dark:text-slate-400">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6">
               <img src="/favicon.svg" alt="Shift Optimizer Logo" width="24" height="24" className="w-6 h-6 rounded-md" />

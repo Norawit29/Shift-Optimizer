@@ -11,9 +11,10 @@ export function LanguageToggle() {
       size="sm"
       onClick={() => setLang(lang === "en" ? "th" : "en")}
       className="gap-1.5"
+      aria-label={lang === "en" ? "Switch to Thai" : "เปลี่ยนเป็นภาษาอังกฤษ"}
       data-testid="button-language-toggle"
     >
-      <Languages className="w-4 h-4" />
+      <Languages className="w-4 h-4" aria-hidden="true" />
       {lang === "en" ? "TH" : "EN"}
     </Button>
   );
