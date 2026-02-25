@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
-import { AnimatePresence, m } from "framer-motion";
+import { LazyMotion, domAnimation, AnimatePresence, m } from "framer-motion";
 import { useLanguage } from "@/context/LanguageContext";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { useAuth } from "@/context/AuthContext";
@@ -31,6 +31,8 @@ export function Navbar({ isHomePage }: NavbarProps) {
       e.preventDefault();
       history.replaceState(null, "", href);
       document.querySelector(href)?.scrollIntoView({ behavior: "smooth" });
+      setMobileMenuOpen(false);
+    } else {
       setMobileMenuOpen(false);
     }
   };
@@ -107,38 +109,40 @@ export function Navbar({ isHomePage }: NavbarProps) {
           </div>
         </div>
 
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <m.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="lg:hidden bg-white/95 dark:bg-slate-950/95 backdrop-blur-lg border-t border-slate-100 dark:border-slate-800/50 overflow-hidden"
-            >
-              <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex flex-col gap-1">
-                {sectionLinks.map((item) => (
-                  <a
-                    key={item.id}
-                    href={isHomePage ? item.href : `/${item.href}`}
-                    onClick={(e) => handleSectionClick(e, item.href)}
-                    className="px-3 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors rounded-lg"
-                  >
-                    {item.label}
-                  </a>
-                ))}
-                {isArticlesActive ? (
-                  <span className="px-3 py-2.5 text-sm font-semibold text-primary rounded-lg">
-                    {t.navArticles}
-                  </span>
-                ) : (
-                  <Link href="/articles" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors rounded-lg">
-                    {t.navArticles}
-                  </Link>
-                )}
-              </div>
-            </m.div>
-          )}
-        </AnimatePresence>
+        <LazyMotion features={domAnimation}>
+          <AnimatePresence>
+            {mobileMenuOpen && (
+              <m.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="lg:hidden bg-white/95 dark:bg-slate-950/95 backdrop-blur-lg border-t border-slate-100 dark:border-slate-800/50 overflow-hidden"
+              >
+                <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex flex-col gap-1">
+                  {sectionLinks.map((item) => (
+                    <a
+                      key={item.id}
+                      href={isHomePage ? item.href : `/${item.href}`}
+                      onClick={(e) => handleSectionClick(e, item.href)}
+                      className="px-3 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors rounded-lg"
+                    >
+                      {item.label}
+                    </a>
+                  ))}
+                  {isArticlesActive ? (
+                    <span className="px-3 py-2.5 text-sm font-semibold text-primary rounded-lg">
+                      {t.navArticles}
+                    </span>
+                  ) : (
+                    <Link href="/articles" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors rounded-lg">
+                      {t.navArticles}
+                    </Link>
+                  )}
+                </div>
+              </m.div>
+            )}
+          </AnimatePresence>
+        </LazyMotion>
       </nav>
     </header>
   );
