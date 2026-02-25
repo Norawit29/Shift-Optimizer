@@ -214,7 +214,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="how-it-works" className="min-h-screen flex flex-col justify-center py-16 sm:py-20 px-4 sm:px-6">
+        <section id="how-it-works" className="scroll-mt-20 min-h-screen flex flex-col justify-center py-16 sm:py-20 px-4 sm:px-6">
           <div className="max-w-6xl mx-auto">
             <m.div
               initial="hidden"
@@ -265,7 +265,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="features" className="min-h-screen flex flex-col justify-center py-16 sm:py-20 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-y border-slate-100 dark:border-slate-800/50">
+        <section id="features" className="scroll-mt-20 min-h-screen flex flex-col justify-center py-16 sm:py-20 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-y border-slate-100 dark:border-slate-800/50">
           <div className="max-w-6xl mx-auto">
             <m.div
               initial="hidden"
@@ -331,7 +331,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="about" className="py-20 sm:py-28 px-4 sm:px-6">
+        <section id="about" className="scroll-mt-20 py-20 sm:py-28 px-4 sm:px-6">
           <div className="max-w-4xl mx-auto">
             <m.div
               initial="hidden"
@@ -353,7 +353,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="faq" className="py-20 sm:py-28 px-4 sm:px-6">
+        <section id="faq" className="scroll-mt-20 py-20 sm:py-28 px-4 sm:px-6">
           <div className="max-w-3xl mx-auto">
             <m.div
               initial="hidden"
