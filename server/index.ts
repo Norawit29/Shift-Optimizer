@@ -31,7 +31,13 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
-app.use((_req, res, next) => {
+app.use((req, res, next) => {
+  const host = req.get("host") || "";
+  if (host.includes("replit.app") && !host.includes("localhost")) {
+    const url = `https://shift-optimizer.com${req.originalUrl}`;
+    return res.redirect(301, url);
+  }
+
   res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
   res.setHeader("X-Frame-Options", "SAMEORIGIN");
   res.setHeader("X-Content-Type-Options", "nosniff");
