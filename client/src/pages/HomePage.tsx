@@ -107,7 +107,7 @@ export default function HomePage() {
       <header>
         <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg border-b border-slate-100 dark:border-slate-800/50" style={{ minHeight: "72px" }} aria-label="Main navigation">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 h-[72px] flex items-center justify-between gap-6">
-            <a href="#" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="flex items-center gap-3 min-w-0 shrink-0">
+            <a href="#" onClick={(e) => { e.preventDefault(); history.replaceState(null, "", window.location.pathname); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="flex items-center gap-3 min-w-0 shrink-0">
               <div className="w-10 h-10 shrink-0" data-testid="logo-icon">
                 <img src="/favicon.svg" alt="Shift Optimizer Logo" width="40" height="40" className="w-10 h-10 rounded-lg" />
               </div>
@@ -126,7 +126,7 @@ export default function HomePage() {
                 <a
                   key={item.href}
                   href={item.href}
-                  onClick={(e) => { e.preventDefault(); document.querySelector(item.href)?.scrollIntoView({ behavior: "smooth" }); }}
+                  onClick={(e) => { e.preventDefault(); history.replaceState(null, "", item.href); document.querySelector(item.href)?.scrollIntoView({ behavior: "smooth" }); }}
                   className="px-3.5 py-2 text-[15px] font-medium text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors rounded-lg"
                   data-testid={`nav-link-${item.href.slice(1)}`}
                 >
@@ -169,7 +169,7 @@ export default function HomePage() {
                     <a
                       key={item.href}
                       href={item.href}
-                      onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); document.querySelector(item.href)?.scrollIntoView({ behavior: "smooth" }); }}
+                      onClick={(e) => { e.preventDefault(); setMobileMenuOpen(false); history.replaceState(null, "", item.href); document.querySelector(item.href)?.scrollIntoView({ behavior: "smooth" }); }}
                       className="px-3 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors rounded-lg"
                     >
                       {item.label}
