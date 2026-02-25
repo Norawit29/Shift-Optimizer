@@ -309,10 +309,10 @@ export default function HomePage() {
               variants={staggerContainer}
             >
               <m.h2 variants={fadeUp} custom={0} className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-cta-title">
-                {t.heroTitle1}
+                {t.ctaTitle}
               </m.h2>
               <m.p variants={fadeUp} custom={1} className="mt-4 text-slate-600 dark:text-slate-300 text-base sm:text-lg">
-                {t.heroTitle2}
+                {t.ctaDesc}
               </m.p>
               <m.div variants={fadeUp} custom={2} className="mt-8">
                 <Link href="/create">
@@ -331,7 +331,7 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 flex-wrap text-sm text-slate-500 dark:text-slate-400">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6">
-              <img src="/favicon.svg" alt="Shift Optimizer Logo" width="24" height="24" className="w-6 h-6 rounded-md" />
+              <img src="/favicon.svg" alt="โปรแกรมจัดตารางเวร Shift Optimizer" width="24" height="24" className="w-6 h-6 rounded-md" />
             </div>
             <span className="font-medium" data-testid="text-footer-app-name">{t.appName}</span>
           </div>

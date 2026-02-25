@@ -65,7 +65,7 @@ export function Navbar({ isHomePage }: NavbarProps) {
           {isHomePage ? (
             <a href="#" onClick={handleLogoClick} className="flex items-center gap-3 min-w-0 shrink-0">
               <div className="w-10 h-10 shrink-0" data-testid="logo-icon">
-                <img src="/favicon.svg" alt="Shift Optimizer Logo" width="40" height="40" className="w-10 h-10 rounded-lg" />
+                <img src="/favicon.svg" alt="โปรแกรมจัดตารางเวร Shift Optimizer" width="40" height="40" className="w-10 h-10 rounded-lg" />
               </div>
               <div className="hidden sm:flex flex-col leading-tight min-w-0" data-testid="text-app-name">
                 <span className="font-display font-bold text-base text-slate-900 dark:text-white truncate">{t.appName}</span>
@@ -75,7 +75,7 @@ export function Navbar({ isHomePage }: NavbarProps) {
           ) : (
             <Link href="/" className="flex items-center gap-3 min-w-0 shrink-0">
               <div className="w-10 h-10 shrink-0" data-testid="logo-icon">
-                <img src="/favicon.svg" alt="Shift Optimizer Logo" width="40" height="40" className="w-10 h-10 rounded-lg" />
+                <img src="/favicon.svg" alt="โปรแกรมจัดตารางเวร Shift Optimizer" width="40" height="40" className="w-10 h-10 rounded-lg" />
               </div>
               <div className="hidden sm:flex flex-col leading-tight min-w-0" data-testid="text-app-name">
                 <span className="font-display font-bold text-base text-slate-900 dark:text-white truncate">{t.appName}</span>
