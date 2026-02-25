@@ -86,6 +86,7 @@ function getTooltipWidth() {
 export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: WalkthroughOverlayProps) {
   const { t } = useLanguage();
   const [currentStep, setCurrentStep] = useState(0);
+  const [displayedStep, setDisplayedStep] = useState(0);
   const [spotlight, setSpotlight] = useState<SpotlightRect | null>(null);
   const [tooltipPos, setTooltipPos] = useState<React.CSSProperties>({ top: -9999, left: -9999 });
   const [arrowPos, setArrowPos] = useState<React.CSSProperties>({});
@@ -199,6 +200,7 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
     el.scrollIntoView({ behavior: "smooth", block: "center" });
 
     const timer = setTimeout(() => {
+      setDisplayedStep(currentStep);
       computePositions();
       requestAnimationFrame(() => {
         computePositions();
@@ -248,8 +250,9 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
     right: "border-t-8 border-b-8 border-l-8 border-t-transparent border-b-transparent border-l-white dark:border-l-slate-800",
   };
 
-  const titleText = (t as any)[step.titleKey] || step.titleKey;
-  const descText = (t as any)[step.descKey] || step.descKey;
+  const displayStep = steps[displayedStep] || step;
+  const titleText = (t as any)[displayStep.titleKey] || displayStep.titleKey;
+  const descText = (t as any)[displayStep.descKey] || displayStep.descKey;
 
   return (
     <div
@@ -257,7 +260,7 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
       data-testid="walkthrough-overlay"
       style={{
         opacity: isReady ? 1 : 0,
-        transition: "opacity 0.25s ease",
+        transition: "opacity 0.2s ease",
       }}
     >
       <div className="absolute inset-0" style={{ pointerEvents: isReady ? "auto" : "none" }}>
@@ -273,7 +276,6 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
                   height={spotlight.height}
                   rx="12"
                   fill="black"
-                  style={{ transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)" }}
                 />
               )}
             </mask>
@@ -295,7 +297,6 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
             width: spotlight.width,
             height: spotlight.height,
             boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.5), 0 0 20px 4px rgba(59, 130, 246, 0.15)",
-            transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         />
       )}
@@ -310,7 +311,6 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
             height: spotlight.height,
             pointerEvents: "auto",
             zIndex: 1,
-            transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         />
       )}
@@ -321,18 +321,17 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
         style={{
           width: tooltipW,
           ...tooltipPos,
-          transition: isReady ? "top 0.4s cubic-bezier(0.4,0,0.2,1), left 0.4s cubic-bezier(0.4,0,0.2,1)" : "none",
         }}
         data-testid="walkthrough-tooltip"
       >
         <div
           className={`absolute w-0 h-0 ${arrowClasses[arrowDir]}`}
-          style={{ ...arrowPos, transition: "all 0.4s cubic-bezier(0.4,0,0.2,1)" }}
+          style={arrowPos}
         />
 
         <div className="flex items-center justify-between mb-2 sm:mb-3">
           <span className="text-[11px] sm:text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full">
-            {currentStep + 1} / {steps.length}
+            {displayedStep + 1} / {steps.length}
           </span>
           <button
             onClick={handleSkip}
@@ -361,7 +360,7 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
             {(t as any).walkthroughSkip || "Skip"}
           </Button>
           <div className="flex gap-1.5 sm:gap-2">
-            {currentStep > 0 && (
+            {displayedStep > 0 && (
               <Button
                 variant="outline"
                 size="sm"
@@ -379,10 +378,10 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
               className="bg-blue-600 hover:bg-blue-700 text-white h-8 px-3 sm:px-4 text-xs sm:text-sm"
               data-testid="button-walkthrough-next"
             >
-              {currentStep === steps.length - 1
+              {displayedStep === steps.length - 1
                 ? ((t as any).walkthroughDone || "Done")
                 : ((t as any).walkthroughNext || "Next")}
-              {currentStep < steps.length - 1 && <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-0.5 sm:ml-1" />}
+              {displayedStep < steps.length - 1 && <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-0.5 sm:ml-1" />}
             </Button>
           </div>
         </div>
