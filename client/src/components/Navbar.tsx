@@ -37,12 +37,14 @@ export function Navbar({ isHomePage }: NavbarProps) {
   const handleSectionClick = (e: React.MouseEvent, href: string, sectionId: string) => {
     e.preventDefault();
     e.stopPropagation();
+    const wasMobileOpen = mobileMenuOpen;
     setMobileMenuOpen(false);
     if (isHomePage) {
       history.replaceState(null, "", href);
-      requestAnimationFrame(() => {
+      const delay = wasMobileOpen ? 350 : 0;
+      setTimeout(() => {
         scrollToSection(sectionId);
-      });
+      }, delay);
     } else {
       window.location.href = `/${href}`;
     }
