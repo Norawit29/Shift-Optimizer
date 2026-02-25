@@ -2,7 +2,13 @@ export type Lang = "en" | "th";
 
 const translations = {
   en: {
-    appName: "Hospital Shift Scheduler v1.0",
+    appName: "Shift-Optimizer",
+    appTagline: "Hospital Shift Scheduling System",
+    navHowItWorks: "How It Works",
+    navFeatures: "Key Features",
+    navAbout: "About Us",
+    navFaq: "FAQ",
+    navArticles: "Articles",
     schedulerWizard: "Scheduler Wizard",
     step: "Step",
 
@@ -334,7 +340,13 @@ const translations = {
     language: "Language",
   },
   th: {
-    appName: "ระบบจัดตารางเวร รพ. v1.0",
+    appName: "Shift-Optimizer",
+    appTagline: "ระบบจัดตารางเวรโรงพยาบาล",
+    navHowItWorks: "ขั้นตอนการใช้งาน",
+    navFeatures: "ฟีเจอร์หลัก",
+    navAbout: "เกี่ยวกับเรา",
+    navFaq: "คำถามที่พบบ่อย",
+    navArticles: "บทความ",
     schedulerWizard: "ตัวช่วยจัดตารางเวร",
     step: "ขั้นตอน",
 
