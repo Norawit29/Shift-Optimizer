@@ -29,9 +29,11 @@ export function Navbar({ isHomePage }: NavbarProps) {
   const handleSectionClick = (e: React.MouseEvent, href: string) => {
     if (isHomePage) {
       e.preventDefault();
-      history.replaceState(null, "", href);
-      document.querySelector(href)?.scrollIntoView({ behavior: "smooth" });
       setMobileMenuOpen(false);
+      history.replaceState(null, "", href);
+      setTimeout(() => {
+        document.querySelector(href)?.scrollIntoView({ behavior: "smooth" });
+      }, 50);
     } else {
       setMobileMenuOpen(false);
     }
