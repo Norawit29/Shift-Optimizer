@@ -11,6 +11,7 @@ import { lazy, Suspense, startTransition, useEffect, useState } from "react";
 
 const LazyWizardPage = lazy(() => import("@/pages/WizardPage"));
 const LazyArticlesPage = lazy(() => import("@/pages/ArticlesPage"));
+const LazyArticlePage = lazy(() => import("@/pages/ArticlePage"));
 
 function WizardPageLoader() {
   const [ready, setReady] = useState(false);
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/" component={HomePage} />
       <Route path="/create" component={WizardPageLoader} />
       <Route path="/articles">{() => <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><LazyArticlesPage /></Suspense>}</Route>
+      <Route path="/articles/:slug">{() => <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><LazyArticlePage /></Suspense>}</Route>
       <Route component={NotFound} />
     </Switch>
   );

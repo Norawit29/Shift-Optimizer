@@ -4,6 +4,7 @@ import { OAuth2Client } from "google-auth-library";
 import { db } from "./db";
 import { users, userPresets, feedbacks, usageLogs, generatedSchedules } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import { sanityClient, urlFor } from "./sanity";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -226,6 +227,52 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Generated schedule error:", error);
       res.status(500).json({ message: "Failed to save generated schedule" });
+    }
+  });
+
+  app.get("/api/articles", async (_req, res) => {
+    try {
+      const articles = await sanityClient.fetch(
+        `*[_type == "article"] | order(publishedAt desc) {
+          _id,
+          title,
+          slug,
+          excerpt,
+          "coverImage": coverImage.asset->url,
+          publishedAt,
+          language
+        }`
+      );
+      res.json(articles);
+    } catch (error) {
+      console.error("Sanity articles fetch error:", error);
+      res.status(500).json({ message: "Failed to fetch articles" });
+    }
+  });
+
+  app.get("/api/articles/:slug", async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const article = await sanityClient.fetch(
+        `*[_type == "article" && slug.current == $slug][0] {
+          _id,
+          title,
+          slug,
+          excerpt,
+          "coverImage": coverImage.asset->url,
+          body,
+          publishedAt,
+          language
+        }`,
+        { slug }
+      );
+      if (!article) {
+        return res.status(404).json({ message: "Article not found" });
+      }
+      res.json(article);
+    } catch (error) {
+      console.error("Sanity article fetch error:", error);
+      res.status(500).json({ message: "Failed to fetch article" });
     }
   });
 

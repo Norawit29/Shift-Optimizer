@@ -9,6 +9,11 @@ const translations = {
     navAbout: "About Us",
     navFaq: "FAQ",
     navArticles: "Articles",
+    articlesLoading: "Loading articles...",
+    articlesEmpty: "No articles yet. Check back soon!",
+    articlesReadMore: "Read more",
+    articlesBackToList: "All Articles",
+    articlesPublishedAt: "Published",
     schedulerWizard: "Scheduler Wizard",
     step: "Step",
 
@@ -347,6 +352,11 @@ const translations = {
     navAbout: "เกี่ยวกับเรา",
     navFaq: "คำถามที่พบบ่อย",
     navArticles: "บทความ",
+    articlesLoading: "กำลังโหลดบทความ...",
+    articlesEmpty: "ยังไม่มีบทความ กลับมาเร็วๆ นี้!",
+    articlesReadMore: "อ่านต่อ",
+    articlesBackToList: "บทความทั้งหมด",
+    articlesPublishedAt: "เผยแพร่เมื่อ",
     schedulerWizard: "ตัวช่วยจัดตารางเวร",
     step: "ขั้นตอน",
 

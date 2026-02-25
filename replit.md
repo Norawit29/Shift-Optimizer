@@ -153,6 +153,14 @@ This shared layer ensures type safety across the full stack.
 ### Required Services
 
 - **PostgreSQL Database**: Required. Connection via `DATABASE_URL` environment variable. Used by Drizzle ORM for all data persistence.
+- **Sanity CMS**: Used for article/blog content management. Admin manages articles via Sanity Studio (external). The app fetches articles via Sanity's GROQ API. Requires `SANITY_PROJECT_ID`, `SANITY_DATASET`, and `SANITY_API_TOKEN` environment variables.
+
+### Sanity CMS Integration
+
+- **Client**: `server/sanity.ts` — Sanity client config + image URL builder
+- **API Routes**: `GET /api/articles` (list), `GET /api/articles/:slug` (single article)
+- **Frontend Pages**: `/articles` (list), `/articles/:slug` (detail with Portable Text rendering)
+- **Document Type**: `article` with fields: title, slug, excerpt, coverImage, body (Portable Text), publishedAt, language
 
 ### Key NPM Packages
 
@@ -166,6 +174,9 @@ This shared layer ensures type safety across the full stack.
 - **nanoid** — Unique ID generation for staff members
 - **Radix UI** (multiple packages) — Accessible UI primitives for shadcn/ui components
 - **date-fns** — Date manipulation for calendar/schedule generation
+- **@sanity/client** — Sanity CMS API client
+- **@portabletext/react** — Portable Text renderer for Sanity rich text
+- **@sanity/image-url** — Image URL builder for Sanity assets
 
 ### Fonts (External)
 
