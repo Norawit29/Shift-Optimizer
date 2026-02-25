@@ -121,9 +121,9 @@ export function Navbar({ isHomePage }: NavbarProps) {
             <LanguageToggle />
             {!loading && (user ? <UserMenu /> : <GoogleSignInButton />)}
             <Link href="/create" className="hidden sm:block">
-              <Button className="shadow-sm text-sm px-4 py-2" data-testid="button-nav-cta">
+              <Button size="lg" className="shadow-sm text-base px-5" data-testid="button-nav-cta">
                 {t.getStartedFree}
-                <ArrowRight className="ml-1.5 h-4 w-4" />
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
           </div>

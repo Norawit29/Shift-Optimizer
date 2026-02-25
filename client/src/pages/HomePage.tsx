@@ -316,7 +316,7 @@ export default function HomePage() {
               </m.p>
               <m.div variants={fadeUp} custom={2} className="mt-8">
                 <Link href="/create">
-                  <Button size="lg" className="shadow-lg shadow-primary/25" data-testid="button-cta-bottom">
+                  <Button size="lg" className="shadow-lg shadow-primary/25 text-base px-5" data-testid="button-cta-bottom">
                     {t.ctaBottomButton}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
