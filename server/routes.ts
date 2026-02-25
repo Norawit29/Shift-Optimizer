@@ -233,7 +233,7 @@ export async function registerRoutes(
   app.get("/api/articles", async (_req, res) => {
     try {
       const articles = await sanityClient.fetch(
-        `*[_type == "article"] | order(publishedAt desc) {
+        `*[_type == "article" && !(_id in path("drafts.**"))] | order(publishedAt desc) {
           _id,
           title,
           slug,
@@ -254,7 +254,7 @@ export async function registerRoutes(
     try {
       const { slug } = req.params;
       const article = await sanityClient.fetch(
-        `*[_type == "article" && slug.current == $slug][0] {
+        `*[_type == "article" && !(_id in path("drafts.**")) && slug.current == $slug][0] {
           _id,
           title,
           slug,
