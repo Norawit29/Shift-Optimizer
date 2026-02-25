@@ -20,17 +20,26 @@ import { useAuth } from "@/context/AuthContext";
 import { GoogleSignInButton, UserMenu } from "@/components/GoogleSignIn";
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
+  hidden: { opacity: 0, y: 20 },
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: i * 0.1, duration: 0.5, ease: "easeOut" },
+    transition: { delay: i * 0.08, duration: 0.4, ease: "easeOut" },
+  }),
+};
+
+const heroFadeUp = {
+  hidden: { opacity: 0, y: 10 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.05, duration: 0.3, ease: "easeOut" },
   }),
 };
 
 const staggerContainer = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.1 } },
+  visible: { transition: { staggerChildren: 0.05 } },
 };
 
 function FAQItem({ q, a, testId }: { q: string; a: string; testId: string }) {
@@ -121,21 +130,21 @@ export default function HomePage() {
 
           <div className="relative max-w-4xl mx-auto text-center">
             <motion.div initial="hidden" animate="visible" variants={staggerContainer}>
-              <motion.h1 variants={fadeUp} custom={1} className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold text-slate-900 dark:text-white leading-[1.1] tracking-tight" data-testid="text-hero-title">
+              <motion.h1 variants={heroFadeUp} custom={0} className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold text-slate-900 dark:text-white leading-[1.1] tracking-tight" data-testid="text-hero-title">
                 {t.heroTitle1}
               </motion.h1>
 
-              <motion.p variants={fadeUp} custom={2} className="mt-4 text-lg sm:text-xl md:text-2xl font-medium text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent" data-testid="text-hero-subtitle">
+              <motion.p variants={heroFadeUp} custom={1} className="mt-4 text-lg sm:text-xl md:text-2xl font-medium text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent" data-testid="text-hero-subtitle">
                 {t.heroTitle2}
               </motion.p>
 
-              <motion.p variants={fadeUp} custom={3} className="mt-6 text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed" data-testid="text-hero-desc">
+              <motion.p variants={heroFadeUp} custom={2} className="mt-6 text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed" data-testid="text-hero-desc">
                 {t.heroDesc.split("\n").map((line: string, i: number) => (
                   <span key={i}>{line}{i < t.heroDesc.split("\n").length - 1 && <br />}</span>
                 ))}
               </motion.p>
 
-              <motion.div variants={fadeUp} custom={4} className="mt-10 flex flex-col sm:flex-row gap-3 justify-center items-center flex-wrap">
+              <motion.div variants={heroFadeUp} custom={3} className="mt-10 flex flex-col sm:flex-row gap-3 justify-center items-center flex-wrap">
                 <Link href="/create" className="w-full sm:w-auto">
                   <Button size="lg" className="w-full sm:w-auto shadow-lg shadow-primary/25" data-testid="button-create-schedule">
                     {t.getStartedFree}
