@@ -23,18 +23,18 @@ export default function ArticlesPage() {
               </div>
             </Link>
             <div className="hidden lg:flex items-center gap-1.5">
-              <Link href="/#how-it-works" className="px-3.5 py-2 text-[15px] font-medium text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors rounded-lg">
+              <a href="/#how-it-works" className="px-3.5 py-2 text-[15px] font-medium text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors rounded-lg">
                 {t.navHowItWorks}
-              </Link>
-              <Link href="/#features" className="px-3.5 py-2 text-[15px] font-medium text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors rounded-lg">
+              </a>
+              <a href="/#features" className="px-3.5 py-2 text-[15px] font-medium text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors rounded-lg">
                 {t.navFeatures}
-              </Link>
-              <Link href="/#about" className="px-3.5 py-2 text-[15px] font-medium text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors rounded-lg">
+              </a>
+              <a href="/#about" className="px-3.5 py-2 text-[15px] font-medium text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors rounded-lg">
                 {t.navAbout}
-              </Link>
-              <Link href="/#faq" className="px-3.5 py-2 text-[15px] font-medium text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors rounded-lg">
+              </a>
+              <a href="/#faq" className="px-3.5 py-2 text-[15px] font-medium text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors rounded-lg">
                 {t.navFaq}
-              </Link>
+              </a>
               <span className="px-3.5 py-2 text-[15px] font-semibold text-primary rounded-lg" data-testid="nav-link-articles-active">
                 {t.navArticles}
               </span>
