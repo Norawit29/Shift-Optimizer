@@ -127,7 +127,7 @@ export default function HomePage() {
 
               <m.div variants={fadeUp} custom={4} className="mt-10 flex flex-col sm:flex-row gap-3 justify-center items-center flex-wrap">
                 <Link href="/create" className="w-full sm:w-auto">
-                  <Button size="lg" className="w-full sm:w-auto shadow-lg shadow-primary/25" data-testid="button-create-schedule">
+                  <Button size="lg" className="w-full sm:w-auto shadow-lg shadow-primary/25 text-base px-5" data-testid="button-create-schedule">
                     {t.getStartedFree}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
