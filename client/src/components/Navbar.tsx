@@ -1,11 +1,12 @@
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ArrowRight } from "lucide-react";
 import { LazyMotion, domAnimation, AnimatePresence, m } from "framer-motion";
 import { useLanguage } from "@/context/LanguageContext";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { useAuth } from "@/context/AuthContext";
 import { GoogleSignInButton, UserMenu } from "@/components/GoogleSignIn";
+import { Button } from "@/components/ui/button";
 
 interface NavbarProps {
   isHomePage?: boolean;
@@ -119,6 +120,12 @@ export function Navbar({ isHomePage }: NavbarProps) {
             </button>
             <LanguageToggle />
             {!loading && (user ? <UserMenu /> : <GoogleSignInButton />)}
+            <Link href="/create" className="hidden sm:block">
+              <Button size="sm" className="shadow-sm" data-testid="button-nav-cta">
+                {t.getStartedFree}
+                <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+              </Button>
+            </Link>
           </div>
         </div>
 
@@ -151,6 +158,12 @@ export function Navbar({ isHomePage }: NavbarProps) {
                       {t.navArticles}
                     </Link>
                   )}
+                  <Link href="/create" onClick={() => setMobileMenuOpen(false)} className="mt-2">
+                    <Button size="sm" className="w-full shadow-sm" data-testid="button-nav-cta-mobile">
+                      {t.getStartedFree}
+                      <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                    </Button>
+                  </Link>
                 </div>
               </m.div>
             )}
