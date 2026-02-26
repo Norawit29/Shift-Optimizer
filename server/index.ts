@@ -46,7 +46,7 @@ app.use((req, res, next) => {
 
 app.use((req, res, next) => {
   const host = req.get("host") || "";
-  if (host.includes("replit.app") && !host.includes("localhost")) {
+  if (host.includes("replit.app") && !host.includes("localhost") && process.env.NODE_ENV === "production") {
     const url = `https://shift-optimizer.com${req.originalUrl}`;
     return res.redirect(301, url);
   }
