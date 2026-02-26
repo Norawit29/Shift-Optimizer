@@ -62,53 +62,55 @@ export function Navbar({ isHomePage }: NavbarProps) {
   return (
     <header>
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg border-b border-slate-100 dark:border-slate-800/50" style={{ minHeight: "72px" }} aria-label="Main navigation">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-[72px] flex items-center justify-between gap-6">
-          {isHomePage ? (
-            <a href="#" onClick={handleLogoClick} className="flex items-center gap-3 min-w-0 shrink-0">
-              <div className="w-10 h-10 shrink-0" data-testid="logo-icon">
-                <img src="/favicon.svg" alt="โปรแกรมจัดตารางเวร Shift Optimizer" width="40" height="40" className="w-10 h-10 rounded-lg" />
-              </div>
-              <div className="hidden sm:flex flex-col leading-tight min-w-0" data-testid="text-app-name">
-                <span className="font-display font-bold text-base text-slate-900 dark:text-white truncate">{t.appName}</span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 truncate">{t.appTagline}</span>
-              </div>
-            </a>
-          ) : (
-            <Link href="/" className="flex items-center gap-3 min-w-0 shrink-0">
-              <div className="w-10 h-10 shrink-0" data-testid="logo-icon">
-                <img src="/favicon.svg" alt="โปรแกรมจัดตารางเวร Shift Optimizer" width="40" height="40" className="w-10 h-10 rounded-lg" />
-              </div>
-              <div className="hidden sm:flex flex-col leading-tight min-w-0" data-testid="text-app-name">
-                <span className="font-display font-bold text-base text-slate-900 dark:text-white truncate">{t.appName}</span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 truncate">{t.appTagline}</span>
-              </div>
-            </Link>
-          )}
-
-          <div className="hidden lg:flex items-center gap-1.5">
-            {sectionLinks.map((item) => (
-              <a
-                key={item.id}
-                href={isHomePage ? item.href : `/${item.href}`}
-                onClick={(e) => handleSectionClick(e, item.href, item.id)}
-                className="px-3.5 py-2 text-[15px] font-medium text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors rounded-lg"
-                data-testid={`nav-link-${item.id}`}
-              >
-                {item.label}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-[72px] flex items-center gap-6">
+          <div className="flex items-center gap-6 shrink-0">
+            {isHomePage ? (
+              <a href="#" onClick={handleLogoClick} className="flex items-center gap-3 shrink-0">
+                <div className="w-10 h-10 shrink-0" data-testid="logo-icon">
+                  <img src="/favicon.svg" alt="โปรแกรมจัดตารางเวร Shift Optimizer" width="40" height="40" className="w-10 h-10 rounded-lg" />
+                </div>
+                <div className="hidden sm:flex flex-col leading-tight shrink-0" data-testid="text-app-name">
+                  <span className="font-display font-bold text-base text-slate-900 dark:text-white whitespace-nowrap">{t.appName}</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">{t.appTagline}</span>
+                </div>
               </a>
-            ))}
-            {isArticlesActive ? (
-              <span className="px-3.5 py-2 text-[15px] font-semibold text-primary rounded-lg" data-testid="nav-link-articles-active">
-                {t.navArticles}
-              </span>
             ) : (
-              <Link href="/articles" className="px-3.5 py-2 text-[15px] font-medium text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors rounded-lg" data-testid="nav-link-articles">
-                {t.navArticles}
+              <Link href="/" className="flex items-center gap-3 shrink-0">
+                <div className="w-10 h-10 shrink-0" data-testid="logo-icon">
+                  <img src="/favicon.svg" alt="โปรแกรมจัดตารางเวร Shift Optimizer" width="40" height="40" className="w-10 h-10 rounded-lg" />
+                </div>
+                <div className="hidden sm:flex flex-col leading-tight shrink-0" data-testid="text-app-name">
+                  <span className="font-display font-bold text-base text-slate-900 dark:text-white whitespace-nowrap">{t.appName}</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">{t.appTagline}</span>
+                </div>
               </Link>
             )}
+
+            <div className="hidden lg:flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+              {sectionLinks.map((item) => (
+                <a
+                  key={item.id}
+                  href={isHomePage ? item.href : `/${item.href}`}
+                  onClick={(e) => handleSectionClick(e, item.href, item.id)}
+                  className="px-3.5 py-2 text-[15px] font-medium text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors rounded-lg"
+                  data-testid={`nav-link-${item.id}`}
+                >
+                  {item.label}
+                </a>
+              ))}
+              {isArticlesActive ? (
+                <span className="px-3.5 py-2 text-[15px] font-semibold text-primary rounded-lg" data-testid="nav-link-articles-active">
+                  {t.navArticles}
+                </span>
+              ) : (
+                <Link href="/articles" className="px-3.5 py-2 text-[15px] font-medium text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors rounded-lg" data-testid="nav-link-articles">
+                  {t.navArticles}
+                </Link>
+              )}
+            </div>
           </div>
 
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex items-center gap-2.5 shrink-0 ml-auto">
             <button
               className="lg:hidden p-2 text-slate-600 dark:text-slate-300 hover:text-primary transition-colors"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -120,8 +122,8 @@ export function Navbar({ isHomePage }: NavbarProps) {
             </button>
             <LanguageToggle />
             {!loading && (user ? <UserMenu /> : <GoogleSignInButton />)}
-            <Link href="/create" className="hidden sm:block">
-              <Button size="lg" className="shadow-lg shadow-primary/25 text-base px-5" data-testid="button-nav-cta">
+            <Link href="/create" className="hidden sm:block shrink-0">
+              <Button size="lg" className="shadow-lg shadow-primary/25 text-base px-5 whitespace-nowrap" data-testid="button-nav-cta">
                 {t.getStartedFree}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>

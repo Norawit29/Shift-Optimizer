@@ -61,7 +61,7 @@
   body {
     @apply bg-background text-foreground antialiased selection:bg-primary/20;
     font-family: var(--font-sans);
-    font-display: swap;
+    font-display: optional;
   }
 
   h1, h2, h3, h4, h5, h6 {
