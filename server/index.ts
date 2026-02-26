@@ -6,23 +6,6 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import { pool } from "./db";
 
-process.on("uncaughtException", (err) => {
-  console.error("UNCAUGHT EXCEPTION:", err.message, err.stack);
-});
-process.on("unhandledRejection", (reason) => {
-  console.error("UNHANDLED REJECTION:", reason);
-});
-process.on("SIGTERM", () => {
-  console.error("RECEIVED SIGTERM");
-});
-process.on("SIGINT", () => {
-  console.error("RECEIVED SIGINT");
-});
-process.on("exit", (code) => {
-  console.error(`PROCESS EXIT with code ${code} at ${new Date().toISOString()}`);
-  console.trace("Exit trace");
-});
-
 declare module "express-session" {
   interface SessionData {
     userId: number;
@@ -30,7 +13,6 @@ declare module "express-session" {
 }
 
 const app = express();
-app.disable("etag");
 const httpServer = createServer(app);
 
 declare module "http" {
@@ -49,21 +31,10 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
-app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok" });
-});
-
-app.use((req, res, next) => {
-  const ua = req.get("user-agent") || "";
-  if (req.path === "/" && ua.includes("Go-http-client")) {
-    return res.status(200).send("ok");
-  }
-  next();
-});
-
 app.use((req, res, next) => {
   const host = req.get("host") || "";
-  if (host.includes("replit.app") && !host.includes("localhost") && process.env.NODE_ENV === "production") {
+  const isHealthCheck = req.path === "/" && req.get("user-agent")?.includes("Go-http-client");
+  if (host.includes("replit.app") && !host.includes("localhost") && !isHealthCheck) {
     const url = `https://shift-optimizer.com${req.originalUrl}`;
     return res.redirect(301, url);
   }
@@ -82,31 +53,20 @@ app.use((req, res, next) => {
 app.set("trust proxy", 1);
 
 const PgSession = connectPgSimple(session);
-const sessionMiddleware = session({
-  store: new PgSession({ pool, createTableIfMissing: true }),
-  secret: process.env.SESSION_SECRET || "shift-scheduler-secret",
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    maxAge: 30 * 24 * 60 * 60 * 1000,
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-  },
-});
-
-app.use((req, res, next) => {
-  if (!req.path.startsWith("/api")) {
-    return next();
-  }
-  sessionMiddleware(req, res, (err) => {
-    if (err) {
-      console.error("Session middleware error:", err);
-      return next();
-    }
-    next();
-  });
-});
+app.use(
+  session({
+    store: new PgSession({ pool, createTableIfMissing: true }),
+    secret: process.env.SESSION_SECRET || "shift-scheduler-secret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    },
+  }),
+);
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -122,11 +82,23 @@ export function log(message: string, source = "express") {
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
+  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+
+  const originalResJson = res.json;
+  res.json = function (bodyJson, ...args) {
+    capturedJsonResponse = bodyJson;
+    return originalResJson.apply(res, [bodyJson, ...args]);
+  };
 
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
-      log(`${req.method} ${path} ${res.statusCode} in ${duration}ms`);
+      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+      if (capturedJsonResponse) {
+        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+      }
+
+      log(logLine);
     }
   });
 

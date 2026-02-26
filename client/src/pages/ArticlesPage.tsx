@@ -9,7 +9,7 @@ import { th, enUS } from "date-fns/locale";
 interface Article {
   _id: string;
   title: string;
-  slug: string;
+  slug: { current: string };
   excerpt?: string;
   coverImage?: string;
   publishedAt?: string;
@@ -63,7 +63,7 @@ export default function ArticlesPage() {
               {articles.map((article) => (
                 <Link
                   key={article._id}
-                  href={`/articles/${article.slug || ""}`}
+                  href={`/articles/${article.slug?.current || ""}`}
                   className="block group"
                   data-testid={`article-card-${article._id}`}
                 >

@@ -11,7 +11,7 @@ import { th, enUS } from "date-fns/locale";
 interface Article {
   _id: string;
   title: string;
-  slug: string;
+  slug: { current: string };
   excerpt?: string;
   coverImage?: string;
   body?: any[];
