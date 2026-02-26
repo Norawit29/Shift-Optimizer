@@ -13,6 +13,7 @@ declare module "express-session" {
 }
 
 const app = express();
+app.disable("etag");
 const httpServer = createServer(app);
 
 declare module "http" {
