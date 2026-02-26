@@ -11,10 +11,15 @@ import {
   Puzzle,
   Globe,
   ChevronDown,
+  Calendar,
+  FileText,
 } from "lucide-react";
 import { LazyMotion, domAnimation, m, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/context/LanguageContext";
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { th, enUS } from "date-fns/locale";
 import { Navbar } from "@/components/Navbar";
 
 const fadeUp = {
@@ -61,8 +66,31 @@ function FAQItem({ q, a, testId }: { q: string; a: string; testId: string }) {
   );
 }
 
+interface Article {
+  _id: string;
+  title: string;
+  slug: { current: string };
+  excerpt?: string;
+  coverImage?: string;
+  publishedAt?: string;
+}
+
 export default function HomePage() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+
+  const { data: articles } = useQuery<Article[]>({
+    queryKey: ["/api/articles"],
+  });
+
+  const formatDate = (dateStr: string) => {
+    try {
+      return format(new Date(dateStr), "d MMM yyyy", { locale: lang === "th" ? th : enUS });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const latestArticles = (articles || []).slice(0, 3);
 
   useEffect(() => {
     const hash = window.location.hash;
@@ -299,6 +327,87 @@ export default function HomePage() {
             </m.div>
           </div>
         </section>
+
+        {latestArticles.length > 0 && (
+          <section className="py-16 sm:py-20 px-4 sm:px-6 border-t border-slate-100 dark:border-slate-800/50">
+            <div className="max-w-5xl mx-auto">
+              <m.div
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-100px" }}
+                variants={staggerContainer}
+              >
+                <m.div variants={fadeUp} custom={0} className="text-center mb-10 sm:mb-14">
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-articles-section-title">
+                    {t.homeArticlesTitle}
+                  </h2>
+                  <p className="mt-3 text-slate-600 dark:text-slate-300 text-base sm:text-lg">
+                    {t.homeArticlesDesc}
+                  </p>
+                </m.div>
+
+                <m.div variants={fadeUp} custom={1} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {latestArticles.map((article) => (
+                    <Link
+                      key={article._id}
+                      href={`/articles/${article.slug?.current || ""}`}
+                      className="block group"
+                      data-testid={`home-article-card-${article._id}`}
+                    >
+                      <div className="h-full rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden transition-shadow duration-300 hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50 bg-white dark:bg-slate-900 flex flex-col">
+                        <div className="aspect-[16/10] overflow-hidden bg-slate-100 dark:bg-slate-800">
+                          {article.coverImage ? (
+                            <img
+                              src={article.coverImage}
+                              alt={article.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-slate-300 dark:text-slate-600">
+                              <FileText className="w-12 h-12" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-5 flex-1 flex flex-col">
+                          <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2 group-hover:text-primary transition-colors line-clamp-2">
+                            {article.title}
+                          </h3>
+                          {article.excerpt && (
+                            <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed mb-3 line-clamp-2 flex-1">
+                              {article.excerpt}
+                            </p>
+                          )}
+                          <div className="flex items-center justify-between mt-auto pt-2">
+                            {article.publishedAt && (
+                              <span className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+                                <Calendar className="w-3.5 h-3.5" aria-hidden="true" />
+                                {formatDate(article.publishedAt)}
+                              </span>
+                            )}
+                            <span className="text-sm font-medium text-primary flex items-center gap-1 group-hover:gap-2 transition-all ml-auto">
+                              {t.articlesReadMore}
+                              <ArrowRight className="w-4 h-4" aria-hidden="true" />
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </m.div>
+
+                <m.div variants={fadeUp} custom={2} className="text-center mt-8">
+                  <Link href="/articles">
+                    <Button variant="outline" size="lg" className="text-base px-5" data-testid="button-view-all-articles">
+                      {t.homeArticlesViewAll}
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                </m.div>
+              </m.div>
+            </div>
+          </section>
+        )}
 
         <section className="py-16 sm:py-20 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800/50">
           <div className="max-w-3xl mx-auto text-center">
