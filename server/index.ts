@@ -33,7 +33,8 @@ app.use(express.urlencoded({ extended: false }));
 
 app.use((req, res, next) => {
   const host = req.get("host") || "";
-  if (host.includes("replit.app") && !host.includes("localhost")) {
+  const isHealthCheck = req.path === "/" && req.get("user-agent")?.includes("Go-http-client");
+  if (host.includes("replit.app") && !host.includes("localhost") && !isHealthCheck) {
     const url = `https://shift-optimizer.com${req.originalUrl}`;
     return res.redirect(301, url);
   }
