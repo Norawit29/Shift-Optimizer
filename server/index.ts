@@ -31,10 +31,13 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
+app.get("/api/health", (_req, res) => {
+  res.json({ status: "ok" });
+});
+
 app.use((req, res, next) => {
   const host = req.get("host") || "";
-  const isHealthCheck = req.path === "/" && req.get("user-agent")?.includes("Go-http-client");
-  if (host.includes("replit.app") && !host.includes("localhost") && !isHealthCheck) {
+  if (host.includes("replit.app") && !host.includes("localhost")) {
     const url = `https://shift-optimizer.com${req.originalUrl}`;
     return res.redirect(301, url);
   }

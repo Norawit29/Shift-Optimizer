@@ -57,10 +57,6 @@ export async function registerRoutes(
     res.type("application/xml; charset=utf-8").send(xml);
   });
 
-  app.get("/api/health", (_req, res) => {
-    res.json({ status: "ok" });
-  });
-
   app.get("/api/auth/google-client-id", (_req, res) => {
     res.json({ clientId: process.env.GOOGLE_CLIENT_ID || "" });
   });
