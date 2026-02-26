@@ -18,6 +18,10 @@ process.on("SIGTERM", () => {
 process.on("SIGINT", () => {
   console.error("RECEIVED SIGINT");
 });
+process.on("exit", (code) => {
+  console.error(`PROCESS EXIT with code ${code} at ${new Date().toISOString()}`);
+  console.trace("Exit trace");
+});
 
 declare module "express-session" {
   interface SessionData {
