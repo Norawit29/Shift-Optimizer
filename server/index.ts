@@ -37,6 +37,14 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.use((req, res, next) => {
+  const ua = req.get("user-agent") || "";
+  if (req.path === "/" && ua.includes("Go-http-client")) {
+    return res.status(200).send("ok");
+  }
+  next();
+});
+
+app.use((req, res, next) => {
   const host = req.get("host") || "";
   if (host.includes("replit.app") && !host.includes("localhost")) {
     const url = `https://shift-optimizer.com${req.originalUrl}`;

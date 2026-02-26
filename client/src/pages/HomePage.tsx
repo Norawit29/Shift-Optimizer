@@ -69,7 +69,7 @@ function FAQItem({ q, a, testId }: { q: string; a: string; testId: string }) {
 interface Article {
   _id: string;
   title: string;
-  slug: { current: string };
+  slug: string;
   excerpt?: string;
   coverImage?: string;
   publishedAt?: string;
@@ -350,7 +350,7 @@ export default function HomePage() {
                   {latestArticles.map((article) => (
                     <Link
                       key={article._id}
-                      href={`/articles/${article.slug?.current || ""}`}
+                      href={`/articles/${article.slug || ""}`}
                       className="block group"
                       data-testid={`home-article-card-${article._id}`}
                     >

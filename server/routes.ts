@@ -269,14 +269,14 @@ export async function registerRoutes(
         `*[_type == "article" && !(_id in path("drafts.**"))] | order(publishedAt desc) {
           _id,
           title,
-          slug,
+          "slug": slug.current,
           excerpt,
           "coverImage": coverImage.asset->url,
           publishedAt,
           language
         }`
       );
-      res.json(articles);
+      res.json(articles || []);
     } catch (error) {
       console.error("Sanity articles fetch error:", error);
       res.status(500).json({ message: "Failed to fetch articles" });
@@ -290,7 +290,7 @@ export async function registerRoutes(
         `*[_type == "article" && !(_id in path("drafts.**")) && slug.current == $slug][0] {
           _id,
           title,
-          slug,
+          "slug": slug.current,
           excerpt,
           "coverImage": coverImage.asset->url,
           body,
