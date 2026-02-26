@@ -65,20 +65,31 @@ app.use((req, res, next) => {
 app.set("trust proxy", 1);
 
 const PgSession = connectPgSimple(session);
-app.use(
-  session({
-    store: new PgSession({ pool, createTableIfMissing: true }),
-    secret: process.env.SESSION_SECRET || "shift-scheduler-secret",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-    },
-  }),
-);
+const sessionMiddleware = session({
+  store: new PgSession({ pool, createTableIfMissing: true }),
+  secret: process.env.SESSION_SECRET || "shift-scheduler-secret",
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  },
+});
+
+app.use((req, res, next) => {
+  if (!req.path.startsWith("/api")) {
+    return next();
+  }
+  sessionMiddleware(req, res, (err) => {
+    if (err) {
+      console.error("Session middleware error:", err);
+      return next();
+    }
+    next();
+  });
+});
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
