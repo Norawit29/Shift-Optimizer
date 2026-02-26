@@ -335,7 +335,7 @@ export default function HomePage() {
             </div>
             <span className="font-medium" data-testid="text-footer-app-name">{t.appName}</span>
           </div>
-          <span data-testid="text-footer-copyright">&copy; {new Date().getFullYear()}</span>
+          <span data-testid="text-footer-copyright">Copyright &copy; 2026 Shift Optimizer All rights reserved.</span>
         </div>
       </footer>
     </div>
