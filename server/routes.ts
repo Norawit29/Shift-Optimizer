@@ -20,6 +20,43 @@ export async function registerRoutes(
     );
   });
 
+  app.get("/sitemap.xml", async (_req, res) => {
+    const baseUrl = "https://shift-optimizer.com";
+    const now = new Date().toISOString().split("T")[0];
+
+    const staticPages = [
+      { loc: "/", priority: "1.0", changefreq: "weekly" },
+      { loc: "/create", priority: "0.8", changefreq: "monthly" },
+      { loc: "/articles", priority: "0.8", changefreq: "weekly" },
+    ];
+
+    let articleUrls: { loc: string; lastmod: string }[] = [];
+    try {
+      const articles = await sanityClient.fetch<{ slug: string; publishedAt: string | null }[]>(
+        `*[_type == "article" && !(_id in path("drafts.**"))] | order(publishedAt desc) { "slug": slug.current, publishedAt }`
+      );
+      articleUrls = (articles || []).map((a) => ({
+        loc: `/articles/${a.slug}`,
+        lastmod: a.publishedAt ? a.publishedAt.split("T")[0] : now,
+      }));
+    } catch {}
+
+    const urls = staticPages
+      .map(
+        (p) =>
+          `<url><loc>${baseUrl}${p.loc}</loc><lastmod>${now}</lastmod><changefreq>${p.changefreq}</changefreq><priority>${p.priority}</priority></url>`
+      )
+      .concat(
+        articleUrls.map(
+          (a) =>
+            `<url><loc>${baseUrl}${a.loc}</loc><lastmod>${a.lastmod}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>`
+        )
+      );
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join("\n")}\n</urlset>`;
+    res.type("application/xml; charset=utf-8").send(xml);
+  });
+
   app.get("/api/health", (_req, res) => {
     res.json({ status: "ok" });
   });
