@@ -215,15 +215,18 @@ const translations = {
 
     // StatsCard
     workloadDistribution: "Workload Distribution",
-    fairnessScore: "Fairness Score",
+    fairnessScore: "Fairness",
     range: "Range",
-    lowerRangeFairer: "Lower range means fairer distribution.",
+    lowerRangeFairer: "Score considers both the min-max gap and average workload. Higher is fairer.",
     status: "Status",
     optimized: "Optimized",
-    rulesRespected: "Rules respected",
+    rulesRespected: "All rules respected",
     imbalanced: "Imbalanced",
     someStaffMore: "Some staff have significantly more shifts",
     activeMembers: "Active members",
+    coverageLabel: "Coverage",
+    slotsFilled: "slots filled",
+    minMaxLabel: "Min-Max",
 
     // HistoryPage
     savedSchedules: "Saved Schedules",
@@ -564,15 +567,18 @@ const translations = {
 
     // StatsCard
     workloadDistribution: "การกระจายภาระงาน",
-    fairnessScore: "คะแนนความยุติธรรม",
+    fairnessScore: "ความยุติธรรม",
     range: "ช่วง",
-    lowerRangeFairer: "ช่วงน้อยหมายถึงการกระจายที่ยุติธรรมกว่า",
+    lowerRangeFairer: "คะแนนคำนวณจากช่วง min-max และจำนวนเวรเฉลี่ย ยิ่งสูงยิ่งยุติธรรม",
     status: "สถานะ",
     optimized: "จัดเวรแล้ว",
     rulesRespected: "เป็นไปตามกฎทั้งหมด",
     imbalanced: "ไม่สมดุล",
     someStaffMore: "บุคลากรบางคนมีเวรมากกว่าอย่างมีนัยสำคัญ",
     activeMembers: "สมาชิกที่ใช้งาน",
+    coverageLabel: "ความครอบคลุม",
+    slotsFilled: "ช่องที่เติมเต็ม",
+    minMaxLabel: "Min-Max",
 
     // HistoryPage
     savedSchedules: "ตารางเวรที่บันทึก",
