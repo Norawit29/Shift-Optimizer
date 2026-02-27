@@ -1,13 +1,9 @@
 import type { StaffMember, SchedulerConfig, DaySchedule, OptimizerResult, UnfilledSlot } from "@shared/schema";
 import { getDaysInMonth, differenceInCalendarDays, addDays, parseISO } from "date-fns";
-
-let highsModule: any = null;
+import highsFactory from "highs";
 
 async function createSolver(): Promise<any> {
-  if (!highsModule) {
-    highsModule = (await import("highs")).default;
-  }
-  const solver = await highsModule({
+  const solver = await (highsFactory as any)({
     locateFile: (file: string) => `/${file}`
   });
   return solver;
@@ -1438,22 +1434,3 @@ export class ShiftOptimizer {
   }
 }
 
-export function runOptimizerInWorker(
-  config: SchedulerConfig,
-  staff: StaffMember[],
-  month: number,
-  year: number,
-  options?: { softLevelConstraints?: boolean }
-): Promise<OptimizerResult> {
-  return new Promise<OptimizerResult>((resolve, reject) => {
-    setTimeout(async () => {
-      try {
-        const optimizer = new ShiftOptimizer(config, staff, month, year, options);
-        const result = await optimizer.optimize();
-        resolve(result);
-      } catch (err: any) {
-        reject(err);
-      }
-    }, 0);
-  });
-}

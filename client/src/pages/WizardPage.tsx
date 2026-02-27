@@ -3,7 +3,7 @@ import { useCreateSchedule } from "@/hooks/use-schedules";
 import { type StaffMember, type SchedulerConfig, type OptimizerResult, type DaySchedule } from "@shared/schema";
 import { useAuth } from "@/context/AuthContext";
 import { GoogleSignInButton, UserMenu } from "@/components/GoogleSignIn";
-import { runOptimizerInWorker } from "@/lib/optimizer";
+import { runOptimizerInWorker } from "@/lib/workerRunner";
 import { WizardStep } from "@/components/WizardStep";
 import { ScheduleView } from "@/components/ScheduleView";
 import { StatsCard } from "@/components/StatsCard";
