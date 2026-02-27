@@ -972,6 +972,73 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     return warnings;
   };
 
+  const estimateShouldForceSoftLevels = (): boolean => {
+    const levels = config.staffLevels;
+    const minPerLevel = config.minStaffPerLevel;
+    if (!levels || levels.length === 0 || !minPerLevel) return false;
+
+    const S = config.shiftNames.length;
+    let totalDays: number;
+    if (useCustomRange && customStartDate && customEndDate) {
+      const start = new Date(customStartDate);
+      const end = new Date(customEndDate);
+      totalDays = Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
+    } else {
+      totalDays = new Date(year, month, 0).getDate();
+    }
+
+    for (let lvl = 0; lvl < levels.length; lvl++) {
+      let totalNeeded = 0;
+      const levelShifts = new Set<number>();
+      for (let s = 0; s < S; s++) {
+        const minReq = minPerLevel[s]?.[lvl] ?? 0;
+        if (minReq > 0) {
+          totalNeeded += minReq * totalDays;
+          levelShifts.add(s);
+        }
+      }
+      if (totalNeeded === 0) continue;
+
+      const levelStaff = staff.filter(s => (s.level ?? 0) === lvl);
+      if (levelStaff.length === 0) return true;
+
+      const totalBlocked = levelStaff.reduce((sum, s) => sum + (s.blocked?.length ?? 0), 0);
+      let rawCapacity = levelStaff.reduce((sum, s) => sum + s.maxShifts, 0) - totalBlocked;
+
+      let penaltyFactor = 1.0;
+      for (const rule of (config.consecutiveRules || [])) {
+        const ruleType = rule.type || 'nextDay';
+        const fromRelevant = levelShifts.has(rule.from);
+        const toRelevant = levelShifts.has(rule.to);
+        if (fromRelevant || toRelevant) {
+          if (ruleType === 'sameDay') {
+            penaltyFactor -= 0.15;
+          } else {
+            penaltyFactor -= 0.12;
+          }
+        }
+      }
+
+      if (config.maxConsecutiveRules) {
+        for (const rule of config.maxConsecutiveRules) {
+          const hasRelevantShift = rule.shifts.some(s => levelShifts.has(s));
+          if (hasRelevantShift) {
+            penaltyFactor -= 0.08;
+          }
+        }
+      }
+
+      penaltyFactor = Math.max(0.3, penaltyFactor);
+
+      const effectiveCapacity = rawCapacity * penaltyFactor;
+      if (effectiveCapacity < totalNeeded * 1.1) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
   const executeOptimizer = (softLevels: boolean) => {
     setIsOptimizing(true);
     setOptimizeProgress(0);
@@ -1300,6 +1367,23 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     return { capacityWarnings, conflicts };
   };
 
+  const decideLevelMode = (): { useSoft: boolean; showWarningDialog: boolean; warnings: string[] } => {
+    const hasLevels = !!(config.staffLevels && config.staffLevels.length > 0 && config.minStaffPerLevel);
+    if (!hasLevels) return { useSoft: false, showWarningDialog: false, warnings: [] };
+
+    const warnings = checkLevelFeasibility();
+    if (warnings.length > 0) {
+      return { useSoft: true, showWarningDialog: true, warnings };
+    }
+
+    const shouldForceSoft = estimateShouldForceSoftLevels();
+    if (shouldForceSoft) {
+      return { useSoft: true, showWarningDialog: false, warnings: [] };
+    }
+
+    return { useSoft: false, showWarningDialog: false, warnings: [] };
+  };
+
   const runOptimizer = () => {
     const { capacityWarnings, conflicts } = checkPreOptimization();
     if (conflicts.length > 0 || capacityWarnings.length > 0) {
@@ -1308,25 +1392,29 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
       setShowPreCheckWarning(true);
       return;
     }
-    const hasLevelsConfigured = !!(config.staffLevels && config.staffLevels.length > 0 && config.minStaffPerLevel);
-    const warnings = checkLevelFeasibility();
-    if (warnings.length > 0) {
-      setLevelWarnings(warnings);
+    const levelDecision = decideLevelMode();
+    if (levelDecision.showWarningDialog) {
+      setLevelWarnings(levelDecision.warnings);
       setShowLevelWarning(true);
     } else {
-      executeOptimizer(hasLevelsConfigured);
+      if (levelDecision.useSoft) {
+        toast({ title: t.levelFeasibilityWarning, description: t.levelAutoSoftNotice });
+      }
+      executeOptimizer(levelDecision.useSoft);
     }
   };
 
   const proceedAfterPreCheck = () => {
     setShowPreCheckWarning(false);
-    const hasLevelsConfigured = !!(config.staffLevels && config.staffLevels.length > 0 && config.minStaffPerLevel);
-    const warnings = checkLevelFeasibility();
-    if (warnings.length > 0) {
-      setLevelWarnings(warnings);
+    const levelDecision = decideLevelMode();
+    if (levelDecision.showWarningDialog) {
+      setLevelWarnings(levelDecision.warnings);
       setShowLevelWarning(true);
     } else {
-      executeOptimizer(hasLevelsConfigured);
+      if (levelDecision.useSoft) {
+        toast({ title: t.levelFeasibilityWarning, description: t.levelAutoSoftNotice });
+      }
+      executeOptimizer(levelDecision.useSoft);
     }
   };
 
