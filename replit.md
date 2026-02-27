@@ -41,7 +41,9 @@ The scheduler supports **staff levels** (up to 5 levels):
 - `staffLevels` in SchedulerConfig: array of level names (e.g., ["พยาบาล", "ผู้ช่วยพยาบาล", "คนงาน"])
 - Each StaffMember has an optional `level` field (0-based index into staffLevels)
 - `minStaffPerLevel` in SchedulerConfig: 2D array `[shiftIdx][levelIdx]` for minimum staff of each level per shift
-- The optimizer enforces level minimums as hard constraints (LP `>= minRequired`)
+- The optimizer enforces level minimums as soft constraints by default (LP `>= minRequired` with slack variables) to prevent infeasible problems
+- When levels are configured, `executeOptimizer` always passes `softLevelConstraints: true` so the optimizer never hangs on infeasible level requirements
+- Pre-optimization check (`checkLevelFeasibility`) validates both total capacity AND per-day availability at each level, considering blocked dates
 - Greedy post-processing prioritizes candidates that help meet unmet level requirements
 - Schedule view and Excel export display staff levels when configured
 - Feature is fully optional — backward compatible when `staffLevels` is undefined
@@ -76,7 +78,7 @@ Key pages:
 - `HomePage` — Landing page with single "Create Schedule" button
 - `WizardPage` — Multi-step form wizard for schedule creation (config → staff → blocked dates → optimize → export). Always runs in export-only mode — generates Excel output directly, no database saving.
 
-The shift optimization algorithm runs **client-side** inside a **Web Worker** (`client/src/lib/solverWorker.ts`) to keep the UI responsive during computation. The main thread calls `runOptimizerInWorker()` (in `client/src/lib/workerRunner.ts`) which spawns a module worker via `new URL("./solverWorker.ts", import.meta.url)`, posts config/staff/month/year/options, and resolves/rejects based on the worker's response. The worker file is kept separate from `workerRunner.ts` to avoid recursive worker detection during Vite builds. The `highs` WASM solver is imported statically (`import highsFactory from "highs"`) to avoid dynamic `import()` which would force code-splitting incompatible with Vite's default IIFE worker format. The optimizer uses **Mixed Integer Programming (MIP)** via the HiGHS solver (WASM) with a **2-phase approach**:
+The shift optimization algorithm runs **client-side** inside a **Web Worker** (`client/src/lib/solverWorker.ts`) to keep the UI responsive during computation. The main thread calls `runOptimizerInWorker()` (in `client/src/lib/workerRunner.ts`) which spawns a module worker via `new URL("./solverWorker.ts", import.meta.url)`, posts config/staff/month/year/options, and resolves/rejects based on the worker's response. The worker has a **150-second hard timeout** — if the solver doesn't finish, the worker is terminated and the UI shows an error. The worker file is kept separate from `workerRunner.ts` to avoid recursive worker detection during Vite builds. The `highs` WASM solver is imported statically (`import highsFactory from "highs"`) to avoid dynamic `import()` which would force code-splitting incompatible with Vite's default IIFE worker format. The optimizer uses **Mixed Integer Programming (MIP)** via the HiGHS solver (WASM) with a **2-phase approach**:
 - **Phase 1**: Minimizes coverage slack (`1000 * Σ u_d_s + 100 * Σ levelSlack`) — deterministic, no randomness. Produces optimal per-slot coverage.
 - **Phase 2**: Minimizes workload range directly using `maxLoad - minLoad` continuous variables (RANGE_W=1,000,000), plus per-shift-type deviation (SHIFT_W=1,000) and holiday deviation (HOLIDAY_W=100), and level slack (LEVEL_W=10). Fully-filled slots from Phase 1 are locked with equality constraints (`= required`); partially-filled slots use `>=`. Falls back to Phase 1 result if Phase 2 fails.
 

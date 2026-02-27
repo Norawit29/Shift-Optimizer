@@ -924,6 +924,51 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
         );
       }
     }
+
+    const holidayDays = new Set<number>();
+    if (config.balanceHolidays || config.separateHolidayConfig) {
+      for (let d = 1; d <= totalDays; d++) {
+        const dt = getDateForIndex(d);
+        const dow = dt.getDay();
+        if (dow === 0 || dow === 6) holidayDays.add(d);
+      }
+      if (config.holidays) {
+        for (const h of config.holidays) holidayDays.add(h);
+      }
+    }
+
+    let dayWarningCount = 0;
+    const maxDayWarnings = 5;
+    for (let d = 1; d <= totalDays && dayWarningCount < maxDayWarnings; d++) {
+      const isHol = holidayDays.has(d);
+      const sps = (config.separateHolidayConfig && config.holidayStaffPerShift && isHol)
+        ? config.holidayStaffPerShift : config.staffPerShift;
+      for (let s = 0; s < S && dayWarningCount < maxDayWarnings; s++) {
+        if ((sps[s] || 0) === 0) continue;
+        for (let lvl = 0; lvl < levels.length && dayWarningCount < maxDayWarnings; lvl++) {
+          const minReq = minPerLevel[s]?.[lvl] ?? 0;
+          if (minReq <= 0) continue;
+          const availableAtLevel = staff.filter(m => {
+            if ((m.level ?? 0) !== lvl) return false;
+            return !m.blocked.some(b => b.date === d && (b.shift === -1 || b.shift === s));
+          }).length;
+          if (availableAtLevel < minReq) {
+            const dt = getDateForIndex(d);
+            warnings.push(
+              t.levelDayShortage
+                .replace("{day}", String(d))
+                .replace("{date}", format(dt, "d/M"))
+                .replace("{shift}", config.shiftNames[s])
+                .replace("{needed}", String(minReq))
+                .replace("{level}", levels[lvl])
+                .replace("{available}", String(availableAtLevel))
+            );
+            dayWarningCount++;
+          }
+        }
+      }
+    }
+
     return warnings;
   };
 
@@ -1011,9 +1056,10 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           toast({ title: t.scheduleGenerated, description: t.optimizationComplete });
         }
       } catch (e: any) {
+        const isTimeout = e.message === "OPTIMIZER_TIMEOUT";
         toast({ 
           title: t.optimizationFailed, 
-          description: e.message || "Could not satisfy all constraints. Try adding more staff or loosening rules.", 
+          description: isTimeout ? t.optimizerTimeout : (e.message || "Could not satisfy all constraints. Try adding more staff or loosening rules."), 
           variant: "destructive" 
         });
       } finally {
@@ -1262,23 +1308,25 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
       setShowPreCheckWarning(true);
       return;
     }
+    const hasLevelsConfigured = !!(config.staffLevels && config.staffLevels.length > 0 && config.minStaffPerLevel);
     const warnings = checkLevelFeasibility();
     if (warnings.length > 0) {
       setLevelWarnings(warnings);
       setShowLevelWarning(true);
     } else {
-      executeOptimizer(false);
+      executeOptimizer(hasLevelsConfigured);
     }
   };
 
   const proceedAfterPreCheck = () => {
     setShowPreCheckWarning(false);
+    const hasLevelsConfigured = !!(config.staffLevels && config.staffLevels.length > 0 && config.minStaffPerLevel);
     const warnings = checkLevelFeasibility();
     if (warnings.length > 0) {
       setLevelWarnings(warnings);
       setShowLevelWarning(true);
     } else {
-      executeOptimizer(false);
+      executeOptimizer(hasLevelsConfigured);
     }
   };
 
