@@ -77,15 +77,19 @@ Key pages:
 - `WizardPage` — Multi-step form wizard for schedule creation (config → staff → blocked dates → optimize → export). Always runs in export-only mode — generates Excel output directly, no database saving.
 
 The shift optimization algorithm runs **client-side** in `client/src/lib/optimizer.ts` using **Mixed Integer Programming (MIP)** via the HiGHS solver (WASM). The optimizer uses a **2-phase approach**:
-- **Phase 1**: Maximizes total coverage (`Σ x[i,d,s]`) subject to hard constraints (blocked dates, one-shift-per-day, consecutive rules, max shifts, staffing caps). Produces optimal coverage value `C*`.
-- **Phase 2**: Minimizes fairness deviations subject to all Phase 1 constraints plus a coverage floor (`Σ x >= C*`). Uses **deviation variables** (`dev >= |actual - avg|`) for workload balance, per-shift-type balance, and holiday balance. Targets are computed from Phase 1 actual results, not theoretical maximums. Falls back to Phase 1 result if Phase 2 fails.
+- **Phase 1**: Minimizes coverage slack (`1000 * Σ u_d_s + 100 * Σ levelSlack`) — deterministic, no randomness. Produces optimal per-slot coverage.
+- **Phase 2**: Minimizes workload range directly using `maxLoad - minLoad` continuous variables (weight=10), plus per-shift-type deviation (weight=3) and holiday deviation (weight=5). Fully-filled slots from Phase 1 are locked with equality constraints (`= required`); partially-filled slots use `>=`. Falls back to Phase 1 result if Phase 2 fails.
+
+The optimizer is **deterministic** — no `Math.random()` anywhere. Different versions are produced via a `seed` parameter that creates small deterministic perturbations on shift deviation weights using a hash function.
+
+**Multi-version generation**: Generates 3 versions first. If min-max ranges differ across versions, generates 2 more (total 5) and selects the best 3 (lowest min-max difference) to display.
 
 This 2-phase design ensures coverage is never sacrificed for fairness. The WASM file is served from `client/public/highs.wasm`. Time limit: 15 seconds per phase, MIP gap: 1%.
 
 **Constraint priority:**
 - HARD: Consecutive shift rules (e.g., Night→Morning blocked) — never violated
 - HARD: Staff per shift count — exact staffing requirements
-- SOFT: Fairness (min-max workload difference) — optimizer prefers equal distribution but will give some staff more shifts to maximize coverage
+- SOFT: Fairness (min-max workload range) — optimizer minimizes the difference between highest and lowest staff workload directly
 
 After the MIP solver, a **greedy post-processing** (up to 3 passes) fills any remaining unfilled slots by assigning available staff (lowest workload first) while respecting ALL hard constraints. Phase 2 has per-slot and global coverage floor constraints matching Phase 1's optimal. If slots remain unfilled after greedy fill, diagnostic logging shows WHY each slot can't be filled (consecutive rule, maxShifts, blocked dates, etc.).
 

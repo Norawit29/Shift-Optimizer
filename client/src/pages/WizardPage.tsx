@@ -906,7 +906,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
         for (let v = 0; v < 3; v++) {
           setOptimizeProgress(v + 1);
           await new Promise(r => setTimeout(r, 50));
-          const optimizer = new ShiftOptimizer(optimizerConfig, staff, month, year, { softLevelConstraints: softLevels });
+          const optimizer = new ShiftOptimizer(optimizerConfig, staff, month, year, { softLevelConstraints: softLevels, seed: v });
           const res = await optimizer.optimize();
           allResults.push(res);
         }
@@ -918,7 +918,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           for (let v = 3; v < 5; v++) {
             setOptimizeProgress(v + 1);
             await new Promise(r => setTimeout(r, 50));
-            const optimizer = new ShiftOptimizer(optimizerConfig, staff, month, year, { softLevelConstraints: softLevels });
+            const optimizer = new ShiftOptimizer(optimizerConfig, staff, month, year, { softLevelConstraints: softLevels, seed: v });
             const res = await optimizer.optimize();
             allResults.push(res);
           }

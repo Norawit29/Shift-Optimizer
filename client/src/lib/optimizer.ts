@@ -42,11 +42,14 @@ export class ShiftOptimizer {
     return new Date(this.year, this.month - 1, dayIndex);
   }
 
-  constructor(config: SchedulerConfig, staff: StaffMember[], month: number, year: number, options?: { softLevelConstraints?: boolean }) {
+  private seed: number;
+
+  constructor(config: SchedulerConfig, staff: StaffMember[], month: number, year: number, options?: { softLevelConstraints?: boolean; seed?: number }) {
     this.config = config;
     this.staff = staff;
     this.month = month;
     this.softLevelConstraints = options?.softLevelConstraints ?? false;
+    this.seed = options?.seed ?? 0;
     this.year = year;
 
     if (config.useCustomRange && config.customStartDate && config.customEndDate) {
@@ -549,17 +552,10 @@ export class ShiftOptimizer {
     lines.push("Minimize");
     lines.push("  obj:");
     const objParts = slackVars.map((v, idx) => {
-      const w = fmt(1 + (Math.random() - 0.5) * 0.01);
-      return idx === 0 ? `${w} ${v}` : `+ ${w} ${v}`;
+      return idx === 0 ? `1000 ${v}` : `+ 1000 ${v}`;
     });
-    const xVars = Array.from(varMap.keys());
-    for (const xv of xVars) {
-      const n = (Math.random() - 0.5) * 0.001;
-      objParts.push(n >= 0 ? `+ ${fmt(n)} ${xv}` : `- ${fmt(-n)} ${xv}`);
-    }
     for (const lv of levelSlackVars) {
-      const w = fmt(100 + (Math.random() - 0.5) * 0.1);
-      objParts.push(`+ ${w} ${lv}`);
+      objParts.push(`+ 100 ${lv}`);
     }
     lines.push(writeTerms(objParts, 10));
 
@@ -626,14 +622,14 @@ export class ShiftOptimizer {
     const N = this.staff.length;
     const D = this.daysInMonth;
     const S = this.config.shiftNames.length;
+
+    const WORKLOAD_W = 10;
+    const SHIFT_W = 3;
+    const HOLIDAY_W = 5;
+
     const enableHolidayBalance = this.config.balanceHolidays && this.holidayDays.size > 0;
 
-    const WORKLOAD_W = 1.0;
-    const SHIFT_W = 0.4;
-    const HOLIDAY_W = enableHolidayBalance ? 0.6 : 0;
-
     const totalMaxShifts = this.staff.reduce((sum, s) => sum + s.maxShifts, 0);
-    const staffWorkloadTargets = this.staff.map(s => phase1Targets.totalCoverage * (s.maxShifts / totalMaxShifts));
     const staffShiftTargets = phase1Targets.perShift.map(total =>
       this.staff.map(s => total * (s.maxShifts / totalMaxShifts))
     );
@@ -646,16 +642,6 @@ export class ShiftOptimizer {
     const cIdx = { val: 0 };
     const auxBinaryVars: string[] = [];
     this.writeCommonConstraints(constraintLines, varMap, cIdx, { levelSlackVars, auxBinaryVars });
-
-    {
-      const allXVars = Array.from(varMap.keys());
-      if (allXVars.length > 0 && phase1Targets.totalCoverage > 0) {
-        const coverageTerms = allXVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
-        constraintLines.push(`  c${cIdx.val++}:`);
-        constraintLines.push(writeTerms(coverageTerms, 10));
-        constraintLines.push(`  >= ${phase1Targets.totalCoverage}`);
-      }
-    }
 
     for (let d = 0; d < D; d++) {
       const required = this.getStaffPerShiftForDay(d + 1);
@@ -673,7 +659,11 @@ export class ShiftOptimizer {
           const terms = shiftVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
           constraintLines.push(`  c${cIdx.val++}:`);
           constraintLines.push(writeTerms(terms, 10));
-          constraintLines.push(`  >= ${p1Coverage}`);
+          if (p1Coverage >= required[s]) {
+            constraintLines.push(`  = ${required[s]}`);
+          } else {
+            constraintLines.push(`  >= ${p1Coverage}`);
+          }
         }
       }
     }
@@ -694,9 +684,8 @@ export class ShiftOptimizer {
       constraintLines.push(writeTerms(defTerms, 10));
       constraintLines.push(`  = 0`);
 
-      const wTarget = staffWorkloadTargets[i];
-      constraintLines.push(`  c${cIdx.val++}: tw_${i} - dw_${i} <= ${fmt(wTarget)}`);
-      constraintLines.push(`  c${cIdx.val++}: - tw_${i} - dw_${i} <= ${fmt(-wTarget)}`);
+      constraintLines.push(`  c${cIdx.val++}: tw_${i} - maxLoad <= 0`);
+      constraintLines.push(`  c${cIdx.val++}: - tw_${i} + minLoad <= 0`);
     }
 
     for (let i = 0; i < N; i++) {
@@ -747,37 +736,34 @@ export class ShiftOptimizer {
       }
     }
 
+    const detNoise = (idx: number): number => {
+      const h = ((idx * 2654435761 + this.seed * 2246822519) >>> 0) % 10000;
+      return (h / 10000 - 0.5) * 0.1;
+    };
+
     const lines: string[] = [];
     lines.push("Minimize");
     lines.push("  obj:");
     const objParts: string[] = [];
-    for (let i = 0; i < N; i++) {
-      const w = fmt(WORKLOAD_W + (Math.random() - 0.5) * 0.6);
-      objParts.push(i === 0 ? `${w} dw_${i}` : `+ ${w} dw_${i}`);
-    }
+    objParts.push(`${WORKLOAD_W} maxLoad`);
+    objParts.push(`- ${WORKLOAD_W} minLoad`);
+    let noiseIdx = 0;
     for (let i = 0; i < N; i++) {
       for (let s = 0; s < S; s++) {
         if (staffShiftTargets[s][i] > 0) {
-          const w = fmt(SHIFT_W + (Math.random() - 0.5) * 0.3);
+          const w = fmt(SHIFT_W + detNoise(noiseIdx++));
           objParts.push(`+ ${w} ds_${i}_${s}`);
         }
       }
     }
     if (enableHolidayBalance && staffHolidayTargets.some(t => t > 0)) {
       for (let i = 0; i < N; i++) {
-        const w = fmt(HOLIDAY_W + (Math.random() - 0.5) * 0.4);
+        const w = fmt(HOLIDAY_W + detNoise(noiseIdx++));
         objParts.push(`+ ${w} dh_${i}`);
       }
     }
-    const maxNoiseVars = Math.min(binaryVars.length, 300);
-    const shuffled = [...binaryVars].sort(() => Math.random() - 0.5);
-    for (let j = 0; j < maxNoiseVars; j++) {
-      const n = (Math.random() - 0.5) * 0.002;
-      objParts.push(n >= 0 ? `+ ${fmt(n)} ${shuffled[j]}` : `- ${fmt(-n)} ${shuffled[j]}`);
-    }
     for (const lv of levelSlackVars) {
-      const w = fmt(100 + (Math.random() - 0.5) * 0.1);
-      objParts.push(`+ ${w} ${lv}`);
+      objParts.push(`+ 100 ${lv}`);
     }
     lines.push(writeTerms(objParts, 8));
 
@@ -785,9 +771,10 @@ export class ShiftOptimizer {
     lines.push(...constraintLines);
 
     lines.push("Bounds");
+    lines.push(`  maxLoad >= 0`);
+    lines.push(`  minLoad >= 0`);
     for (let i = 0; i < N; i++) {
       lines.push(`  tw_${i} >= 0`);
-      lines.push(`  dw_${i} >= 0`);
     }
     for (let i = 0; i < N; i++) {
       for (let s = 0; s < S; s++) {

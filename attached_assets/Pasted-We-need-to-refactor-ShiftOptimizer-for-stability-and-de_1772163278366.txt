@@ -1,0 +1,108 @@
+We need to refactor ShiftOptimizer for stability and deterministic fairness.
+
+Make the following CRITICAL improvements:
+
+----------------------------------------------------
+1) REMOVE ALL RANDOMNESS FROM OBJECTIVE FUNCTIONS
+----------------------------------------------------
+
+Remove every use of:
+- Math.random()
+- shuffled random binary variable ordering
+- random noise on objective weights
+- random perturbation terms
+
+Phase 1 objective must be deterministic and simple:
+
+Minimize:
+  1000 * sum(coverage_slack u_d_s)
++ 100  * sum(levelSlackVars)
+
+DO NOT add any noise on x variables.
+DO NOT randomize weights.
+
+Phase 2 objective must use fixed weights only:
+
+Use constants:
+  const WORKLOAD_W = 10;
+  const SHIFT_W = 3;
+  const HOLIDAY_W = 5;
+
+Remove all random perturbation from:
+- workload deviation weights
+- shift deviation weights
+- holiday deviation weights
+- noise on binary variables
+
+----------------------------------------------------
+2) LOCK COVERAGE STRICTLY IN PHASE 2
+----------------------------------------------------
+
+Currently Phase 2 uses:
+
+  sum(x_i_d_s) >= phase1Coverage
+
+This allows reshuffling and instability.
+
+Change logic as follows:
+
+For each day d and shift s:
+
+If Phase 1 filled that slot completely:
+  (slotCoverage == required[s])
+
+Then enforce:
+  sum(x_i_d_s) = required[s]
+
+If Phase 1 left it partially filled:
+  keep:
+  sum(x_i_d_s) >= phase1CoverageSlot
+
+This ensures deterministic coverage locking.
+
+----------------------------------------------------
+3) MINIMIZE WORKLOAD RANGE DIRECTLY
+----------------------------------------------------
+
+Add two continuous variables:
+
+  maxLoad
+  minLoad
+
+For each staff i:
+
+  tw_i <= maxLoad
+  tw_i >= minLoad
+
+Then change Phase 2 objective to:
+
+Minimize:
+  1000 * coverage_slack
++ 100  * levelSlack
++ 1    * (maxLoad - minLoad)
+
+Remove absolute deviation objective (dw_i) completely.
+We no longer minimize |tw_i - target_i|.
+
+We minimize workload range directly.
+
+----------------------------------------------------
+Implementation Notes
+----------------------------------------------------
+
+- Keep Phase 1 unchanged except removing randomness.
+- Modify only buildPhase2Model.
+- Add maxLoad and minLoad under Bounds section.
+- They must be continuous variables.
+- Ensure solver still builds valid LP format.
+
+After refactor:
+- Solver must be deterministic.
+- Running twice with same input must produce identical schedule.
+- Workload difference between staff should be minimized directly.
+
+Do NOT change external API.
+Do NOT remove existing constraints.
+Only modify objective and fairness model.
+
+Refactor carefully and return full updated buildPhase2Model function.
