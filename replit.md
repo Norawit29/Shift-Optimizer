@@ -34,7 +34,7 @@ The project utilizes a monorepo structure comprising three main parts:
     - **Phase 1 (Coverage)**: `buildCoverageModel()` — Maximizes total coverage (minimizes unfilled slots). Includes staffing capacity, maxShifts, shiftsPerDay, consecutiveRules, maxConsecutiveRules, and requested shifts. Excludes level constraints and fairness.
     - **Phase 1.5 (Quality Check)**: If coverage ratio < 20%, skips fairness phase and returns partial result with diagnostics.
     - **Phase 2 (Fairness + Soft Levels)**: `buildFairnessModel()` — Locks coverage from Phase 1 (cannot reduce). Minimizes load range, per-shift balance, holiday balance. Level constraints added as soft only (slack + penalty weight 10). `writeSoftLevelConstraints()` generates the soft level constraint block.
-- **Optimization Details**: The optimizer is fully deterministic. Solver settings: time_limit=20s, mip_rel_gap=0.01, threads=1 per phase. Greedy post-processing fills remaining slots respecting all hard constraints. `checkLevelFillability()` runs pre-solve to detect level shortages for diagnostics.
+- **Optimization Details**: The optimizer is fully deterministic. Solver settings: time_limit=90s, mip_rel_gap=0.001, threads=1, presolve=on per phase. Worker timeout: 210s. Greedy post-processing fills remaining slots respecting all hard constraints. `checkLevelFillability()` runs pre-solve to detect level shortages for diagnostics.
 - **User Workflow**: A multi-step wizard guides users through schedule configuration, staff management, blocked dates, optimization, and export.
 
 ### Backend (`server/`)

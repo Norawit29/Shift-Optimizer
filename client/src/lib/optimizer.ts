@@ -1408,10 +1408,10 @@ export class ShiftOptimizer {
     let phase1Solution: any;
     try {
       phase1Solution = solver.solve(coverageModel, {
-        time_limit: 20.0,
-        presolve: "on",
-        mip_rel_gap: 0.01,
+        time_limit: 90,
+        mip_rel_gap: 0.001,
         threads: 1,
+        presolve: "on",
       });
     } catch (err: any) {
       console.error("[OPT] Phase 1 (coverage) CRASH:", err);
@@ -1461,10 +1461,10 @@ export class ShiftOptimizer {
       try {
         const solver2 = await createSolver();
         const phase2Solution = solver2.solve(fairnessModel, {
-          time_limit: 20.0,
-          presolve: "on",
-          mip_rel_gap: 0.01,
+          time_limit: 90,
+          mip_rel_gap: 0.001,
           threads: 1,
+          presolve: "on",
         });
 
         console.log(`[OPT] Phase 2 status: ${phase2Solution.Status}, obj: ${phase2Solution.ObjectiveValue}`);
