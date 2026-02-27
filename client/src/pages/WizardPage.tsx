@@ -164,6 +164,17 @@ async function exportToExcel(
 
   const hasLevels = config.staffLevels && config.staffLevels.length > 0;
 
+  const colLetter = (colNum: number): string => {
+    let result = "";
+    let n = colNum;
+    while (n > 0) {
+      n--;
+      result = String.fromCharCode(65 + (n % 26)) + result;
+      n = Math.floor(n / 26);
+    }
+    return result;
+  };
+
   const dateHeaders = result.map((day) => format(getDateForIdx(day.date), "d MMM"));
   const ws3 = wb.addWorksheet(labels.staffSchedule);
   const matrixHeaders = hasLevels
@@ -200,10 +211,28 @@ async function exportToExcel(
       dayCellInfo.push({ shiftIndices: matchedShifts });
     });
 
-    shiftTotals.forEach(ct => rowValues.push(ct));
-    rowValues.push(grandTotal);
+    config.shiftNames.forEach(() => rowValues.push(0));
+    rowValues.push(0);
 
     const excelRow = ws3.addRow(rowValues);
+
+    const excelRowNum = excelRow.number;
+    const dayColStart = 2 + ws3ColOffset;
+    const dayColEnd = dateHeaders.length + 1 + ws3ColOffset;
+    const dayStartLetter = colLetter(dayColStart);
+    const dayEndLetter = colLetter(dayColEnd);
+
+    config.shiftNames.forEach((shiftName, shiftIdx) => {
+      const shiftCountCol = dateHeaders.length + 2 + ws3ColOffset + shiftIdx;
+      const cell = excelRow.getCell(shiftCountCol);
+      cell.value = { formula: `COUNTIF(${dayStartLetter}${excelRowNum}:${dayEndLetter}${excelRowNum},"*${shiftName}*")`, result: shiftTotals[shiftIdx] } as any;
+    });
+
+    const totalCol = dateHeaders.length + 2 + ws3ColOffset + config.shiftNames.length;
+    const firstShiftLetter = colLetter(dateHeaders.length + 2 + ws3ColOffset);
+    const lastShiftLetter = colLetter(totalCol - 1);
+    const totalCell = excelRow.getCell(totalCol);
+    totalCell.value = { formula: `SUM(${firstShiftLetter}${excelRowNum}:${lastShiftLetter}${excelRowNum})`, result: grandTotal } as any;
 
     dayCellInfo.forEach((info, ci) => {
       const dayDate = result[ci].date;
