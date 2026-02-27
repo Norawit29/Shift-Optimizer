@@ -559,7 +559,7 @@ export function ScheduleEditor({
           )}
 
           {sidebarOpen && (
-            <Card className="w-[320px] border shadow-lg bg-white dark:bg-zinc-900 flex flex-col h-full" data-testid="staff-panel">
+            <Card className="min-w-[320px] w-auto max-w-[480px] border shadow-lg bg-white dark:bg-zinc-900 flex flex-col h-full" data-testid="staff-panel">
               <div className="p-3 border-b shrink-0 flex items-center justify-between">
                 <h3 className="font-semibold text-sm">{t.editorStaffPanel}</h3>
                 <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setSidebarOpen(false)} data-testid="button-toggle-staff-panel">

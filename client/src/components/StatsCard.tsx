@@ -91,12 +91,17 @@ function verifyConstraints(
         if (days.size === 0) continue;
         const sortedDays = Array.from(days).sort((a, b) => a - b);
         let consecutive = 1;
+        let streakViolated = false;
         for (let i = 1; i < sortedDays.length; i++) {
           if (sortedDays[i] === sortedDays[i - 1] + 1) {
             consecutive++;
-            if (consecutive > rule.maxDays) violations++;
+            if (consecutive > rule.maxDays && !streakViolated) {
+              violations++;
+              streakViolated = true;
+            }
           } else {
             consecutive = 1;
+            streakViolated = false;
           }
         }
       }
