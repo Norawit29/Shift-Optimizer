@@ -98,7 +98,7 @@ export class ShiftOptimizer {
           if (!isBlocked) available++;
         }
         if (available < required) {
-          hardErrors.push(
+          softWarnings.push(
             `Day ${day}, Shift "${this.config.shiftNames[shiftIdx]}": needs ${required} staff but only ${available} available.`
           );
         }
@@ -112,7 +112,7 @@ export class ShiftOptimizer {
       for (let s = 0; s < S; s++) totalRequired += req[s];
     }
     if (totalMaxShifts < totalRequired) {
-      hardErrors.push(
+      softWarnings.push(
         `Total staff capacity (${totalMaxShifts} shifts) is less than total required slots (${totalRequired}). Increase maxShifts or add more staff.`
       );
     }
