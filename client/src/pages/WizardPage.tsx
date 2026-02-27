@@ -2557,12 +2557,13 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               {isOptimizing ? (
                 <div className="text-center space-y-6 max-w-sm mx-auto">
                   <div className="relative inline-flex items-center justify-center">
-                    <div className="absolute w-28 h-28 rounded-full border-4 border-primary/15 dark:border-primary/25" />
-                    <svg className="w-28 h-28 animate-spin" style={{ animationDuration: "2.5s" }} viewBox="0 0 112 112">
-                      <circle cx="56" cy="56" r="52" fill="none" stroke="hsl(var(--primary) / 0.3)" strokeWidth="4" strokeDasharray="220 110" strokeLinecap="round" />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-2xl font-bold text-primary">{optimizeProgress}/3</span>
+                    <div className="w-24 h-24 rounded-2xl p-2.5" style={{ background: "linear-gradient(135deg, #5FA8D3, #3B82C4)" }}>
+                      <div className="relative w-full h-full grid grid-cols-3 gap-[6px]">
+                        {[...Array(9)].map((_, i) => (
+                          <div key={i} className="logo-grid-cell rounded-[3px] bg-white/40" />
+                        ))}
+                        <div className="logo-grid-highlight absolute top-0 left-0 w-[calc((100%-12px)/3)] h-[calc((100%-12px)/3)] rounded-[3px]" style={{ backgroundColor: "#FACC15" }} />
+                      </div>
                     </div>
                   </div>
                   <div className="space-y-2">
