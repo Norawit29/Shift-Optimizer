@@ -82,9 +82,7 @@ The shift optimization algorithm runs **client-side** in `client/src/lib/optimiz
 
 The optimizer is **fully deterministic** — no `Math.random()` or noise perturbation anywhere. All objective weights are fixed constants with strict priority hierarchy: RANGE_W=1,000,000 (workload range), SHIFT_W=1,000 (shift-type deviation), HOLIDAY_W=100 (holiday deviation), LEVEL_W=10 (level slack).
 
-**Multi-version generation**: Generates 3 versions first. If min-max ranges differ across versions, generates 2 more (total 5) and selects the best 3 (lowest min-max difference) to display.
-
-This 2-phase design ensures coverage is never sacrificed for fairness. The WASM file is served from `client/public/highs.wasm`. Time limit: 15 seconds per phase, MIP gap: 1%.
+This 2-phase design ensures coverage is never sacrificed for fairness. The WASM file is served from `client/public/highs.wasm`. Time limit: 60 seconds per phase, MIP gap: 0.01%, single thread.
 
 **Constraint priority:**
 - HARD: Consecutive shift rules (e.g., Night→Morning blocked) — never violated

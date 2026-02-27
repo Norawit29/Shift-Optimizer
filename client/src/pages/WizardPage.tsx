@@ -880,7 +880,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const executeOptimizer = (softLevels: boolean) => {
     setIsOptimizing(true);
     setOptimizeProgress(0);
-    setOptimizeTotal(3);
+    setOptimizeTotal(1);
     const optimizeStartTime = performance.now();
     (async () => {
       try {
@@ -896,54 +896,20 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           customEndDate: useCustomRange ? customEndDate : undefined,
           holidayStaffPerShift: config.separateHolidayConfig ? holStaff : undefined,
         };
-        const getMinMaxRange = (r: OptimizerResult) => {
-          const ps = r?.metrics?.perStaff;
-          if (!ps || ps.length === 0) return Infinity;
-          return Math.max(...ps.map(s => s.total)) - Math.min(...ps.map(s => s.total));
-        };
 
-        let allResults: OptimizerResult[] = [];
-        for (let v = 0; v < 3; v++) {
-          setOptimizeProgress(v + 1);
-          await new Promise(r => setTimeout(r, 50));
-          const optimizer = new ShiftOptimizer(optimizerConfig, staff, month, year, { softLevelConstraints: softLevels, seed: v });
-          const res = await optimizer.optimize();
-          allResults.push(res);
-        }
+        setOptimizeProgress(1);
+        await new Promise(r => setTimeout(r, 50));
+        const optimizer = new ShiftOptimizer(optimizerConfig, staff, month, year, { softLevelConstraints: softLevels });
+        const res = await optimizer.optimize();
 
-        const ranges = allResults.map(getMinMaxRange);
-        const allEqual = ranges.every(r => r === ranges[0]);
-        if (!allEqual) {
-          setOptimizeTotal(5);
-          for (let v = 3; v < 5; v++) {
-            setOptimizeProgress(v + 1);
-            await new Promise(r => setTimeout(r, 50));
-            const optimizer = new ShiftOptimizer(optimizerConfig, staff, month, year, { softLevelConstraints: softLevels, seed: v });
-            const res = await optimizer.optimize();
-            allResults.push(res);
-          }
-          allResults.sort((a, b) => getMinMaxRange(a) - getMinMaxRange(b));
-          allResults = allResults.slice(0, 3);
-        }
-
-        setResults(allResults);
-        let bestIdx = 0;
-        let bestRange = Infinity;
-        for (let i = 0; i < allResults.length; i++) {
-          const range = getMinMaxRange(allResults[i]);
-          if (range < bestRange) {
-            bestRange = range;
-            bestIdx = i;
-          }
-        }
-        setSelectedVersion(bestIdx);
+        setResults([res]);
+        setSelectedVersion(0);
         setStep(4);
         savePreset();
 
-        const totalDays = allResults[0]?.schedule?.length ?? 0;
-        const r0 = allResults[0];
-        const totalAssigned = r0?.metrics?.perStaff?.reduce((sum, s) => sum + s.total, 0) ?? 0;
-        const unfilledCount = r0?.unfilledSlots?.reduce((sum, u) => sum + (u.required - u.assigned), 0) ?? 0;
+        const totalDays = res?.schedule?.length ?? 0;
+        const totalAssigned = res?.metrics?.perStaff?.reduce((sum, s) => sum + s.total, 0) ?? 0;
+        const unfilledCount = res?.unfilledSlots?.reduce((sum, u) => sum + (u.required - u.assigned), 0) ?? 0;
         const totalRequired = totalAssigned + unfilledCount;
         const coveragePct = totalRequired > 0 ? Math.round((totalAssigned / totalRequired) * 100) : 0;
         try {
@@ -956,12 +922,12 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               dayCount: totalDays,
               shiftCount: config.shiftNames.length,
               coveragePercent: Math.min(coveragePct, 100),
-              isPartial: allResults[0]?.isPartial ?? false,
+              isPartial: res?.isPartial ?? false,
               durationMs: Math.round(performance.now() - optimizeStartTime),
               metadata: {
                 shiftNames: config.shiftNames,
                 softLevels,
-                versions: allResults.length,
+                versions: 1,
                 hasLevels: !!config.staffLevels?.length,
               },
             }),
@@ -979,13 +945,12 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               year,
               config: optimizerConfig,
               staff: anonymizedStaff,
-              result: allResults[0],
+              result: res,
             }),
           }).catch(() => {});
         } catch {}
 
-        const anyPartial = allResults.some(r => r.isPartial && r.unfilledSlots && r.unfilledSlots.length > 0);
-        if (anyPartial) {
+        if (res.isPartial && res.unfilledSlots && res.unfilledSlots.length > 0) {
           toast({ 
             title: t.partialScheduleWarning, 
             description: t.partialScheduleDesc, 
@@ -2588,9 +2553,9 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <h3 className="text-lg font-bold">{t.generatingVersions}...</h3>
+                    <h3 className="text-lg font-bold">{t.generatingVersions}</h3>
                     <p className="text-sm text-muted-foreground">
-                      {lang === "th" ? "กำลังคำนวณเวอร์ชัน" : "Computing version"} {optimizeProgress} {lang === "th" ? "จาก" : "of"} {optimizeTotal}
+                      {lang === "th" ? "กรุณารอสักครู่..." : "Please wait..."}
                     </p>
                   </div>
                   <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
@@ -2645,9 +2610,9 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <h3 className="text-lg font-bold">{t.generatingVersions}...</h3>
+                    <h3 className="text-lg font-bold">{t.generatingVersions}</h3>
                     <p className="text-sm text-muted-foreground">
-                      {lang === "th" ? "กำลังคำนวณเวอร์ชัน" : "Computing version"} {optimizeProgress} {lang === "th" ? "จาก" : "of"} {optimizeTotal}
+                      {lang === "th" ? "กรุณารอสักครู่..." : "Please wait..."}
                     </p>
                   </div>
                   <div className="w-full bg-muted rounded-full h-2 overflow-hidden">

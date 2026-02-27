@@ -42,14 +42,11 @@ export class ShiftOptimizer {
     return new Date(this.year, this.month - 1, dayIndex);
   }
 
-  private seed: number;
-
-  constructor(config: SchedulerConfig, staff: StaffMember[], month: number, year: number, options?: { softLevelConstraints?: boolean; seed?: number }) {
+  constructor(config: SchedulerConfig, staff: StaffMember[], month: number, year: number, options?: { softLevelConstraints?: boolean }) {
     this.config = config;
     this.staff = staff;
     this.month = month;
     this.softLevelConstraints = options?.softLevelConstraints ?? false;
-    this.seed = options?.seed ?? 0;
     this.year = year;
 
     if (config.useCustomRange && config.customStartDate && config.customEndDate) {
@@ -1329,9 +1326,10 @@ export class ShiftOptimizer {
     let phase1Solution: any;
     try {
       phase1Solution = solver.solve(phase1Model, {
-        time_limit: 15.0,
+        time_limit: 60.0,
         presolve: "on",
-        mip_rel_gap: 0.01,
+        mip_rel_gap: 0.0001,
+        threads: 1,
       });
     } catch (err: any) {
       console.error("[OPT] Phase 1 solver CRASH:", err);
@@ -1376,9 +1374,10 @@ export class ShiftOptimizer {
     try {
       const solver2 = await createSolver();
       const phase2Solution = solver2.solve(phase2Model, {
-        time_limit: 15.0,
+        time_limit: 60.0,
         presolve: "on",
-        mip_rel_gap: 0.01,
+        mip_rel_gap: 0.0001,
+        threads: 1,
       });
 
       console.log(`[OPT] Phase 2 status: ${phase2Solution.Status}, ObjectiveValue: ${phase2Solution.ObjectiveValue}`);
