@@ -426,6 +426,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [saveVersion, setSaveVersion] = useState(0);
   const [optimizeProgress, setOptimizeProgress] = useState(0);
+  const [optimizeTotal, setOptimizeTotal] = useState(3);
   const result = results.length > 0 ? results[selectedVersion] : null;
   const [useCustomRange, setUseCustomRange] = useState(false);
   const [customStartDate, setCustomStartDate] = useState("");
@@ -879,6 +880,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const executeOptimizer = (softLevels: boolean) => {
     setIsOptimizing(true);
     setOptimizeProgress(0);
+    setOptimizeTotal(3);
     const optimizeStartTime = performance.now();
     (async () => {
       try {
@@ -894,7 +896,13 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           customEndDate: useCustomRange ? customEndDate : undefined,
           holidayStaffPerShift: config.separateHolidayConfig ? holStaff : undefined,
         };
-        const allResults: OptimizerResult[] = [];
+        const getMinMaxRange = (r: OptimizerResult) => {
+          const ps = r?.metrics?.perStaff;
+          if (!ps || ps.length === 0) return Infinity;
+          return Math.max(...ps.map(s => s.total)) - Math.min(...ps.map(s => s.total));
+        };
+
+        let allResults: OptimizerResult[] = [];
         for (let v = 0; v < 3; v++) {
           setOptimizeProgress(v + 1);
           await new Promise(r => setTimeout(r, 50));
@@ -902,17 +910,30 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           const res = await optimizer.optimize();
           allResults.push(res);
         }
+
+        const ranges = allResults.map(getMinMaxRange);
+        const allEqual = ranges.every(r => r === ranges[0]);
+        if (!allEqual) {
+          setOptimizeTotal(5);
+          for (let v = 3; v < 5; v++) {
+            setOptimizeProgress(v + 1);
+            await new Promise(r => setTimeout(r, 50));
+            const optimizer = new ShiftOptimizer(optimizerConfig, staff, month, year, { softLevelConstraints: softLevels });
+            const res = await optimizer.optimize();
+            allResults.push(res);
+          }
+          allResults.sort((a, b) => getMinMaxRange(a) - getMinMaxRange(b));
+          allResults = allResults.slice(0, 3);
+        }
+
         setResults(allResults);
         let bestIdx = 0;
         let bestRange = Infinity;
         for (let i = 0; i < allResults.length; i++) {
-          const ps = allResults[i]?.metrics?.perStaff;
-          if (ps && ps.length > 0) {
-            const range = Math.max(...ps.map(s => s.total)) - Math.min(...ps.map(s => s.total));
-            if (range < bestRange) {
-              bestRange = range;
-              bestIdx = i;
-            }
+          const range = getMinMaxRange(allResults[i]);
+          if (range < bestRange) {
+            bestRange = range;
+            bestIdx = i;
           }
         }
         setSelectedVersion(bestIdx);
@@ -2569,13 +2590,13 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                   <div className="space-y-2">
                     <h3 className="text-lg font-bold">{t.generatingVersions}...</h3>
                     <p className="text-sm text-muted-foreground">
-                      {lang === "th" ? "กำลังคำนวณเวอร์ชัน" : "Computing version"} {optimizeProgress} {lang === "th" ? "จาก" : "of"} 3
+                      {lang === "th" ? "กำลังคำนวณเวอร์ชัน" : "Computing version"} {optimizeProgress} {lang === "th" ? "จาก" : "of"} {optimizeTotal}
                     </p>
                   </div>
                   <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
                     <div
                       className="h-full bg-primary rounded-full transition-all duration-700 ease-out"
-                      style={{ width: `${(optimizeProgress / 3) * 100}%` }}
+                      style={{ width: `${(optimizeProgress / optimizeTotal) * 100}%` }}
                     />
                   </div>
                 </div>
