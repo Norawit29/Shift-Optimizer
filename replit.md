@@ -78,9 +78,9 @@ Key pages:
 
 The shift optimization algorithm runs **client-side** in `client/src/lib/optimizer.ts` using **Mixed Integer Programming (MIP)** via the HiGHS solver (WASM). The optimizer uses a **2-phase approach**:
 - **Phase 1**: Minimizes coverage slack (`1000 * Σ u_d_s + 100 * Σ levelSlack`) — deterministic, no randomness. Produces optimal per-slot coverage.
-- **Phase 2**: Minimizes workload range directly using `maxLoad - minLoad` continuous variables (weight=10), plus per-shift-type deviation (weight=3) and holiday deviation (weight=5). Fully-filled slots from Phase 1 are locked with equality constraints (`= required`); partially-filled slots use `>=`. Falls back to Phase 1 result if Phase 2 fails.
+- **Phase 2**: Minimizes workload range directly using `maxLoad - minLoad` continuous variables (RANGE_W=1,000,000), plus per-shift-type deviation (SHIFT_W=1,000) and holiday deviation (HOLIDAY_W=100), and level slack (LEVEL_W=10). Fully-filled slots from Phase 1 are locked with equality constraints (`= required`); partially-filled slots use `>=`. Falls back to Phase 1 result if Phase 2 fails.
 
-The optimizer is **deterministic** — no `Math.random()` anywhere. Different versions are produced via a `seed` parameter that creates small deterministic perturbations on shift deviation weights using a hash function.
+The optimizer is **fully deterministic** — no `Math.random()` or noise perturbation anywhere. All objective weights are fixed constants with strict priority hierarchy: RANGE_W=1,000,000 (workload range), SHIFT_W=1,000 (shift-type deviation), HOLIDAY_W=100 (holiday deviation), LEVEL_W=10 (level slack).
 
 **Multi-version generation**: Generates 3 versions first. If min-max ranges differ across versions, generates 2 more (total 5) and selects the best 3 (lowest min-max difference) to display.
 

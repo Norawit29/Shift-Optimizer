@@ -1,0 +1,95 @@
+We need to refactor buildPhase2Model to enforce strict priority:
+
+1) Workload range (maxLoad - minLoad) must be the highest priority.
+2) Shift-type deviation second priority.
+3) Holiday deviation third priority.
+4) Level slack last priority.
+
+IMPORTANT:
+- Do NOT modify any hard constraints.
+- Do NOT modify writeCommonConstraints().
+- Do NOT modify staffing cap, maxShifts, consecutive rules, requested, or blocked logic.
+- Only modify the objective weights and remove deterministic noise.
+
+------------------------------------------------------------
+STEP 1 — REMOVE deterministic noise completely
+------------------------------------------------------------
+
+Delete:
+- detNoise function
+- Any weight perturbation
+- Any randomization
+- Any coefficient adjustment
+
+All weights must be fixed constants.
+
+------------------------------------------------------------
+STEP 2 — KEEP deviation variables
+------------------------------------------------------------
+
+Keep:
+- ts_i_s
+- ds_i_s
+- th_i
+- dh_i
+- staffShiftTargets
+- staffHolidayTargets
+
+We still want shift and holiday balancing.
+
+------------------------------------------------------------
+STEP 3 — APPLY STRICT WEIGHT HIERARCHY
+------------------------------------------------------------
+
+Define weights as:
+
+const RANGE_W = 1_000_000;
+const SHIFT_W = 1_000;
+const HOLIDAY_W = 100;
+const LEVEL_W = 10;
+
+These values ensure:
+
+One unit of range improvement is more important than
+all possible shift + holiday deviation combined.
+
+------------------------------------------------------------
+STEP 4 — OBJECTIVE MUST BE EXACTLY:
+
+Minimize:
+  RANGE_W * maxLoad
+- RANGE_W * minLoad
++ SHIFT_W * sum(ds_i_s)
++ HOLIDAY_W * sum(dh_i)
++ LEVEL_W * sum(levelSlackVars)
+
+No other terms allowed.
+
+------------------------------------------------------------
+STEP 5 — KEEP coverage locking logic exactly as is
+------------------------------------------------------------
+
+Keep:
+
+if (p1Coverage >= required[s]) {
+    sum(x_i_d_s) = required[s]
+} else {
+    sum(x_i_d_s) >= p1Coverage
+}
+
+Do not change this.
+
+------------------------------------------------------------
+EXPECTED RESULT
+------------------------------------------------------------
+
+- Deterministic solver.
+- Hard constraints unchanged.
+- Coverage unchanged.
+- Range minimized first.
+- If multiple equal-range solutions exist,
+  solver improves shift balance.
+- Then improves holiday balance.
+
+Return the full updated buildPhase2Model function only.
+Do not change any other functions.

@@ -623,9 +623,10 @@ export class ShiftOptimizer {
     const D = this.daysInMonth;
     const S = this.config.shiftNames.length;
 
-    const WORKLOAD_W = 10;
-    const SHIFT_W = 3;
-    const HOLIDAY_W = 5;
+    const RANGE_W = 1_000_000;
+    const SHIFT_W = 1_000;
+    const HOLIDAY_W = 100;
+    const LEVEL_W = 10;
 
     const enableHolidayBalance = this.config.balanceHolidays && this.holidayDays.size > 0;
 
@@ -736,34 +737,26 @@ export class ShiftOptimizer {
       }
     }
 
-    const detNoise = (idx: number): number => {
-      const h = ((idx * 2654435761 + this.seed * 2246822519) >>> 0) % 10000;
-      return (h / 10000 - 0.5) * 0.1;
-    };
-
     const lines: string[] = [];
     lines.push("Minimize");
     lines.push("  obj:");
     const objParts: string[] = [];
-    objParts.push(`${WORKLOAD_W} maxLoad`);
-    objParts.push(`- ${WORKLOAD_W} minLoad`);
-    let noiseIdx = 0;
+    objParts.push(`${RANGE_W} maxLoad`);
+    objParts.push(`- ${RANGE_W} minLoad`);
     for (let i = 0; i < N; i++) {
       for (let s = 0; s < S; s++) {
         if (staffShiftTargets[s][i] > 0) {
-          const w = fmt(SHIFT_W + detNoise(noiseIdx++));
-          objParts.push(`+ ${w} ds_${i}_${s}`);
+          objParts.push(`+ ${SHIFT_W} ds_${i}_${s}`);
         }
       }
     }
     if (enableHolidayBalance && staffHolidayTargets.some(t => t > 0)) {
       for (let i = 0; i < N; i++) {
-        const w = fmt(HOLIDAY_W + detNoise(noiseIdx++));
-        objParts.push(`+ ${w} dh_${i}`);
+        objParts.push(`+ ${HOLIDAY_W} dh_${i}`);
       }
     }
     for (const lv of levelSlackVars) {
-      objParts.push(`+ 100 ${lv}`);
+      objParts.push(`+ ${LEVEL_W} ${lv}`);
     }
     lines.push(writeTerms(objParts, 8));
 
