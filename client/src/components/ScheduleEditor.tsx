@@ -396,9 +396,9 @@ export function ScheduleEditor({
 
   return (
     <>
-      <div className="flex gap-3 w-full" data-testid="schedule-editor">
+      <div className="flex gap-3 w-full items-stretch" data-testid="schedule-editor">
         <div className="flex-1 min-w-0">
-          <Card className="border shadow-lg overflow-hidden bg-white dark:bg-zinc-900">
+          <Card className="border shadow-lg overflow-hidden bg-white dark:bg-zinc-900 h-full">
             <ScrollArea className="h-[700px] w-full rounded-md">
               <div className="min-w-[800px]">
                 <Table>
@@ -546,20 +546,25 @@ export function ScheduleEditor({
           </Card>
         </div>
 
-        <div className="shrink-0 flex flex-col gap-2">
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            data-testid="button-toggle-staff-panel"
-          >
-            {sidebarOpen ? <PanelRightClose className="w-4 h-4" /> : <PanelRightOpen className="w-4 h-4" />}
-          </Button>
+        <div className="shrink-0 flex flex-col">
+          {!sidebarOpen && (
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => setSidebarOpen(true)}
+              data-testid="button-toggle-staff-panel"
+            >
+              <PanelRightOpen className="w-4 h-4" />
+            </Button>
+          )}
 
           {sidebarOpen && (
-            <Card className="w-[320px] border shadow-lg bg-white dark:bg-zinc-900 flex flex-col" data-testid="staff-panel" style={{ height: '700px' }}>
-              <div className="p-3 border-b shrink-0">
+            <Card className="w-[320px] border shadow-lg bg-white dark:bg-zinc-900 flex flex-col h-full" data-testid="staff-panel">
+              <div className="p-3 border-b shrink-0 flex items-center justify-between">
                 <h3 className="font-semibold text-sm">{t.editorStaffPanel}</h3>
+                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setSidebarOpen(false)} data-testid="button-toggle-staff-panel">
+                  <PanelRightClose className="w-4 h-4" />
+                </Button>
               </div>
               <ScrollArea className="flex-1">
                 <div className="p-2 space-y-1">
