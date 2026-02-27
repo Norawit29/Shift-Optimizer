@@ -1445,26 +1445,15 @@ export function runOptimizerInWorker(
   year: number,
   options?: { softLevelConstraints?: boolean }
 ): Promise<OptimizerResult> {
-  return new Promise((resolve, reject) => {
-    const worker = new Worker(
-      new URL("./solverWorker.ts", import.meta.url),
-      { type: "module" }
-    );
-
-    worker.postMessage({ config, staff, month, year, options });
-
-    worker.onmessage = (e: MessageEvent) => {
-      if (e.data.success) {
-        resolve(e.data.result);
-      } else {
-        reject(new Error(e.data.error));
+  return new Promise<OptimizerResult>((resolve, reject) => {
+    setTimeout(async () => {
+      try {
+        const optimizer = new ShiftOptimizer(config, staff, month, year, options);
+        const result = await optimizer.optimize();
+        resolve(result);
+      } catch (err: any) {
+        reject(err);
       }
-      worker.terminate();
-    };
-
-    worker.onerror = (err) => {
-      reject(err);
-      worker.terminate();
-    };
+    }, 0);
   });
 }
