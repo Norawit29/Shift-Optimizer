@@ -273,6 +273,9 @@ async function exportToExcel(
 
     const levelNames = config.staffLevels!;
     const totalLabel = lang === "th" ? "รวม" : "Total";
+    const staffFirstRow = 2;
+    const staffLastRow = 1 + staff.length;
+    const levelColLetter = colLetter(2);
 
     config.shiftNames.forEach((shiftName, shiftIdx) => {
       const shiftColor = SHIFT_COLORS[shiftIdx % SHIFT_COLORS.length];
@@ -280,26 +283,36 @@ async function exportToExcel(
       shiftHeaderRow.getCell(1).font = { bold: true, size: 12 };
       shiftHeaderRow.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF" + shiftColor } };
 
+      const levelRowNumbers: number[] = [];
+
       levelNames.forEach((lvlName, lvlIdx) => {
         const minReq = config.minStaffPerLevel?.[shiftIdx]?.[lvlIdx] ?? 0;
         const displayName = minReq > 0 ? `${lvlName} >=${minReq}` : lvlName;
         const rowValues: (string | number)[] = ["", displayName];
+        const staticCounts: number[] = [];
         result.forEach((day) => {
           const assignedIds = day.shifts[shiftIdx]?.map(String) || [];
           const count = assignedIds.filter(id => {
             const member = staff.find(s => s.id === id);
             return member && (member.level ?? 0) === lvlIdx;
           }).length;
-          rowValues.push(count);
+          rowValues.push(0);
+          staticCounts.push(count);
         });
         const lvlRow = ws3.addRow(rowValues);
+        const lvlRowNum = lvlRow.number;
+        levelRowNumbers.push(lvlRowNum);
         lvlRow.getCell(2).font = { bold: true };
-        for (let ci = 2 + ws3ColOffset; ci <= result.length + 1 + ws3ColOffset; ci++) {
-          const cell = lvlRow.getCell(ci);
-          const val = cell.value as number;
-          if (minReq > 0 && val < minReq) {
+
+        for (let ci = 0; ci < result.length; ci++) {
+          const excelCol = ci + 2 + ws3ColOffset;
+          const dayColL = colLetter(excelCol);
+          const cell = lvlRow.getCell(excelCol);
+          const cachedVal = staticCounts[ci];
+          cell.value = { formula: `COUNTIFS($${levelColLetter}$${staffFirstRow}:$${levelColLetter}$${staffLastRow},"${lvlName}",${dayColL}$${staffFirstRow}:${dayColL}$${staffLastRow},"*${shiftName}*")`, result: cachedVal } as any;
+          if (minReq > 0 && cachedVal < minReq) {
             cell.font = { bold: true, color: { argb: "FFFF0000" } };
-          } else if (val > 0) {
+          } else if (cachedVal > 0) {
             cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE8F5E9" } };
             cell.font = { bold: true };
           }
@@ -308,14 +321,23 @@ async function exportToExcel(
       });
 
       const totalRowValues: (string | number)[] = ["", totalLabel];
+      const staticTotals: number[] = [];
       result.forEach((day) => {
         const count = (day.shifts[shiftIdx] || []).filter(id => id && id.length > 0).length;
-        totalRowValues.push(count);
+        totalRowValues.push(0);
+        staticTotals.push(count);
       });
       const totRow = ws3.addRow(totalRowValues);
+      const totRowNum = totRow.number;
       totRow.getCell(2).font = { bold: true };
-      for (let ci = 2 + ws3ColOffset; ci <= result.length + 1 + ws3ColOffset; ci++) {
-        const cell = totRow.getCell(ci);
+
+      for (let ci = 0; ci < result.length; ci++) {
+        const excelCol = ci + 2 + ws3ColOffset;
+        const cell = totRow.getCell(excelCol);
+        if (levelRowNumbers.length > 0) {
+          const sumParts = levelRowNumbers.map(rn => `${colLetter(excelCol)}${rn}`).join(",");
+          cell.value = { formula: `SUM(${sumParts})`, result: staticTotals[ci] } as any;
+        }
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF" + shiftColor } };
         cell.font = { bold: true };
         cell.alignment = { horizontal: "center" };
