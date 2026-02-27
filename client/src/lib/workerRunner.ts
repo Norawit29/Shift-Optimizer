@@ -1,6 +1,6 @@
 import type { SchedulerConfig, StaffMember, OptimizerResult } from "@shared/schema";
 
-const WORKER_TIMEOUT_MS = 150_000;
+const WORKER_TIMEOUT_MS = 90_000;
 
 export function runOptimizerInWorker(
   config: SchedulerConfig,

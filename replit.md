@@ -84,7 +84,7 @@ The shift optimization algorithm runs **client-side** inside a **Web Worker** (`
 
 The optimizer is **fully deterministic** — no `Math.random()` or noise perturbation anywhere. All objective weights are fixed constants with strict priority hierarchy: RANGE_W=1,000,000 (workload range), SHIFT_W=1,000 (shift-type deviation), HOLIDAY_W=100 (holiday deviation), LEVEL_W=10 (level slack).
 
-This 2-phase design ensures coverage is never sacrificed for fairness. The WASM file is served from `client/public/highs.wasm`. Time limit: 60 seconds per phase, MIP gap: 0.01%, single thread.
+This 2-phase design ensures coverage is never sacrificed for fairness. The WASM file is served from `client/public/highs.wasm`. Time limit: 30 seconds per phase, MIP gap: 0.5%, single thread. Both phases handle "Time limit reached" gracefully — if an incumbent solution exists, it's used instead of failing.
 
 **Constraint priority:**
 - HARD: Consecutive shift rules (e.g., Night→Morning blocked) — never violated

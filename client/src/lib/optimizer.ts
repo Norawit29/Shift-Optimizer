@@ -1322,9 +1322,9 @@ export class ShiftOptimizer {
     let phase1Solution: any;
     try {
       phase1Solution = solver.solve(phase1Model, {
-        time_limit: 60.0,
+        time_limit: 30.0,
         presolve: "on",
-        mip_rel_gap: 0.0001,
+        mip_rel_gap: 0.005,
         threads: 1,
       });
     } catch (err: any) {
@@ -1334,12 +1334,17 @@ export class ShiftOptimizer {
 
     console.log(`[OPT] Phase 1 status: ${phase1Solution.Status}, ObjectiveValue: ${phase1Solution.ObjectiveValue}`);
 
-    if (failStatuses.includes(phase1Solution.Status) || !phase1Solution.Columns) {
+    if (phase1Solution.Status === "Time limit reached" && phase1Solution.Columns) {
+      console.warn(`[OPT] Phase 1 hit time limit, using best solution found so far`);
+    } else if (failStatuses.includes(phase1Solution.Status) || !phase1Solution.Columns) {
       console.error(`[OPT] Phase 1 FAILED: ${phase1Solution.Status}`);
       let infeasibleMsg = feasibilityMsg || "";
       if (phase1Solution.Status === "Infeasible" && !feasibilityMsg) {
         const totalReq = this.config.staffPerShift.reduce((a, b) => a + b, 0);
         infeasibleMsg = `Infeasible: constraints conflict. Staff per day: ${totalReq}, Staff count: ${this.staff.length}, Shifts: ${this.config.shiftNames.length}, Rules: ${this.config.consecutiveRules.length} consecutive + ${(this.config.maxConsecutiveRules || []).length} max-consecutive. Try: reduce staff-per-shift, relax consecutive rules, remove conflicting requested shifts, or add more staff.`;
+      }
+      if (phase1Solution.Status === "Time limit reached") {
+        infeasibleMsg = "Time limit reached and no feasible solution found. Try reducing constraints or adding more staff.";
       }
       return this.makeEmptyResult(infeasibleMsg || `Phase 1 solver status: ${phase1Solution.Status}.`);
     }
@@ -1370,15 +1375,18 @@ export class ShiftOptimizer {
     try {
       const solver2 = await createSolver();
       const phase2Solution = solver2.solve(phase2Model, {
-        time_limit: 60.0,
+        time_limit: 30.0,
         presolve: "on",
-        mip_rel_gap: 0.0001,
+        mip_rel_gap: 0.005,
         threads: 1,
       });
 
       console.log(`[OPT] Phase 2 status: ${phase2Solution.Status}, ObjectiveValue: ${phase2Solution.ObjectiveValue}`);
 
-      if (failStatuses.includes(phase2Solution.Status) || !phase2Solution.Columns) {
+      if (phase2Solution.Status === "Time limit reached" && phase2Solution.Columns) {
+        console.warn(`[OPT] Phase 2 hit time limit, using best solution found so far`);
+        finalSolution = phase2Solution;
+      } else if (failStatuses.includes(phase2Solution.Status) || !phase2Solution.Columns) {
         console.warn(`[OPT] Phase 2 FAILED (${phase2Solution.Status}), falling back to Phase 1`);
         finalSolution = phase1Solution;
         usedPhase = 1;
