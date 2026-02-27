@@ -141,32 +141,46 @@ function verifyConstraints(
   }
 
   if (config.staffLevels && config.staffLevels.length > 0 && config.minStaffPerLevel) {
-    let violations = 0;
-    const levelDescs: string[] = [];
+    let totalViolations = 0;
+    let totalSlots = 0;
+    const perShiftDetails: string[] = [];
     for (let s = 0; s < S; s++) {
       const mins = config.minStaffPerLevel[s];
       if (!mins) continue;
       for (let lvl = 0; lvl < config.staffLevels.length; lvl++) {
         const minReq = mins[lvl] || 0;
         if (minReq <= 0) continue;
-        levelDescs.push(`${config.shiftNames[s]}: ${config.staffLevels[lvl]} ≥${minReq}`);
+        let shiftViolations = 0;
+        let shiftTotal = 0;
         for (const daySchedule of schedule) {
           const assignedEntries = daySchedule.shifts[s] || [];
           const filledEntries = assignedEntries.filter(e => !!e);
+          if (filledEntries.length === 0) continue;
+          shiftTotal++;
           const levelCount = filledEntries.filter(entry => {
             const member = staff.find(m => m.id === entry || m.name === entry);
             return member && (member.level ?? 0) === lvl;
           }).length;
-          if (levelCount < minReq && filledEntries.length > 0) violations++;
+          if (levelCount < minReq) shiftViolations++;
         }
+        totalSlots += shiftTotal;
+        totalViolations += shiftViolations;
+        const statusText = shiftTotal > 0
+          ? `${shiftTotal - shiftViolations}/${shiftTotal}`
+          : "—";
+        perShiftDetails.push(`${config.shiftNames[s]}: ${config.staffLevels[lvl]} ≥${minReq} (${statusText})`);
       }
     }
-    if (levelDescs.length > 0) {
+    if (perShiftDetails.length > 0) {
+      const passedSlots = totalSlots - totalViolations;
+      const summaryDetail = totalSlots > 0
+        ? `${perShiftDetails.join(", ")} — ${t.levelSlotSummary?.(passedSlots, totalSlots) ?? `${passedSlots}/${totalSlots} ผ่าน`}`
+        : perShiftDetails.join(", ");
       checks.push({
         label: t.constraintLevelMin,
-        detail: levelDescs.join(", "),
-        passed: violations === 0,
-        violations,
+        detail: summaryDetail,
+        passed: totalViolations === 0,
+        violations: totalViolations,
       });
     }
   }
@@ -292,7 +306,7 @@ export function StatsCard({ result, config, staff }: StatsCardProps) {
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium leading-tight">{check.label}</p>
-                  <p className="text-xs text-muted-foreground truncate">{check.detail}</p>
+                  <p className="text-xs text-muted-foreground break-words">{check.detail}</p>
                 </div>
                 {!check.passed && (
                   <span className="text-xs font-medium text-red-600 dark:text-red-400 shrink-0">

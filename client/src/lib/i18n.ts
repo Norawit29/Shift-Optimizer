@@ -234,6 +234,7 @@ const translations = {
     constraintMaxShifts: "Max shifts",
     constraintBlocked: "Blocked dates",
     constraintLevelMin: "Min staff per level",
+    levelSlotSummary: (passed: number, total: number) => `${passed}/${total} passed`,
     violationCount: "violations",
 
     // HistoryPage
@@ -614,6 +615,7 @@ const translations = {
     constraintMaxShifts: "จำนวนเวรสูงสุด",
     constraintBlocked: "วันที่บล็อก",
     constraintLevelMin: "ระดับบุคลากรต่อเวรขั้นต่ำ",
+    levelSlotSummary: (passed: number, total: number) => `${passed}/${total} ผ่าน`,
     violationCount: "จุดที่ไม่ผ่าน",
 
     // HistoryPage
