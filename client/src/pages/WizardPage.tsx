@@ -72,11 +72,18 @@ const getInitialConfig = (lang: string): SchedulerConfig => ({
 });
 
 const INITIAL_STAFF: StaffMember[] = [
-  { id: "1", name: "Dr. Smith", maxShifts: 20, blocked: [] },
-  { id: "2", name: "Nurse Joy", maxShifts: 20, blocked: [] },
-  { id: "3", name: "Dr. House", maxShifts: 20, blocked: [] },
-  { id: "4", name: "Nurse Jackie", maxShifts: 20, blocked: [] },
-  { id: "5", name: "Dr. Grey", maxShifts: 20, blocked: [] },
+  { id: "1", name: "Dr. Smith", maxShifts: 25, blocked: [] },
+  { id: "2", name: "Nurse Joy", maxShifts: 25, blocked: [] },
+  { id: "3", name: "Dr. House", maxShifts: 25, blocked: [] },
+  { id: "4", name: "Nurse Jackie", maxShifts: 25, blocked: [] },
+  { id: "5", name: "Dr. Grey", maxShifts: 25, blocked: [] },
+  { id: "6", name: "Nurse Somsri", maxShifts: 25, blocked: [] },
+  { id: "7", name: "Dr. Somchai", maxShifts: 25, blocked: [] },
+  { id: "8", name: "Nurse Nightingale", maxShifts: 25, blocked: [] },
+  { id: "9", name: "Dr. Strange", maxShifts: 25, blocked: [] },
+  { id: "10", name: "Nurse Ratched", maxShifts: 25, blocked: [] },
+  { id: "11", name: "Dr. Watson", maxShifts: 25, blocked: [] },
+  { id: "12", name: "Staff Member 12", maxShifts: 25, blocked: [] },
 ];
 
 const SHIFT_COLORS = [
