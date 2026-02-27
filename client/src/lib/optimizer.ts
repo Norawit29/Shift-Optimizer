@@ -1,9 +1,21 @@
 import type { StaffMember, SchedulerConfig, DaySchedule, OptimizerResult, UnfilledSlot } from "@shared/schema";
 import { getDaysInMonth, differenceInCalendarDays, addDays, parseISO } from "date-fns";
-import highsFactory from "highs";
+
+let _cachedHighsFactory: any = null;
+
+async function loadHighsFactory(): Promise<any> {
+  if (_cachedHighsFactory) return _cachedHighsFactory;
+  const response = await fetch("/highs.js");
+  const code = await response.text();
+  const wrappedCode = code + "\nreturn Module;";
+  const factory = new Function(wrappedCode)();
+  _cachedHighsFactory = factory;
+  return factory;
+}
 
 async function createSolver(): Promise<any> {
-  const solver = await (highsFactory as any)({
+  const highsFactory = await loadHighsFactory();
+  const solver = await highsFactory({
     locateFile: (file: string) => `/${file}`
   });
   return solver;
