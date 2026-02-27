@@ -229,12 +229,11 @@ const translations = {
     minMaxLabel: "Min-Max",
     constraintPassed: "Passed",
     constraintViolated: "Violated",
-    constraintNextDay: "Next-day rule",
-    constraintSameDay: "Same-day rule",
+    constraintConsecutive: "Consecutive shift rules",
     constraintMaxConsecutive: "Max consecutive",
     constraintMaxShifts: "Max shifts",
     constraintBlocked: "Blocked dates",
-    constraintCoverage: "Shift coverage",
+    constraintLevelMin: "Min staff per level",
     violationCount: "violations",
 
     // HistoryPage
@@ -590,12 +589,11 @@ const translations = {
     minMaxLabel: "Min-Max",
     constraintPassed: "ผ่าน",
     constraintViolated: "ไม่ผ่าน",
-    constraintNextDay: "กฎเวรวันถัดไป",
-    constraintSameDay: "กฎเวรวันเดียวกัน",
+    constraintConsecutive: "กฎเวรต่อเนื่อง",
     constraintMaxConsecutive: "เวรติดต่อกันสูงสุด",
     constraintMaxShifts: "จำนวนเวรสูงสุด",
     constraintBlocked: "วันที่บล็อก",
-    constraintCoverage: "จำนวนคนต่อเวร",
+    constraintLevelMin: "ระดับบุคลากรต่อเวรขั้นต่ำ",
     violationCount: "จุดที่ไม่ผ่าน",
 
     // HistoryPage

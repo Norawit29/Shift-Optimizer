@@ -41,44 +41,31 @@ function verifyConstraints(
     }
   }
 
-  const nextDayRules = config.consecutiveRules.filter(r => !r.type || r.type === 'nextDay');
-  if (nextDayRules.length > 0) {
+  if (config.consecutiveRules.length > 0) {
     let violations = 0;
-    const ruleDescs = nextDayRules.map(r => `${config.shiftNames[r.from]}→${config.shiftNames[r.to]}`);
+    const ruleDescs: string[] = [];
+    const nextDayRules = config.consecutiveRules.filter(r => !r.type || r.type === 'nextDay');
+    const sameDayRules = config.consecutiveRules.filter(r => r.type === 'sameDay');
+    for (const r of nextDayRules) ruleDescs.push(`${config.shiftNames[r.from]}→${config.shiftNames[r.to]}`);
+    for (const r of sameDayRules) ruleDescs.push(`${config.shiftNames[r.from]}+${config.shiftNames[r.to]}`);
     for (const [, assignments] of staffAssignments) {
       for (const rule of nextDayRules) {
         for (const a of assignments) {
           if (a.shift === rule.from) {
-            const hasNext = assignments.some(b => b.day === a.day + 1 && b.shift === rule.to);
-            if (hasNext) violations++;
+            if (assignments.some(b => b.day === a.day + 1 && b.shift === rule.to)) violations++;
           }
         }
       }
-    }
-    checks.push({
-      label: t.constraintNextDay,
-      detail: ruleDescs.join(", "),
-      passed: violations === 0,
-      violations,
-    });
-  }
-
-  const sameDayRules = config.consecutiveRules.filter(r => r.type === 'sameDay');
-  if (sameDayRules.length > 0) {
-    let violations = 0;
-    const ruleDescs = sameDayRules.map(r => `${config.shiftNames[r.from]}+${config.shiftNames[r.to]}`);
-    for (const [, assignments] of staffAssignments) {
       for (const rule of sameDayRules) {
         for (const a of assignments) {
           if (a.shift === rule.from) {
-            const hasSame = assignments.some(b => b.day === a.day && b.shift === rule.to);
-            if (hasSame) violations++;
+            if (assignments.some(b => b.day === a.day && b.shift === rule.to)) violations++;
           }
         }
       }
     }
     checks.push({
-      label: t.constraintSameDay,
+      label: t.constraintConsecutive,
       detail: ruleDescs.join(", "),
       passed: violations === 0,
       violations,
@@ -143,6 +130,36 @@ function verifyConstraints(
       passed: violations === 0,
       violations,
     });
+  }
+
+  if (config.staffLevels && config.staffLevels.length > 0 && config.minStaffPerLevel) {
+    let violations = 0;
+    const levelDescs: string[] = [];
+    for (let s = 0; s < S; s++) {
+      const mins = config.minStaffPerLevel[s];
+      if (!mins) continue;
+      for (let lvl = 0; lvl < config.staffLevels.length; lvl++) {
+        const minReq = mins[lvl] || 0;
+        if (minReq <= 0) continue;
+        levelDescs.push(`${config.shiftNames[s]}: ${config.staffLevels[lvl]} ≥${minReq}`);
+        for (const daySchedule of schedule) {
+          const assignedNames = daySchedule.shifts[s] || [];
+          const levelCount = assignedNames.filter(name => {
+            const member = staff.find(m => m.name === name);
+            return member && member.level === lvl;
+          }).length;
+          if (levelCount < minReq && assignedNames.length > 0) violations++;
+        }
+      }
+    }
+    if (levelDescs.length > 0) {
+      checks.push({
+        label: t.constraintLevelMin,
+        detail: levelDescs.join(", "),
+        passed: violations === 0,
+        violations,
+      });
+    }
   }
 
   return checks;
