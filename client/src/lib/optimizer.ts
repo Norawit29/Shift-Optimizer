@@ -29,7 +29,7 @@ export class ShiftOptimizer {
   private daysInMonth: number;
   private rangeStartDate: Date | null = null;
   private holidayDays: Set<number>;
-  private coverageThreshold = 0.7;
+  private coverageThreshold = 0.2;
 
   private getActualDate(dayIndex: number): Date {
     if (this.rangeStartDate) {

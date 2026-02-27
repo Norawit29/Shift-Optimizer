@@ -271,6 +271,7 @@ const translations = {
 
     // Schedule Editor
     editorStaffPanel: "Staff Panel",
+    totalLabel: "Total",
     editorTotalShifts: "Total Shifts",
     editorDragToAssign: "Drag to assign",
     editorRemoveStaff: "Remove from shift",
@@ -652,6 +653,7 @@ const translations = {
 
     // Schedule Editor
     editorStaffPanel: "รายชื่อบุคลากร",
+    totalLabel: "รวม",
     editorTotalShifts: "เวรทั้งหมด",
     editorDragToAssign: "ลากเพื่อจัดเวร",
     editorRemoveStaff: "ลบออกจากเวร",

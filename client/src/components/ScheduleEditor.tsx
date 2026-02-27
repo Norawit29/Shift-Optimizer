@@ -557,11 +557,11 @@ export function ScheduleEditor({
           </Button>
 
           {sidebarOpen && (
-            <Card className="w-[320px] border shadow-lg bg-white dark:bg-zinc-900" data-testid="staff-panel">
-              <div className="p-3 border-b">
+            <Card className="w-[320px] border shadow-lg bg-white dark:bg-zinc-900 flex flex-col" data-testid="staff-panel" style={{ height: '700px' }}>
+              <div className="p-3 border-b shrink-0">
                 <h3 className="font-semibold text-sm">{t.editorStaffPanel}</h3>
               </div>
-              <ScrollArea className="h-[640px]">
+              <ScrollArea className="flex-1">
                 <div className="p-2 space-y-1">
                   {staff.map((s, idx) => {
                     const metrics = staffMetrics[idx];
@@ -618,6 +618,10 @@ export function ScheduleEditor({
                               <div className="text-xs font-medium">{metrics.byShift[si]}</div>
                             </div>
                           ))}
+                          <div className="text-center px-1 border-l border-muted">
+                            <div className="text-[10px] text-muted-foreground whitespace-nowrap">{t.totalLabel || "รวม"}</div>
+                            <div className="text-xs font-bold">{metrics.total}</div>
+                          </div>
                         </div>
                       </div>
                     );
