@@ -145,18 +145,6 @@ function verifyConstraints(
     });
   }
 
-  {
-    const unfilled = result.unfilledSlots?.reduce((sum, u) => sum + (u.required - u.assigned), 0) || 0;
-    const totalAssigned = result.metrics.perStaff.reduce((sum, s) => sum + s.total, 0);
-    const totalRequired = totalAssigned + unfilled;
-    checks.push({
-      label: t.constraintCoverage,
-      detail: `${totalAssigned}/${totalRequired}`,
-      passed: unfilled === 0,
-      violations: unfilled,
-    });
-  }
-
   return checks;
 }
 
@@ -195,8 +183,6 @@ export function StatsCard({ result, config, staff }: StatsCardProps) {
     () => verifyConstraints(result, config, staff, t),
     [result, config, staff, t]
   );
-  const allPassed = constraintChecks.every(c => c.passed);
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <Card className="md:col-span-2 shadow-md">
@@ -260,18 +246,7 @@ export function StatsCard({ result, config, staff }: StatsCardProps) {
 
         <Card className="shadow-md">
           <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t.status}</CardTitle>
-              {allPassed ? (
-                <span className="text-xs font-medium text-green-600 dark:text-green-400 flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> {t.constraintPassed}
-                </span>
-              ) : (
-                <span className="text-xs font-medium text-red-600 dark:text-red-400 flex items-center gap-1">
-                  <XCircle className="w-3.5 h-3.5" /> {t.constraintViolated}
-                </span>
-              )}
-            </div>
+            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t.status}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {constraintChecks.map((check, i) => (
