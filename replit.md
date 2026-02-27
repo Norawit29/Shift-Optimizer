@@ -30,10 +30,11 @@ The project utilizes a monorepo structure comprising three main parts:
 ### Frontend (`client/`)
 
 - **Technology Stack**: React with TypeScript, Wouter for routing, TanStack React Query for server state management, shadcn/ui for UI components (built on Radix UI), Tailwind CSS for styling, Framer Motion for animations, Recharts for data visualization, and date-fns for date utilities. Vite is used as the build tool.
-- **Core Functionality**: The shift optimization algorithm runs client-side within a Web Worker (`solverWorker.ts`) to maintain UI responsiveness. It uses the HiGHS solver (WASM) with a 2-phase Mixed Integer Programming (MIP) approach.
-    - **Phase 1**: Minimizes coverage slack to achieve optimal per-slot coverage.
-    - **Phase 2**: Minimizes workload range and deviation, locking in Phase 1's coverage.
-- **Optimization Details**: The optimizer is fully deterministic with fixed objective weights prioritizing coverage over fairness. It includes greedy post-processing to fill remaining slots while respecting hard constraints.
+- **Core Functionality**: The shift optimization algorithm runs client-side within a Web Worker (`solverWorker.ts`) to maintain UI responsiveness. It uses the HiGHS solver (WASM) with a 3-stage Mixed Integer Programming (MIP) pipeline.
+    - **Phase 1 (Coverage)**: `buildCoverageModel()` — Maximizes total coverage (minimizes unfilled slots). Includes staffing capacity, maxShifts, shiftsPerDay, consecutiveRules, maxConsecutiveRules, and requested shifts. Excludes level constraints and fairness.
+    - **Phase 1.5 (Quality Check)**: If coverage ratio < 70%, skips fairness phase and returns partial result with diagnostics.
+    - **Phase 2 (Fairness + Soft Levels)**: `buildFairnessModel()` — Locks coverage from Phase 1 (cannot reduce). Minimizes load range, per-shift balance, holiday balance. Level constraints added as soft only (slack + penalty weight 10). `writeSoftLevelConstraints()` generates the soft level constraint block.
+- **Optimization Details**: The optimizer is fully deterministic. Solver settings: time_limit=20s, mip_rel_gap=0.01, threads=1 per phase. Greedy post-processing fills remaining slots respecting all hard constraints. `checkLevelFillability()` runs pre-solve to detect level shortages for diagnostics.
 - **User Workflow**: A multi-step wizard guides users through schedule configuration, staff management, blocked dates, optimization, and export.
 
 ### Backend (`server/`)

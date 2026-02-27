@@ -1,0 +1,117 @@
+Refactor the ShiftOptimizer architecture to a 3-stage optimization pipeline for improved solver stability.
+
+Current problem:
+The optimizer becomes unstable or very slow when some shifts cannot be fully filled, especially when level constraints are active. The current design mixes coverage, level constraints, and fairness into Phase 1 and Phase 2, which makes the MIP search space too complex.
+
+We want to refactor into a cleaner staged architecture:
+
+NEW ARCHITECTURE
+
+Phase 1 – Coverage Only
+
+Objective: Maximize total coverage (minimize unfilled slots).
+
+Include:
+
+Staffing capacity per shift
+
+maxShifts per staff
+
+shiftsPerDay
+
+consecutiveRules
+
+maxConsecutiveRules
+
+requested shifts (=1 hard)
+
+EXCLUDE:
+
+Level constraints (minStaffPerLevel)
+
+Fairness constraints (range, per-shift balance, holiday balance)
+
+Phase 1.5 – Coverage Quality Check
+After Phase 1:
+
+Compute coverage ratio = covered / totalRequired
+
+If coverage ratio < 0.7:
+
+Skip fairness phase entirely
+
+Return partial result with diagnostics
+
+If coverage ratio >= 0.7:
+
+Proceed to Phase 2
+
+Phase 2 – Fairness + Optional Soft Level
+
+Lock coverage from Phase 1 (do not reduce it)
+
+Objective:
+
+Minimize load range
+
+Balance per-shift distribution
+
+Balance holidays
+
+Level constraints:
+
+Add as soft constraints only (with slack + penalty)
+
+DO NOT make level constraints hard >= constraints
+
+IMPLEMENTATION DETAILS
+
+Remove level constraints from Phase 1 model builder entirely.
+
+Create three separate model builders:
+
+buildCoverageModel()
+
+buildFairnessModel()
+
+(optional) buildLevelSoftConstraints()
+
+In optimize():
+
+Step 1:
+const phase1 = buildCoverageModel()
+solve()
+
+Step 2:
+compute coverageRatio
+
+if (coverageRatio < 0.7) {
+return partial result (skip fairness)
+}
+
+Step 3:
+buildFairnessModel() using:
+- Phase 1 solution
+- coverage lock constraints:
+sum(x_d_s) >= phase1Coverage[d][s]
+
+solve fairness model
+
+Solver settings:
+Use:
+time_limit: 20
+mip_rel_gap: 0.01
+threads: 1
+
+IMPORTANT:
+Never allow fairness phase to reduce coverage found in Phase 1.
+
+GOALS
+
+Prevent solver from exploring large infeasible search trees.
+
+Improve stability when coverage is structurally limited.
+
+Separate coverage feasibility from fairness optimization.
+
+Avoid hard level constraints in early phases
