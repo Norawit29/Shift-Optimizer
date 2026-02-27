@@ -326,11 +326,24 @@ export function ScheduleEditor({
         return;
       }
 
+      let scheduleForValidation = schedule;
+      if (sourceDayIndex !== undefined && sourceShiftIndex !== undefined) {
+        scheduleForValidation = schedule.map((day) => {
+          if (day.date !== sourceDayIndex) return day;
+          return {
+            ...day,
+            shifts: day.shifts.map((shift, si) =>
+              si === sourceShiftIndex ? shift.filter((id) => id !== staffId) : shift
+            ),
+          };
+        });
+      }
+
       const warnings = validateAssignment(
         staffId,
         targetDayDate,
         targetShiftIdx,
-        schedule,
+        scheduleForValidation,
         config,
         staff,
         month,
