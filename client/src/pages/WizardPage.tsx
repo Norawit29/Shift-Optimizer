@@ -2631,7 +2631,35 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
             title={t.generatedSchedule}
             className="max-w-6xl"
           >
-            <div className="space-y-8">
+            {isOptimizing && (
+              <div className="flex items-center justify-center p-8">
+                <div className="text-center space-y-6 max-w-sm mx-auto">
+                  <div className="relative inline-flex items-center justify-center">
+                    <div className="w-24 h-24 rounded-2xl p-2.5" style={{ background: "linear-gradient(135deg, #5FA8D3, #3B82C4)" }}>
+                      <div className="relative w-full h-full grid grid-cols-3 gap-[6px]">
+                        {[...Array(9)].map((_, i) => (
+                          <div key={i} className="logo-grid-cell rounded-[3px] bg-white/40" />
+                        ))}
+                        <div className="logo-grid-highlight absolute top-0 left-0 w-[calc((100%-12px)/3)] h-[calc((100%-12px)/3)] rounded-[3px]" style={{ backgroundColor: "#FACC15" }} />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-bold">{t.generatingVersions}...</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {lang === "th" ? "กำลังคำนวณเวอร์ชัน" : "Computing version"} {optimizeProgress} {lang === "th" ? "จาก" : "of"} {optimizeTotal}
+                    </p>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                    <div
+                      className="h-full bg-primary rounded-full transition-all duration-700 ease-out"
+                      style={{ width: `${(optimizeProgress / optimizeTotal) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+            <div className={`space-y-8 ${isOptimizing ? "hidden" : ""}`}>
               <div className="flex items-center gap-4 bg-white dark:bg-zinc-900 p-4 rounded-xl border flex-wrap">
                 <div className="flex-1 min-w-[200px]">
                   <Label>{t.scheduleName}</Label>
