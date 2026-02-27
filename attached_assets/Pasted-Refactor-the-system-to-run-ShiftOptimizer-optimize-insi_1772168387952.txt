@@ -1,0 +1,119 @@
+Refactor the system to run ShiftOptimizer.optimize() inside a Web Worker
+to prevent UI freezing.
+
+DO NOT modify:
+- model structure
+- constraints
+- objective
+- fairness logic
+- coverage locking
+- solver configuration
+
+Only move heavy computation off the main thread.
+
+------------------------------------------------------------
+STEP 1 — Create a new file: solverWorker.ts
+------------------------------------------------------------
+
+Move the entire optimize() call inside the worker.
+
+solverWorker.ts:
+
+------------------------------------------------------------
+
+import { ShiftOptimizer } from "./ShiftOptimizer";
+
+self.onmessage = async (e) => {
+  try {
+    const { config, staff, month, year, options } = e.data;
+
+    const optimizer = new ShiftOptimizer(
+      config,
+      staff,
+      month,
+      year,
+      options
+    );
+
+    const result = await optimizer.optimize();
+
+    self.postMessage({ success: true, result });
+  } catch (err) {
+    self.postMessage({
+      success: false,
+      error: err?.message || "Worker error"
+    });
+  }
+};
+
+------------------------------------------------------------
+STEP 2 — Update main thread code
+------------------------------------------------------------
+
+Replace direct optimize() calls with worker usage:
+
+------------------------------------------------------------
+
+export function runOptimizerInWorker(
+  config,
+  staff,
+  month,
+  year,
+  options
+) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(
+      new URL("./solverWorker.ts", import.meta.url),
+      { type: "module" }
+    );
+
+    worker.postMessage({ config, staff, month, year, options });
+
+    worker.onmessage = (e) => {
+      if (e.data.success) {
+        resolve(e.data.result);
+      } else {
+        reject(e.data.error);
+      }
+      worker.terminate();
+    };
+
+    worker.onerror = (err) => {
+      reject(err);
+      worker.terminate();
+    };
+  });
+}
+
+------------------------------------------------------------
+STEP 3 — Replace all direct optimize() calls
+------------------------------------------------------------
+
+Replace:
+
+  const result = await optimizer.optimize();
+
+With:
+
+  const result = await runOptimizerInWorker(
+    config,
+    staff,
+    month,
+    year,
+    options
+  );
+
+------------------------------------------------------------
+EXPECTED BEHAVIOR
+------------------------------------------------------------
+
+- Solver runs in background thread.
+- UI remains responsive.
+- No Chrome “Page Unresponsive”.
+- No changes to optimization results.
+- No logic modifications.
+
+Return only:
+- solverWorker.ts
+- updated main-thread function that calls worker
+Do not modify other files.

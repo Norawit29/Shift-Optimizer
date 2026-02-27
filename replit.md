@@ -76,7 +76,7 @@ Key pages:
 - `HomePage` — Landing page with single "Create Schedule" button
 - `WizardPage` — Multi-step form wizard for schedule creation (config → staff → blocked dates → optimize → export). Always runs in export-only mode — generates Excel output directly, no database saving.
 
-The shift optimization algorithm runs **client-side** in `client/src/lib/optimizer.ts` using **Mixed Integer Programming (MIP)** via the HiGHS solver (WASM). The optimizer uses a **2-phase approach**:
+The shift optimization algorithm runs **client-side** inside a **Web Worker** (`client/src/lib/solverWorker.ts`) to keep the UI responsive during computation. The main thread calls `runOptimizerInWorker()` (in `optimizer.ts`) which spawns a module worker, posts config/staff/month/year/options, and resolves/rejects based on the worker's response. The optimizer uses **Mixed Integer Programming (MIP)** via the HiGHS solver (WASM) with a **2-phase approach**:
 - **Phase 1**: Minimizes coverage slack (`1000 * Σ u_d_s + 100 * Σ levelSlack`) — deterministic, no randomness. Produces optimal per-slot coverage.
 - **Phase 2**: Minimizes workload range directly using `maxLoad - minLoad` continuous variables (RANGE_W=1,000,000), plus per-shift-type deviation (SHIFT_W=1,000) and holiday deviation (HOLIDAY_W=100), and level slack (LEVEL_W=10). Fully-filled slots from Phase 1 are locked with equality constraints (`= required`); partially-filled slots use `>=`. Falls back to Phase 1 result if Phase 2 fails.
 

@@ -3,7 +3,7 @@ import { useCreateSchedule } from "@/hooks/use-schedules";
 import { type StaffMember, type SchedulerConfig, type OptimizerResult, type DaySchedule } from "@shared/schema";
 import { useAuth } from "@/context/AuthContext";
 import { GoogleSignInButton, UserMenu } from "@/components/GoogleSignIn";
-import { ShiftOptimizer } from "@/lib/optimizer";
+import { runOptimizerInWorker } from "@/lib/optimizer";
 import { WizardStep } from "@/components/WizardStep";
 import { ScheduleView } from "@/components/ScheduleView";
 import { StatsCard } from "@/components/StatsCard";
@@ -899,8 +899,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
 
         setOptimizeProgress(1);
         await new Promise(r => setTimeout(r, 50));
-        const optimizer = new ShiftOptimizer(optimizerConfig, staff, month, year, { softLevelConstraints: softLevels });
-        const res = await optimizer.optimize();
+        const res = await runOptimizerInWorker(optimizerConfig, staff, month, year, { softLevelConstraints: softLevels });
 
         setResults([res]);
         setSelectedVersion(0);
