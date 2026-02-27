@@ -2827,7 +2827,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                 </TabsContent>
                 
                 <TabsContent value="stats" className="mt-0">
-                  <StatsCard result={result} config={config} />
+                  <StatsCard result={result} config={config} staff={staff} />
                 </TabsContent>
               </Tabs>
             </div>

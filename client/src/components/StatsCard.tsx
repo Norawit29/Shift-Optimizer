@@ -1,15 +1,166 @@
-import { type OptimizerResult, type SchedulerConfig } from "@shared/schema";
+import { type OptimizerResult, type SchedulerConfig, type StaffMember } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { Users, AlertTriangle, CheckCircle2, LayoutGrid } from "lucide-react";
+import { CheckCircle2, XCircle, LayoutGrid } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
+import { useMemo } from "react";
 
 interface StatsCardProps {
   result: OptimizerResult;
   config: SchedulerConfig;
+  staff: StaffMember[];
 }
 
-export function StatsCard({ result, config }: StatsCardProps) {
+interface ConstraintCheck {
+  label: string;
+  detail: string;
+  passed: boolean;
+  violations: number;
+}
+
+function verifyConstraints(
+  result: OptimizerResult,
+  config: SchedulerConfig,
+  staff: StaffMember[],
+  t: any
+): ConstraintCheck[] {
+  const { schedule } = result;
+  const checks: ConstraintCheck[] = [];
+  const S = config.shiftNames.length;
+
+  const staffAssignments: Map<string, { day: number; shift: number }[]> = new Map();
+  for (const member of staff) {
+    staffAssignments.set(member.name, []);
+  }
+  for (const daySchedule of schedule) {
+    for (let s = 0; s < daySchedule.shifts.length; s++) {
+      for (const name of daySchedule.shifts[s]) {
+        const arr = staffAssignments.get(name);
+        if (arr) arr.push({ day: daySchedule.date, shift: s });
+      }
+    }
+  }
+
+  const nextDayRules = config.consecutiveRules.filter(r => !r.type || r.type === 'nextDay');
+  if (nextDayRules.length > 0) {
+    let violations = 0;
+    const ruleDescs = nextDayRules.map(r => `${config.shiftNames[r.from]}→${config.shiftNames[r.to]}`);
+    for (const [, assignments] of staffAssignments) {
+      for (const rule of nextDayRules) {
+        for (const a of assignments) {
+          if (a.shift === rule.from) {
+            const hasNext = assignments.some(b => b.day === a.day + 1 && b.shift === rule.to);
+            if (hasNext) violations++;
+          }
+        }
+      }
+    }
+    checks.push({
+      label: t.constraintNextDay,
+      detail: ruleDescs.join(", "),
+      passed: violations === 0,
+      violations,
+    });
+  }
+
+  const sameDayRules = config.consecutiveRules.filter(r => r.type === 'sameDay');
+  if (sameDayRules.length > 0) {
+    let violations = 0;
+    const ruleDescs = sameDayRules.map(r => `${config.shiftNames[r.from]}+${config.shiftNames[r.to]}`);
+    for (const [, assignments] of staffAssignments) {
+      for (const rule of sameDayRules) {
+        for (const a of assignments) {
+          if (a.shift === rule.from) {
+            const hasSame = assignments.some(b => b.day === a.day && b.shift === rule.to);
+            if (hasSame) violations++;
+          }
+        }
+      }
+    }
+    checks.push({
+      label: t.constraintSameDay,
+      detail: ruleDescs.join(", "),
+      passed: violations === 0,
+      violations,
+    });
+  }
+
+  if (config.maxConsecutiveRules && config.maxConsecutiveRules.length > 0) {
+    let violations = 0;
+    const ruleDescs: string[] = [];
+    for (const rule of config.maxConsecutiveRules) {
+      const shiftNames = rule.shifts.map(i => config.shiftNames[i]).join("+");
+      ruleDescs.push(`${shiftNames} ≤${rule.maxDays}`);
+      for (const [, assignments] of staffAssignments) {
+        const days = new Set(assignments.filter(a => rule.shifts.includes(a.shift)).map(a => a.day));
+        if (days.size === 0) continue;
+        const sortedDays = Array.from(days).sort((a, b) => a - b);
+        let consecutive = 1;
+        for (let i = 1; i < sortedDays.length; i++) {
+          if (sortedDays[i] === sortedDays[i - 1] + 1) {
+            consecutive++;
+            if (consecutive > rule.maxDays) violations++;
+          } else {
+            consecutive = 1;
+          }
+        }
+      }
+    }
+    checks.push({
+      label: t.constraintMaxConsecutive,
+      detail: ruleDescs.join(", "),
+      passed: violations === 0,
+      violations,
+    });
+  }
+
+  {
+    let violations = 0;
+    for (const member of staff) {
+      const assignments = staffAssignments.get(member.name) || [];
+      if (assignments.length > member.maxShifts) violations++;
+    }
+    checks.push({
+      label: t.constraintMaxShifts,
+      detail: `${staff.length} ${t.staff}`,
+      passed: violations === 0,
+      violations,
+    });
+  }
+
+  {
+    let violations = 0;
+    for (const member of staff) {
+      const assignments = staffAssignments.get(member.name) || [];
+      for (const blocked of member.blocked) {
+        const isAssigned = assignments.some(a => a.day === blocked.date && (blocked.shift === -1 || a.shift === blocked.shift));
+        if (isAssigned) violations++;
+      }
+    }
+    checks.push({
+      label: t.constraintBlocked,
+      detail: `${staff.reduce((s, m) => s + m.blocked.length, 0)} ${t.constraintBlocked.toLowerCase()}`,
+      passed: violations === 0,
+      violations,
+    });
+  }
+
+  {
+    const unfilled = result.unfilledSlots?.reduce((sum, u) => sum + (u.required - u.assigned), 0) || 0;
+    const totalAssigned = result.metrics.perStaff.reduce((sum, s) => sum + s.total, 0);
+    const totalRequired = totalAssigned + unfilled;
+    checks.push({
+      label: t.constraintCoverage,
+      detail: `${totalAssigned}/${totalRequired}`,
+      passed: unfilled === 0,
+      violations: unfilled,
+    });
+  }
+
+  return checks;
+}
+
+export function StatsCard({ result, config, staff }: StatsCardProps) {
   const { metrics } = result;
   const { t } = useLanguage();
 
@@ -39,6 +190,12 @@ export function StatsCard({ result, config }: StatsCardProps) {
   let coverageColor = "text-green-500";
   if (coveragePct < 100) coverageColor = "text-yellow-500";
   if (coveragePct < 80) coverageColor = "text-red-500";
+
+  const constraintChecks = useMemo(
+    () => verifyConstraints(result, config, staff, t),
+    [result, config, staff, t]
+  );
+  const allPassed = constraintChecks.every(c => c.passed);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -103,54 +260,46 @@ export function StatsCard({ result, config }: StatsCardProps) {
 
         <Card className="shadow-md">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t.status}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-3">
-              {result.isPartial ? (
-                <>
-                  <div className="bg-yellow-100 p-2 rounded-full dark:bg-yellow-900/30">
-                    <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">{t.imbalanced}</p>
-                    <p className="text-xs text-muted-foreground">{t.someStaffMore}</p>
-                  </div>
-                </>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{t.status}</CardTitle>
+              {allPassed ? (
+                <span className="text-xs font-medium text-green-600 dark:text-green-400 flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> {t.constraintPassed}
+                </span>
               ) : (
-                <>
-                  <div className="bg-green-100 p-2 rounded-full dark:bg-green-900/30">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">{t.optimized}</p>
-                    <p className="text-xs text-muted-foreground">{t.rulesRespected}</p>
-                  </div>
-                </>
+                <span className="text-xs font-medium text-red-600 dark:text-red-400 flex items-center gap-1">
+                  <XCircle className="w-3.5 h-3.5" /> {t.constraintViolated}
+                </span>
               )}
             </div>
-            
-            {metrics.range > 3 && !result.isPartial && (
-              <div className="flex items-center gap-3">
-                <div className="bg-yellow-100 p-2 rounded-full dark:bg-yellow-900/30">
-                  <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {constraintChecks.map((check, i) => (
+              <div
+                key={i}
+                className={`flex items-center gap-3 p-2.5 rounded-lg transition-colors ${
+                  check.passed
+                    ? "bg-green-50 dark:bg-green-900/10"
+                    : "bg-red-50 dark:bg-red-900/10"
+                }`}
+                data-testid={`constraint-check-${i}`}
+              >
+                {check.passed ? (
+                  <CheckCircle2 className="w-4.5 h-4.5 text-green-500 dark:text-green-400 shrink-0" />
+                ) : (
+                  <XCircle className="w-4.5 h-4.5 text-red-500 dark:text-red-400 shrink-0" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium leading-tight">{check.label}</p>
+                  <p className="text-xs text-muted-foreground truncate">{check.detail}</p>
                 </div>
-                <div>
-                  <p className="font-semibold">{t.imbalanced}</p>
-                  <p className="text-xs text-muted-foreground">{t.someStaffMore}</p>
-                </div>
+                {!check.passed && (
+                  <span className="text-xs font-medium text-red-600 dark:text-red-400 shrink-0">
+                    {check.violations}
+                  </span>
+                )}
               </div>
-            )}
-            
-            <div className="flex items-center gap-3">
-              <div className="bg-blue-100 p-2 rounded-full dark:bg-blue-900/30">
-                <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <p className="font-semibold">{metrics.perStaff.length} {t.staff}</p>
-                <p className="text-xs text-muted-foreground">{t.activeMembers}</p>
-              </div>
-            </div>
+            ))}
           </CardContent>
         </Card>
       </div>
