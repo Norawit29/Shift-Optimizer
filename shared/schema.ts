@@ -86,6 +86,7 @@ export const userPresets = pgTable("user_presets", {
 
 export const schedules = pgTable("schedules", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id"),
   name: text("name").notNull().default("Untitled Schedule"),
   month: integer("month").notNull(),
   year: integer("year").notNull(),

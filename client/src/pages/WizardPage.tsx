@@ -6,6 +6,7 @@ import { GoogleSignInButton, UserMenu } from "@/components/GoogleSignIn";
 import { runOptimizerInWorker } from "@/lib/workerRunner";
 import { WizardStep } from "@/components/WizardStep";
 import { ScheduleView } from "@/components/ScheduleView";
+import { ScheduleEditor } from "@/components/ScheduleEditor";
 import { StatsCard } from "@/components/StatsCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -431,6 +432,54 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const [useCustomRange, setUseCustomRange] = useState(false);
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
+
+  const handleScheduleEdit = useCallback((updatedSchedule: DaySchedule[]) => {
+    if (results.length === 0) return;
+    const isCustom = useCustomRange && customStartDate;
+    const base = isCustom
+      ? new Date(customStartDate)
+      : new Date(year, month - 1, 1);
+    const hols = new Set(config.holidays || []);
+
+    const getDate = (idx: number) => {
+      if (isCustom) {
+        const d = new Date(customStartDate);
+        d.setDate(d.getDate() + idx - 1);
+        return d;
+      }
+      const d = new Date(base);
+      d.setDate(idx);
+      return d;
+    };
+
+    const perStaff = staff.map((s) => {
+      const byShift = new Array(config.shiftsPerDay).fill(0);
+      const weekdayByShift = new Array(config.shiftsPerDay).fill(0);
+      const holidayByShift = new Array(config.shiftsPerDay).fill(0);
+      let total = 0, weekdayTotal = 0, holidayTotal = 0;
+      for (const day of updatedSchedule) {
+        const dt = getDate(day.date);
+        const isHol = dt.getDay() === 0 || dt.getDay() === 6 || hols.has(day.date);
+        for (let si = 0; si < day.shifts.length; si++) {
+          if (day.shifts[si].includes(s.id)) {
+            byShift[si]++;
+            total++;
+            if (isHol) { holidayByShift[si]++; holidayTotal++; }
+            else { weekdayByShift[si]++; weekdayTotal++; }
+          }
+        }
+      }
+      return { name: s.name, total, byShift, weekdayTotal, weekdayByShift, holidayTotal, holidayByShift };
+    });
+
+    const totals = perStaff.map(s => s.total);
+    const range = totals.length > 0 ? Math.max(...totals) - Math.min(...totals) : 0;
+
+    const updated = { ...results[selectedVersion], schedule: updatedSchedule, metrics: { range, perStaff } };
+    const newResults = [...results];
+    newResults[selectedVersion] = updated;
+    setResults(newResults);
+  }, [results, selectedVersion, config, staff, month, year, useCustomRange, customStartDate]);
 
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [loginPromptReason, setLoginPromptReason] = useState<"next" | "save">("next");
@@ -2711,19 +2760,18 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                 </TabsList>
                 
                 <TabsContent value="calendar" className="mt-0">
-                  <ScheduleView 
-                    schedule={result.schedule} 
+                  <ScheduleEditor
+                    schedule={result.schedule}
                     config={{
                       ...config,
                       useCustomRange,
                       customStartDate: useCustomRange ? customStartDate : undefined,
                       customEndDate: useCustomRange ? customEndDate : undefined,
-                    }} 
-                    staff={staff} 
-                    month={month} 
+                    }}
+                    staff={staff}
+                    month={month}
                     year={year}
-                    unfilledSlots={result.unfilledSlots}
-                    feasibilityWarning={result.feasibilityWarning}
+                    onScheduleChange={handleScheduleEdit}
                   />
                 </TabsContent>
 

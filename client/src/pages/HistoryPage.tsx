@@ -1,20 +1,11 @@
+import { useState } from "react";
 import { useSchedules, useDeleteSchedule } from "@/hooks/use-schedules";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Trash2, Calendar, ArrowLeft, Loader2, Eye } from "lucide-react";
 import { format } from "date-fns";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { useLanguage } from "@/context/LanguageContext";
 import { LanguageToggle } from "@/components/LanguageToggle";
 
@@ -22,6 +13,7 @@ export default function HistoryPage() {
   const { data: schedules, isLoading } = useSchedules();
   const deleteMutation = useDeleteSchedule();
   const { t } = useLanguage();
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
   if (isLoading) {
     return (
@@ -36,7 +28,7 @@ export default function HistoryPage() {
       <div className="max-w-6xl mx-auto space-y-8">
         <div className="flex items-center gap-4">
           <Link href="/">
-            <Button variant="ghost" size="icon" className="rounded-full">
+            <Button variant="ghost" size="icon" className="rounded-full" data-testid="button-back-home">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
@@ -53,13 +45,13 @@ export default function HistoryPage() {
             <h3 className="text-lg font-medium">{t.noSchedulesFound}</h3>
             <p className="text-muted-foreground mb-6">{t.createFirstRoster}</p>
             <Link href="/create">
-              <Button>{t.createSchedule}</Button>
+              <Button data-testid="button-create-new">{t.createSchedule}</Button>
             </Link>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {schedules.map((schedule) => (
-              <Card key={schedule.id} className="hover:shadow-lg transition-shadow border-l-4 border-l-primary group">
+              <Card key={schedule.id} className="hover:shadow-lg transition-shadow border-l-4 border-l-primary group" data-testid={`card-schedule-${schedule.id}`}>
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start">
                     <CardTitle className="text-xl truncate pr-4">{schedule.name}</CardTitle>
@@ -74,42 +66,51 @@ export default function HistoryPage() {
                 <CardContent>
                   <div className="flex gap-2 mt-4">
                     <Link href={`/schedule/${schedule.id}`} className="flex-1">
-                      <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                      <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors" data-testid={`button-open-${schedule.id}`}>
                         <Eye className="mr-2 h-4 w-4" />
                         {t.view}
                       </Button>
                     </Link>
-
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>{t.areYouSure}</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            {t.deleteConfirm}
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
-                          <AlertDialogAction 
-                            onClick={() => deleteMutation.mutate(schedule.id)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            {t.delete}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => setDeleteId(schedule.id)}
+                      data-testid={`button-delete-${schedule.id}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
         )}
+
+        <Dialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t.areYouSure}</DialogTitle>
+              <DialogDescription>{t.deleteConfirm}</DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end gap-3 mt-4">
+              <Button variant="outline" onClick={() => setDeleteId(null)}>{t.cancel}</Button>
+              <Button
+                variant="destructive"
+                disabled={deleteMutation.isPending}
+                onClick={() => {
+                  if (deleteId !== null) {
+                    deleteMutation.mutate(deleteId, { onSuccess: () => setDeleteId(null) });
+                  }
+                }}
+                data-testid="button-confirm-delete"
+              >
+                {deleteMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {t.delete}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

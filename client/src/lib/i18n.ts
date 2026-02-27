@@ -268,6 +268,20 @@ const translations = {
     optimizationComplete: "Optimization complete!",
     optimizationFailed: "Optimization Failed",
 
+    // Schedule Editor
+    editorStaffPanel: "Staff Panel",
+    editorTotalShifts: "Total Shifts",
+    editorDragToAssign: "Drag to assign",
+    editorRemoveStaff: "Remove from shift",
+    editorBlockedDate: "Blocked on this date",
+    editorConsecutiveViolation: "Consecutive shift rule violated",
+    editorMaxShiftsReached: "Max shifts reached",
+    editorAlreadyAssigned: "Already assigned to another shift",
+    editorConstraintWarning: "Constraint Warning",
+    editorAssignedAnyway: "Staff assigned despite constraint violation",
+    editorAtLimit: "At limit",
+    editorOverLimit: "Over limit",
+
     // Partial result
     partialScheduleWarning: "Partial Schedule",
     partialScheduleDesc: "Could not fill all slots. Unfilled positions are highlighted in red for you to assign manually.",
@@ -627,6 +641,20 @@ const translations = {
     scheduleGenerated: "สร้างตารางเวรแล้ว",
     optimizationComplete: "จัดเวรเสร็จสมบูรณ์!",
     optimizationFailed: "จัดเวรล้มเหลว",
+
+    // Schedule Editor
+    editorStaffPanel: "รายชื่อบุคลากร",
+    editorTotalShifts: "เวรทั้งหมด",
+    editorDragToAssign: "ลากเพื่อจัดเวร",
+    editorRemoveStaff: "ลบออกจากเวร",
+    editorBlockedDate: "บล็อกวันนี้",
+    editorConsecutiveViolation: "ขัดกับกฎเวรต่อเนื่อง",
+    editorMaxShiftsReached: "ถึงจำนวนเวรสูงสุดแล้ว",
+    editorAlreadyAssigned: "จัดเวรอื่นในวันเดียวกันแล้ว",
+    editorConstraintWarning: "คำเตือนเงื่อนไข",
+    editorAssignedAnyway: "จัดเวรแม้จะขัดเงื่อนไข",
+    editorAtLimit: "ถึงจำกัด",
+    editorOverLimit: "เกินจำกัด",
 
     // Partial result
     partialScheduleWarning: "ตารางเวรไม่สมบูรณ์",

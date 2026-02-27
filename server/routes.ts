@@ -2,8 +2,8 @@ import type { Express } from "express";
 import type { Server } from "http";
 import { OAuth2Client } from "google-auth-library";
 import { db } from "./db";
-import { users, userPresets, feedbacks, usageLogs, generatedSchedules } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { users, userPresets, feedbacks, usageLogs, generatedSchedules, schedules, insertScheduleSchema } from "@shared/schema";
+import { eq, desc, and } from "drizzle-orm";
 import { sanityClient, urlFor } from "./sanity";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -264,6 +264,133 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Generated schedule error:", error);
       res.status(500).json({ message: "Failed to save generated schedule" });
+    }
+  });
+
+  app.get("/api/schedules", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const result = await db
+        .select()
+        .from(schedules)
+        .where(eq(schedules.userId, userId))
+        .orderBy(desc(schedules.createdAt));
+      res.json(result);
+    } catch (error) {
+      console.error("List schedules error:", error);
+      res.status(500).json({ message: "Failed to fetch schedules" });
+    }
+  });
+
+  app.get("/api/schedules/:id", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid schedule ID" });
+      }
+      const [schedule] = await db
+        .select()
+        .from(schedules)
+        .where(and(eq(schedules.id, id), eq(schedules.userId, userId)))
+        .limit(1);
+      if (!schedule) {
+        return res.status(404).json({ message: "Schedule not found" });
+      }
+      res.json(schedule);
+    } catch (error) {
+      console.error("Get schedule error:", error);
+      res.status(500).json({ message: "Failed to fetch schedule" });
+    }
+  });
+
+  app.post("/api/schedules", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const parsed = insertScheduleSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid schedule data", field: parsed.error.issues[0]?.path?.join(".") });
+      }
+      const [schedule] = await db
+        .insert(schedules)
+        .values({ ...parsed.data, userId } as any)
+        .returning();
+      res.status(201).json(schedule);
+    } catch (error) {
+      console.error("Create schedule error:", error);
+      res.status(500).json({ message: "Failed to create schedule" });
+    }
+  });
+
+  app.put("/api/schedules/:id", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid schedule ID" });
+      }
+      const [existing] = await db
+        .select()
+        .from(schedules)
+        .where(and(eq(schedules.id, id), eq(schedules.userId, userId)))
+        .limit(1);
+      if (!existing) {
+        return res.status(404).json({ message: "Schedule not found" });
+      }
+      const allowedFields = ["name", "config", "staff", "result", "isPublished"] as const;
+      const updateData: Record<string, any> = { updatedAt: new Date() };
+      for (const field of allowedFields) {
+        if (req.body[field] !== undefined) {
+          updateData[field] = req.body[field];
+        }
+      }
+      const [updated] = await db
+        .update(schedules)
+        .set(updateData)
+        .where(eq(schedules.id, id))
+        .returning();
+      res.json(updated);
+    } catch (error) {
+      console.error("Update schedule error:", error);
+      res.status(500).json({ message: "Failed to update schedule" });
+    }
+  });
+
+  app.delete("/api/schedules/:id", async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid schedule ID" });
+      }
+      const [existing] = await db
+        .select()
+        .from(schedules)
+        .where(and(eq(schedules.id, id), eq(schedules.userId, userId)))
+        .limit(1);
+      if (!existing) {
+        return res.status(404).json({ message: "Schedule not found" });
+      }
+      await db.delete(schedules).where(eq(schedules.id, id));
+      res.status(204).send();
+    } catch (error) {
+      console.error("Delete schedule error:", error);
+      res.status(500).json({ message: "Failed to delete schedule" });
     }
   });
 

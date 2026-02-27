@@ -64,6 +64,44 @@ export function useCreateSchedule() {
   });
 }
 
+export function useUpdateSchedule() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: Partial<InsertSchedule> }) => {
+      const url = buildUrl(api.schedules.update.path, { id });
+      const res = await fetch(url, {
+        method: api.schedules.update.method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Failed to update schedule");
+      }
+      return api.schedules.update.responses[200].parse(await res.json());
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: [api.schedules.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.schedules.get.path, variables.id] });
+      toast({
+        title: "Success",
+        description: "Schedule updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}
+
 export function useDeleteSchedule() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
