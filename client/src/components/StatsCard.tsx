@@ -206,7 +206,7 @@ export function StatsCard({ result, config, staff }: StatsCardProps) {
         <CardHeader>
           <CardTitle className="text-lg">{t.workloadDistribution}</CardTitle>
         </CardHeader>
-        <CardContent className="h-[220px]">
+        <CardContent className="h-[220px] flex items-center">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} margin={{ top: 10, right: 20, left: 20, bottom: 5 }}>
               <XAxis dataKey="name" hide />
