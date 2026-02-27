@@ -953,21 +953,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           }).catch(() => {});
         } catch {}
 
-        if (res.levelAutoSoftened) {
-          toast({ title: t.levelFeasibilityWarning, description: t.levelAutoSoftNotice });
-        }
-
-        if (res.isPartial && res.unfilledSlots && res.unfilledSlots.length > 0) {
-          toast({ 
-            title: t.partialScheduleWarning, 
-            description: t.partialScheduleDesc, 
-            variant: "destructive" 
-          });
-        } else if (softLevels || res.levelAutoSoftened) {
-          toast({ title: t.scheduleGenerated, description: t.softLevelNote, variant: "default" });
-        } else {
-          toast({ title: t.scheduleGenerated, description: t.optimizationComplete });
-        }
+        toast({ title: t.scheduleGenerated, description: t.optimizationComplete });
       } catch (e: any) {
         const isTimeout = e.message === "OPTIMIZER_TIMEOUT";
         toast({ 

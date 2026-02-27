@@ -28,14 +28,22 @@ function verifyConstraints(
   const checks: ConstraintCheck[] = [];
   const S = config.shiftNames.length;
 
+  const idToName = new Map<string, string>();
+  for (const member of staff) {
+    idToName.set(member.id, member.name);
+    idToName.set(member.name, member.name);
+  }
+
   const staffAssignments: Map<string, { day: number; shift: number }[]> = new Map();
   for (const member of staff) {
     staffAssignments.set(member.name, []);
   }
   for (const daySchedule of schedule) {
     for (let s = 0; s < daySchedule.shifts.length; s++) {
-      for (const name of daySchedule.shifts[s]) {
-        const arr = staffAssignments.get(name);
+      for (const entry of daySchedule.shifts[s]) {
+        if (!entry) continue;
+        const resolvedName = idToName.get(entry) || entry;
+        const arr = staffAssignments.get(resolvedName);
         if (arr) arr.push({ day: daySchedule.date, shift: s });
       }
     }
@@ -143,12 +151,13 @@ function verifyConstraints(
         if (minReq <= 0) continue;
         levelDescs.push(`${config.shiftNames[s]}: ${config.staffLevels[lvl]} ≥${minReq}`);
         for (const daySchedule of schedule) {
-          const assignedNames = daySchedule.shifts[s] || [];
-          const levelCount = assignedNames.filter(name => {
-            const member = staff.find(m => m.name === name);
-            return member && member.level === lvl;
+          const assignedEntries = daySchedule.shifts[s] || [];
+          const filledEntries = assignedEntries.filter(e => !!e);
+          const levelCount = filledEntries.filter(entry => {
+            const member = staff.find(m => m.id === entry || m.name === entry);
+            return member && (member.level ?? 0) === lvl;
           }).length;
-          if (levelCount < minReq && assignedNames.length > 0) violations++;
+          if (levelCount < minReq && filledEntries.length > 0) violations++;
         }
       }
     }
