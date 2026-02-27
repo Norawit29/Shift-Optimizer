@@ -485,8 +485,6 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [loginPromptReason, setLoginPromptReason] = useState<"next" | "save">("next");
   const [presetLoaded, setPresetLoaded] = useState(false);
-  const [showLevelWarning, setShowLevelWarning] = useState(false);
-  const [levelWarnings, setLevelWarnings] = useState<string[]>([]);
   const [showPreCheckWarning, setShowPreCheckWarning] = useState(false);
   const [preCheckWarnings, setPreCheckWarnings] = useState<string[]>([]);
   const [preCheckConflicts, setPreCheckConflicts] = useState<string[]>([]);
@@ -883,162 +881,6 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     return (member.requested || []).some(r => r.date === date);
   };
 
-  const checkLevelFeasibility = (): string[] => {
-    const levels = config.staffLevels;
-    const minPerLevel = config.minStaffPerLevel;
-    if (!levels || levels.length === 0 || !minPerLevel) return [];
-
-    const S = config.shiftNames.length;
-    let totalDays: number;
-    if (useCustomRange && customStartDate && customEndDate) {
-      const start = new Date(customStartDate);
-      const end = new Date(customEndDate);
-      totalDays = Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
-    } else {
-      totalDays = new Date(year, month, 0).getDate();
-    }
-
-    const warnings: string[] = [];
-    for (let lvl = 0; lvl < levels.length; lvl++) {
-      let totalNeeded = 0;
-      for (let s = 0; s < S; s++) {
-        const minReq = minPerLevel[s]?.[lvl] ?? 0;
-        if (minReq > 0) totalNeeded += minReq * totalDays;
-      }
-      if (totalNeeded === 0) continue;
-
-      const levelStaff = staff.filter(s => (s.level ?? 0) === lvl);
-      const totalBlocked = levelStaff.reduce((sum, s) => sum + (s.blocked?.length ?? 0), 0);
-      const totalCapacity = levelStaff.reduce((sum, s) => sum + s.maxShifts, 0) - totalBlocked;
-      const avgMax = levelStaff.length > 0 ? Math.round(levelStaff.reduce((s, m) => s + m.maxShifts, 0) / levelStaff.length) : 0;
-
-      if (totalCapacity < totalNeeded) {
-        warnings.push(
-          t.levelCapacityDetail
-            .replace("{level}", levels[lvl])
-            .replace("{needed}", String(totalNeeded))
-            .replace("{capacity}", String(Math.max(0, totalCapacity)))
-            .replace("{count}", String(levelStaff.length))
-            .replace("{maxShifts}", String(avgMax))
-            .replace("{blocked}", String(totalBlocked))
-        );
-      }
-    }
-
-    const holidayDays = new Set<number>();
-    if (config.balanceHolidays || config.separateHolidayConfig) {
-      for (let d = 1; d <= totalDays; d++) {
-        const dt = getDateForIndex(d);
-        const dow = dt.getDay();
-        if (dow === 0 || dow === 6) holidayDays.add(d);
-      }
-      if (config.holidays) {
-        for (const h of config.holidays) holidayDays.add(h);
-      }
-    }
-
-    let dayWarningCount = 0;
-    const maxDayWarnings = 5;
-    for (let d = 1; d <= totalDays && dayWarningCount < maxDayWarnings; d++) {
-      const isHol = holidayDays.has(d);
-      const sps = (config.separateHolidayConfig && config.holidayStaffPerShift && isHol)
-        ? config.holidayStaffPerShift : config.staffPerShift;
-      for (let s = 0; s < S && dayWarningCount < maxDayWarnings; s++) {
-        if ((sps[s] || 0) === 0) continue;
-        for (let lvl = 0; lvl < levels.length && dayWarningCount < maxDayWarnings; lvl++) {
-          const minReq = minPerLevel[s]?.[lvl] ?? 0;
-          if (minReq <= 0) continue;
-          const availableAtLevel = staff.filter(m => {
-            if ((m.level ?? 0) !== lvl) return false;
-            return !m.blocked.some(b => b.date === d && (b.shift === -1 || b.shift === s));
-          }).length;
-          if (availableAtLevel < minReq) {
-            const dt = getDateForIndex(d);
-            warnings.push(
-              t.levelDayShortage
-                .replace("{day}", String(d))
-                .replace("{date}", format(dt, "d/M"))
-                .replace("{shift}", config.shiftNames[s])
-                .replace("{needed}", String(minReq))
-                .replace("{level}", levels[lvl])
-                .replace("{available}", String(availableAtLevel))
-            );
-            dayWarningCount++;
-          }
-        }
-      }
-    }
-
-    return warnings;
-  };
-
-  const estimateShouldForceSoftLevels = (): boolean => {
-    const levels = config.staffLevels;
-    const minPerLevel = config.minStaffPerLevel;
-    if (!levels || levels.length === 0 || !minPerLevel) return false;
-
-    const S = config.shiftNames.length;
-    let totalDays: number;
-    if (useCustomRange && customStartDate && customEndDate) {
-      const start = new Date(customStartDate);
-      const end = new Date(customEndDate);
-      totalDays = Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
-    } else {
-      totalDays = new Date(year, month, 0).getDate();
-    }
-
-    for (let lvl = 0; lvl < levels.length; lvl++) {
-      let totalNeeded = 0;
-      const levelShifts = new Set<number>();
-      for (let s = 0; s < S; s++) {
-        const minReq = minPerLevel[s]?.[lvl] ?? 0;
-        if (minReq > 0) {
-          totalNeeded += minReq * totalDays;
-          levelShifts.add(s);
-        }
-      }
-      if (totalNeeded === 0) continue;
-
-      const levelStaff = staff.filter(s => (s.level ?? 0) === lvl);
-      if (levelStaff.length === 0) return true;
-
-      const totalBlocked = levelStaff.reduce((sum, s) => sum + (s.blocked?.length ?? 0), 0);
-      let rawCapacity = levelStaff.reduce((sum, s) => sum + s.maxShifts, 0) - totalBlocked;
-
-      let penaltyFactor = 1.0;
-      for (const rule of (config.consecutiveRules || [])) {
-        const ruleType = rule.type || 'nextDay';
-        const fromRelevant = levelShifts.has(rule.from);
-        const toRelevant = levelShifts.has(rule.to);
-        if (fromRelevant || toRelevant) {
-          if (ruleType === 'sameDay') {
-            penaltyFactor -= 0.15;
-          } else {
-            penaltyFactor -= 0.12;
-          }
-        }
-      }
-
-      if (config.maxConsecutiveRules) {
-        for (const rule of config.maxConsecutiveRules) {
-          const hasRelevantShift = rule.shifts.some(s => levelShifts.has(s));
-          if (hasRelevantShift) {
-            penaltyFactor -= 0.08;
-          }
-        }
-      }
-
-      penaltyFactor = Math.max(0.3, penaltyFactor);
-
-      const effectiveCapacity = rawCapacity * penaltyFactor;
-      if (effectiveCapacity < totalNeeded * 1.1) {
-        return true;
-      }
-    }
-
-    return false;
-  };
-
   const executeOptimizer = (softLevels: boolean) => {
     setIsOptimizing(true);
     setOptimizeProgress(0);
@@ -1111,13 +953,17 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           }).catch(() => {});
         } catch {}
 
+        if (res.levelAutoSoftened) {
+          toast({ title: t.levelFeasibilityWarning, description: t.levelAutoSoftNotice });
+        }
+
         if (res.isPartial && res.unfilledSlots && res.unfilledSlots.length > 0) {
           toast({ 
             title: t.partialScheduleWarning, 
             description: t.partialScheduleDesc, 
             variant: "destructive" 
           });
-        } else if (softLevels) {
+        } else if (softLevels || res.levelAutoSoftened) {
           toast({ title: t.scheduleGenerated, description: t.softLevelNote, variant: "default" });
         } else {
           toast({ title: t.scheduleGenerated, description: t.optimizationComplete });
@@ -1367,23 +1213,6 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     return { capacityWarnings, conflicts };
   };
 
-  const decideLevelMode = (): { useSoft: boolean; showWarningDialog: boolean; warnings: string[] } => {
-    const hasLevels = !!(config.staffLevels && config.staffLevels.length > 0 && config.minStaffPerLevel);
-    if (!hasLevels) return { useSoft: false, showWarningDialog: false, warnings: [] };
-
-    const warnings = checkLevelFeasibility();
-    if (warnings.length > 0) {
-      return { useSoft: true, showWarningDialog: true, warnings };
-    }
-
-    const shouldForceSoft = estimateShouldForceSoftLevels();
-    if (shouldForceSoft) {
-      return { useSoft: true, showWarningDialog: false, warnings: [] };
-    }
-
-    return { useSoft: false, showWarningDialog: false, warnings: [] };
-  };
-
   const runOptimizer = () => {
     const { capacityWarnings, conflicts } = checkPreOptimization();
     if (conflicts.length > 0 || capacityWarnings.length > 0) {
@@ -1392,30 +1221,14 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
       setShowPreCheckWarning(true);
       return;
     }
-    const levelDecision = decideLevelMode();
-    if (levelDecision.showWarningDialog) {
-      setLevelWarnings(levelDecision.warnings);
-      setShowLevelWarning(true);
-    } else {
-      if (levelDecision.useSoft) {
-        toast({ title: t.levelFeasibilityWarning, description: t.levelAutoSoftNotice });
-      }
-      executeOptimizer(levelDecision.useSoft);
-    }
+    const hasLevels = !!(config.staffLevels && config.staffLevels.length > 0 && config.minStaffPerLevel);
+    executeOptimizer(hasLevels);
   };
 
   const proceedAfterPreCheck = () => {
     setShowPreCheckWarning(false);
-    const levelDecision = decideLevelMode();
-    if (levelDecision.showWarningDialog) {
-      setLevelWarnings(levelDecision.warnings);
-      setShowLevelWarning(true);
-    } else {
-      if (levelDecision.useSoft) {
-        toast({ title: t.levelFeasibilityWarning, description: t.levelAutoSoftNotice });
-      }
-      executeOptimizer(levelDecision.useSoft);
-    }
+    const hasLevels = !!(config.staffLevels && config.staffLevels.length > 0 && config.minStaffPerLevel);
+    executeOptimizer(hasLevels);
   };
 
   const saveSchedule = async (versionIdx?: number) => {
@@ -3190,45 +3003,6 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showLevelWarning} onOpenChange={setShowLevelWarning}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-yellow-500 dark:text-yellow-400 shrink-0" />
-              <DialogTitle>{t.levelFeasibilityWarning}</DialogTitle>
-            </div>
-            <DialogDescription className="pt-2">
-              {t.levelFeasibilityDesc}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2 text-sm text-muted-foreground">
-            {levelWarnings.map((w, i) => (
-              <div key={i} className="pl-3 border-l-2 border-yellow-400 dark:border-yellow-500 py-1">
-                {w}
-              </div>
-            ))}
-          </div>
-          <p className="text-sm text-muted-foreground italic">{t.softLevelNote}</p>
-          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-            <Button
-              variant="outline"
-              onClick={() => setShowLevelWarning(false)}
-              data-testid="button-cancel-optimization"
-            >
-              {t.cancelOptimization}
-            </Button>
-            <Button
-              onClick={() => {
-                setShowLevelWarning(false);
-                executeOptimizer(true);
-              }}
-              data-testid="button-proceed-soft-levels"
-            >
-              {t.proceedWithSoftLevels}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={showLoginPrompt} onOpenChange={setShowLoginPrompt}>
         <DialogContent className="max-w-sm p-0 overflow-hidden">

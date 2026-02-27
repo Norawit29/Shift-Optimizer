@@ -62,6 +62,8 @@ export interface OptimizerResult {
   isPartial?: boolean;
   unfilledSlots?: UnfilledSlot[];
   feasibilityWarning?: string;
+  diagnostics?: string[];
+  levelAutoSoftened?: boolean;
 }
 
 // === TABLE DEFINITIONS ===

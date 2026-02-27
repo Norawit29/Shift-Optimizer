@@ -82,8 +82,10 @@ export class ShiftOptimizer {
     return this.config.staffPerShift;
   }
 
-  private checkFeasibility(): string | null {
-    const warnings: string[] = [];
+  private checkFeasibility(): { hardErrors: string[]; levelErrors: string[]; softWarnings: string[] } {
+    const hardErrors: string[] = [];
+    const levelErrors: string[] = [];
+    const softWarnings: string[] = [];
     const S = this.config.shiftNames.length;
 
     for (let day = 1; day <= this.daysInMonth; day++) {
@@ -96,10 +98,58 @@ export class ShiftOptimizer {
           if (!isBlocked) available++;
         }
         if (available < required) {
-          warnings.push(
-            `Day ${day}, Shift "${this.config.shiftNames[shiftIdx]}": ` +
-            `needs ${required} staff but only ${available} available.`
+          hardErrors.push(
+            `Day ${day}, Shift "${this.config.shiftNames[shiftIdx]}": needs ${required} staff but only ${available} available.`
           );
+        }
+      }
+    }
+
+    const totalMaxShifts = this.staff.reduce((sum, s) => sum + s.maxShifts, 0);
+    let totalRequired = 0;
+    for (let d = 0; d < this.daysInMonth; d++) {
+      const req = this.getStaffPerShiftForDay(d + 1);
+      for (let s = 0; s < S; s++) totalRequired += req[s];
+    }
+    if (totalMaxShifts < totalRequired) {
+      hardErrors.push(
+        `Total staff capacity (${totalMaxShifts} shifts) is less than total required slots (${totalRequired}). Increase maxShifts or add more staff.`
+      );
+    }
+
+    if (this.config.staffLevels && this.config.minStaffPerLevel) {
+      for (let shiftIdx = 0; shiftIdx < S; shiftIdx++) {
+        for (let lvl = 0; lvl < this.config.staffLevels.length; lvl++) {
+          const minReq = this.config.minStaffPerLevel[shiftIdx]?.[lvl] || 0;
+          if (minReq <= 0) continue;
+          const staffAtLevel = this.staff.filter(s => (s.level ?? 0) === lvl).length;
+          if (staffAtLevel < minReq) {
+            levelErrors.push(
+              `Shift "${this.config.shiftNames[shiftIdx]}": needs ${minReq} "${this.config.staffLevels[lvl]}" but only ${staffAtLevel} staff at that level.`
+            );
+          }
+        }
+      }
+
+      for (let day = 1; day <= this.daysInMonth; day++) {
+        const dayStaffPerShift = this.getStaffPerShiftForDay(day);
+        for (let shiftIdx = 0; shiftIdx < S; shiftIdx++) {
+          if (dayStaffPerShift[shiftIdx] === 0) continue;
+          for (let lvl = 0; lvl < this.config.staffLevels.length; lvl++) {
+            const minReq = this.config.minStaffPerLevel[shiftIdx]?.[lvl] || 0;
+            if (minReq <= 0) continue;
+            let availableAtLevel = 0;
+            for (const member of this.staff) {
+              if ((member.level ?? 0) !== lvl) continue;
+              const isBlocked = member.blocked.some(b => b.date === day && (b.shift === -1 || b.shift === shiftIdx));
+              if (!isBlocked) availableAtLevel++;
+            }
+            if (availableAtLevel < minReq) {
+              levelErrors.push(
+                `Day ${day}, "${this.config.shiftNames[shiftIdx]}": needs ${minReq} "${this.config.staffLevels[lvl]}" but only ${availableAtLevel} available (not blocked).`
+              );
+            }
+          }
         }
       }
     }
@@ -115,7 +165,7 @@ export class ShiftOptimizer {
           if (hasReq) requestedNames.push(member.name);
         }
         if (requestedNames.length > capacity) {
-          warnings.push(
+          softWarnings.push(
             `Day ${day}, "${this.config.shiftNames[shiftIdx]}": ${requestedNames.length} staff requested but only ${capacity} slots (${requestedNames.join(', ')})`
           );
         }
@@ -139,37 +189,11 @@ export class ShiftOptimizer {
               const reqAtLevel = requestedByLevel[lvl] || 0;
               const stillNeeded = minReq - reqAtLevel;
               if (stillNeeded > 0 && stillNeeded > remainingSlots) {
-                warnings.push(
+                softWarnings.push(
                   `Day ${day}, "${this.config.shiftNames[shiftIdx]}": requested staff leave only ${Math.max(0, remainingSlots)} slots but need ${stillNeeded} more "${this.config.staffLevels[lvl]}".`
                 );
               }
             }
-          }
-        }
-      }
-    }
-
-    const weekdaySlots = this.config.staffPerShift.reduce((a, b) => a + b, 0);
-    const holidaySlots = this.config.separateHolidayConfig && this.config.holidayStaffPerShift
-      ? this.config.holidayStaffPerShift.reduce((a, b) => a + b, 0)
-      : weekdaySlots;
-    const totalSlotsPerDay = Math.max(weekdaySlots, holidaySlots);
-    if (totalSlotsPerDay > this.staff.length) {
-      warnings.push(
-        `Each day requires ${totalSlotsPerDay} staff slots but only ${this.staff.length} staff members exist.`
-      );
-    }
-
-    if (this.config.staffLevels && this.config.minStaffPerLevel) {
-      for (let shiftIdx = 0; shiftIdx < S; shiftIdx++) {
-        for (let lvl = 0; lvl < this.config.staffLevels.length; lvl++) {
-          const minReq = this.config.minStaffPerLevel[shiftIdx]?.[lvl] || 0;
-          if (minReq <= 0) continue;
-          const staffAtLevel = this.staff.filter(s => (s.level ?? 0) === lvl).length;
-          if (staffAtLevel < minReq) {
-            warnings.push(
-              `Shift "${this.config.shiftNames[shiftIdx]}": needs ${minReq} "${this.config.staffLevels[lvl]}" but only ${staffAtLevel} staff at that level.`
-            );
           }
         }
       }
@@ -188,7 +212,7 @@ export class ShiftOptimizer {
             if (req.shift === rule.from) {
               const hasNextDay = requested.some(r => r.date === d + 1 && r.shift === rule.to);
               if (hasNextDay) {
-                warnings.push(
+                softWarnings.push(
                   `${member.name}: requested "${this.config.shiftNames[rule.from]}" day ${d} + "${this.config.shiftNames[rule.to]}" day ${d + 1}, violates next-day rule.`
                 );
               }
@@ -197,7 +221,7 @@ export class ShiftOptimizer {
             if (req.shift === rule.from) {
               const hasSameDay = requested.some(r => r.date === d && r.shift === rule.to);
               if (hasSameDay) {
-                warnings.push(
+                softWarnings.push(
                   `${member.name}: requested "${this.config.shiftNames[rule.from]}" + "${this.config.shiftNames[rule.to]}" on day ${d}, violates same-day rule.`
                 );
               }
@@ -208,25 +232,13 @@ export class ShiftOptimizer {
 
       const reqCount = requested.length;
       if (reqCount > member.maxShifts) {
-        warnings.push(
+        softWarnings.push(
           `${member.name}: requested ${reqCount} shifts but maxShifts is ${member.maxShifts}.`
         );
       }
     }
 
-    const totalMaxShifts = this.staff.reduce((sum, s) => sum + s.maxShifts, 0);
-    let totalRequired = 0;
-    for (let d = 0; d < this.daysInMonth; d++) {
-      const req = this.getStaffPerShiftForDay(d + 1);
-      for (let s = 0; s < S; s++) totalRequired += req[s];
-    }
-    if (totalMaxShifts < totalRequired) {
-      warnings.push(
-        `Total staff capacity (${totalMaxShifts} shifts) is less than total required slots (${totalRequired}). Increase maxShifts or add more staff.`
-      );
-    }
-
-    return warnings.length > 0 ? warnings.join(" ") : null;
+    return { hardErrors, levelErrors, softWarnings };
   }
 
   private isBlocked(staffIdx: number, dayIdx: number, shiftIdx: number): boolean {
@@ -1275,7 +1287,7 @@ export class ShiftOptimizer {
     return diagnostics;
   }
 
-  private makeEmptyResult(warning: string): OptimizerResult {
+  private makeEmptyResult(warning: string, diagnostics?: string[]): OptimizerResult {
     const emptySchedule = this.buildEmptySchedule();
     return {
       schedule: emptySchedule,
@@ -1288,16 +1300,37 @@ export class ShiftOptimizer {
       },
       isPartial: true,
       unfilledSlots: this.findUnfilledSlots(emptySchedule),
-      feasibilityWarning: warning
+      feasibilityWarning: warning,
+      diagnostics: diagnostics
     };
   }
 
   public async optimize(): Promise<OptimizerResult> {
-    const feasibilityMsg = this.checkFeasibility();
+    const feasibility = this.checkFeasibility();
+    const allWarnings = [...feasibility.softWarnings];
+    const feasibilityMsg = [...feasibility.hardErrors, ...feasibility.levelErrors, ...feasibility.softWarnings].join(" ") || null;
+    let levelAutoSoftened = false;
+
+    if (feasibility.hardErrors.length > 0) {
+      console.error(`[OPT] HARD infeasibility detected, aborting solver:`, feasibility.hardErrors);
+      return this.makeEmptyResult(
+        feasibility.hardErrors.join(" "),
+        [...feasibility.hardErrors, ...feasibility.levelErrors]
+      );
+    }
+
+    if (feasibility.levelErrors.length > 0) {
+      if (!this.softLevelConstraints) {
+        console.warn(`[OPT] Level infeasibility detected, auto-downgrading to soft level constraints:`, feasibility.levelErrors);
+        this.softLevelConstraints = true;
+        levelAutoSoftened = true;
+      }
+    }
+
     const { varMap, binaryVars } = this.prepareVariables();
 
     if (varMap.size === 0) {
-      return this.makeEmptyResult(feasibilityMsg || "No eligible assignments found.");
+      return this.makeEmptyResult(feasibilityMsg || "No eligible assignments found.", feasibility.levelErrors);
     }
 
     const solver = await createSolver();
@@ -1317,6 +1350,9 @@ export class ShiftOptimizer {
     const totalMaxShifts = this.staff.reduce((sum, s) => sum + s.maxShifts, 0);
     console.log(`[OPT] Setup: ${this.staff.length} staff, ${this.daysInMonth} days, ${this.config.shiftNames.length} shifts`);
     console.log(`[OPT] Total required slots: ${totalRequired}, Total staff capacity (maxShifts): ${totalMaxShifts}, Variables: ${varMap.size}`);
+    if (levelAutoSoftened) {
+      console.log(`[OPT] Level constraints auto-softened due to level infeasibility`);
+    }
 
     const { model: phase1Model } = this.buildPhase1Model(varMap, binaryVars);
     let phase1Solution: any;
@@ -1338,15 +1374,46 @@ export class ShiftOptimizer {
       console.warn(`[OPT] Phase 1 hit time limit, using best solution found so far`);
     } else if (failStatuses.includes(phase1Solution.Status) || !phase1Solution.Columns) {
       console.error(`[OPT] Phase 1 FAILED: ${phase1Solution.Status}`);
-      let infeasibleMsg = feasibilityMsg || "";
-      if (phase1Solution.Status === "Infeasible" && !feasibilityMsg) {
-        const totalReq = this.config.staffPerShift.reduce((a, b) => a + b, 0);
-        infeasibleMsg = `Infeasible: constraints conflict. Staff per day: ${totalReq}, Staff count: ${this.staff.length}, Shifts: ${this.config.shiftNames.length}, Rules: ${this.config.consecutiveRules.length} consecutive + ${(this.config.maxConsecutiveRules || []).length} max-consecutive. Try: reduce staff-per-shift, relax consecutive rules, remove conflicting requested shifts, or add more staff.`;
+
+      if (phase1Solution.Status === "Infeasible" && !this.softLevelConstraints &&
+          this.config.staffLevels && this.config.staffLevels.length > 0 && this.config.minStaffPerLevel) {
+        console.warn(`[OPT] Phase 1 infeasible — retrying with soft level constraints`);
+        this.softLevelConstraints = true;
+        levelAutoSoftened = true;
+        const { model: retryModel } = this.buildPhase1Model(varMap, binaryVars);
+        try {
+          phase1Solution = solver.solve(retryModel, {
+            time_limit: 30.0,
+            presolve: "on",
+            mip_rel_gap: 0.005,
+            threads: 1,
+          });
+          console.log(`[OPT] Phase 1 retry status: ${phase1Solution.Status}, ObjectiveValue: ${phase1Solution.ObjectiveValue}`);
+          if (phase1Solution.Status === "Time limit reached" && phase1Solution.Columns) {
+            console.warn(`[OPT] Phase 1 retry hit time limit, using best solution found`);
+          } else if (failStatuses.includes(phase1Solution.Status) || !phase1Solution.Columns) {
+            console.error(`[OPT] Phase 1 retry also FAILED: ${phase1Solution.Status}`);
+            let infeasibleMsg = feasibilityMsg || "";
+            if (phase1Solution.Status === "Time limit reached") {
+              infeasibleMsg = "Time limit reached and no feasible solution found. Try reducing constraints or adding more staff.";
+            }
+            return this.makeEmptyResult(infeasibleMsg || `Phase 1 solver status: ${phase1Solution.Status}.`);
+          }
+        } catch (err: any) {
+          console.error("[OPT] Phase 1 retry CRASH:", err);
+          return this.makeEmptyResult(`Solver crashed during retry: ${err?.message || "Unknown error"}.`);
+        }
+      } else {
+        let infeasibleMsg = feasibilityMsg || "";
+        if (phase1Solution.Status === "Infeasible" && !feasibilityMsg) {
+          const totalReq = this.config.staffPerShift.reduce((a, b) => a + b, 0);
+          infeasibleMsg = `Infeasible: constraints conflict. Staff per day: ${totalReq}, Staff count: ${this.staff.length}, Shifts: ${this.config.shiftNames.length}, Rules: ${this.config.consecutiveRules.length} consecutive + ${(this.config.maxConsecutiveRules || []).length} max-consecutive. Try: reduce staff-per-shift, relax consecutive rules, remove conflicting requested shifts, or add more staff.`;
+        }
+        if (phase1Solution.Status === "Time limit reached") {
+          infeasibleMsg = "Time limit reached and no feasible solution found. Try reducing constraints or adding more staff.";
+        }
+        return this.makeEmptyResult(infeasibleMsg || `Phase 1 solver status: ${phase1Solution.Status}.`);
       }
-      if (phase1Solution.Status === "Time limit reached") {
-        infeasibleMsg = "Time limit reached and no feasible solution found. Try reducing constraints or adding more staff.";
-      }
-      return this.makeEmptyResult(infeasibleMsg || `Phase 1 solver status: ${phase1Solution.Status}.`);
     }
 
     const phase1Targets = this.extractPhase1Targets(phase1Solution, varMap);
@@ -1417,18 +1484,25 @@ export class ShiftOptimizer {
 
     const finalCoverage = metrics.perStaff.reduce((sum: number, s: any) => sum + s.total, 0);
     console.log(`[OPT] Final result: coverage ${finalCoverage}/${totalRequired}, unfilled slots: ${unfilledSlots.length}`);
+    const resultDiagnostics: string[] = [...feasibility.levelErrors];
     if (unfilledSlots.length > 0) {
       console.log(`[OPT] Unfilled: ${unfilledSlots.slice(0, 10).map(u => `Day${u.date}-${u.shiftName}(${u.assigned}/${u.required})`).join(', ')}${unfilledSlots.length > 10 ? '...' : ''}`);
-      const diagnostics = this.diagnoseUnfilled(schedule);
-      for (const diag of diagnostics) {
+      const unfilledDiags = this.diagnoseUnfilled(schedule);
+      for (const diag of unfilledDiags) {
         console.log(`[OPT] Diagnosis: ${diag}`);
+        resultDiagnostics.push(diag);
       }
     }
 
     const result: OptimizerResult = {
       schedule,
-      metrics
+      metrics,
+      levelAutoSoftened
     };
+
+    if (resultDiagnostics.length > 0) {
+      result.diagnostics = resultDiagnostics;
+    }
 
     if (unfilledSlots.length > 0) {
       result.isPartial = true;
