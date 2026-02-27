@@ -1214,14 +1214,12 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
       setShowPreCheckWarning(true);
       return;
     }
-    const hasLevels = !!(config.staffLevels && config.staffLevels.length > 0 && config.minStaffPerLevel);
-    executeOptimizer(hasLevels);
+    executeOptimizer(true);
   };
 
   const proceedAfterPreCheck = () => {
     setShowPreCheckWarning(false);
-    const hasLevels = !!(config.staffLevels && config.staffLevels.length > 0 && config.minStaffPerLevel);
-    executeOptimizer(hasLevels);
+    executeOptimizer(true);
   };
 
   const saveSchedule = async (versionIdx?: number) => {

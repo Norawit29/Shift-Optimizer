@@ -167,21 +167,27 @@ export class ShiftOptimizer {
     const softWarnings: string[] = [];
     const S = this.config.shiftNames.length;
 
+    let hasAnyAvailable = false;
     for (let day = 1; day <= this.daysInMonth; day++) {
       const dayStaffPerShift = this.getStaffPerShiftForDay(day);
       for (let shiftIdx = 0; shiftIdx < S; shiftIdx++) {
         const required = dayStaffPerShift[shiftIdx];
+        if (required <= 0) continue;
         let available = 0;
         for (const member of this.staff) {
           const isBlocked = member.blocked.some(b => b.date === day && (b.shift === -1 || b.shift === shiftIdx));
           if (!isBlocked) available++;
         }
+        if (available > 0) hasAnyAvailable = true;
         if (available < required) {
           softWarnings.push(
             `Day ${day}, Shift "${this.config.shiftNames[shiftIdx]}": needs ${required} staff but only ${available} available.`
           );
         }
       }
+    }
+    if (!hasAnyAvailable) {
+      hardErrors.push("All staff are blocked on all days/shifts. No assignments are possible.");
     }
 
     const totalMaxShifts = this.staff.reduce((sum, s) => sum + s.maxShifts, 0);
@@ -190,7 +196,9 @@ export class ShiftOptimizer {
       const req = this.getStaffPerShiftForDay(d + 1);
       for (let s = 0; s < S; s++) totalRequired += req[s];
     }
-    if (totalMaxShifts < totalRequired) {
+    if (totalMaxShifts === 0) {
+      hardErrors.push("All staff have maxShifts set to 0. No assignments are possible.");
+    } else if (totalMaxShifts < totalRequired) {
       softWarnings.push(
         `Total staff capacity (${totalMaxShifts} shifts) is less than total required slots (${totalRequired}). Increase maxShifts or add more staff.`
       );
@@ -224,9 +232,11 @@ export class ShiftOptimizer {
               if (!isBlocked) availableAtLevel++;
             }
             if (availableAtLevel < minReq) {
-              levelErrors.push(
-                `Day ${day}, "${this.config.shiftNames[shiftIdx]}": needs ${minReq} "${this.config.staffLevels[lvl]}" but only ${availableAtLevel} available (not blocked).`
-              );
+              if (levelErrors.length < 10) {
+                levelErrors.push(
+                  `Day ${day}, "${this.config.shiftNames[shiftIdx]}": needs ${minReq} "${this.config.staffLevels[lvl]}" but only ${availableAtLevel} available (not blocked).`
+                );
+              }
             }
           }
         }
@@ -694,38 +704,15 @@ export class ShiftOptimizer {
     return { perShift, holidayTotal, totalCoverage, slotCoverage };
   }
 
-  private buildFairnessModel(
+  private writeCoverageConstraints(
+    constraintLines: string[],
     varMap: Map<string, { staff: number; day: number; shift: number }>,
-    binaryVars: string[],
-    phase1Targets: { perShift: number[]; holidayTotal: number; totalCoverage: number; slotCoverage: Map<string, number> }
-  ): string {
+    cIdx: { val: number },
+    phase1Targets: { slotCoverage: Map<string, number> }
+  ) {
     const N = this.staff.length;
     const D = this.daysInMonth;
     const S = this.config.shiftNames.length;
-
-    const RANGE_W = 1_000_000;
-    const SHIFT_W = 1_000;
-    const HOLIDAY_W = 100;
-    const LEVEL_W = 10;
-
-    const enableHolidayBalance = this.config.balanceHolidays && this.holidayDays.size > 0;
-
-    const totalMaxShifts = this.staff.reduce((sum, s) => sum + s.maxShifts, 0);
-    const staffShiftTargets = phase1Targets.perShift.map(total =>
-      this.staff.map(s => total * (s.maxShifts / totalMaxShifts))
-    );
-    const staffHolidayTargets = enableHolidayBalance
-      ? this.staff.map(s => phase1Targets.holidayTotal * (s.maxShifts / totalMaxShifts))
-      : this.staff.map(() => 0);
-
-    const levelSlackVars: string[] = [];
-    const constraintLines: string[] = [];
-    const cIdx = { val: 0 };
-    const auxBinaryVars: string[] = [];
-    this.writeCommonConstraints(constraintLines, varMap, cIdx, { auxBinaryVars });
-
-    this.writeSoftLevelConstraints(constraintLines, varMap, cIdx, levelSlackVars);
-
     for (let d = 0; d < D; d++) {
       const required = this.getStaffPerShiftForDay(d + 1);
       for (let s = 0; s < S; s++) {
@@ -750,7 +737,16 @@ export class ShiftOptimizer {
         }
       }
     }
+  }
 
+  private writeLoadTrackingConstraints(
+    constraintLines: string[],
+    varMap: Map<string, { staff: number; day: number; shift: number }>,
+    cIdx: { val: number }
+  ) {
+    const N = this.staff.length;
+    const D = this.daysInMonth;
+    const S = this.config.shiftNames.length;
     for (let i = 0; i < N; i++) {
       const staffVars: string[] = [];
       for (let d = 0; d < D; d++) {
@@ -760,16 +756,89 @@ export class ShiftOptimizer {
         }
       }
       if (staffVars.length === 0) continue;
-
       const defTerms = staffVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
       defTerms.push(`- tw_${i}`);
       constraintLines.push(`  c${cIdx.val++}:`);
       constraintLines.push(writeTerms(defTerms, 10));
       constraintLines.push(`  = 0`);
-
       constraintLines.push(`  c${cIdx.val++}: tw_${i} - maxLoad <= 0`);
       constraintLines.push(`  c${cIdx.val++}: - tw_${i} + minLoad <= 0`);
     }
+  }
+
+  private buildRangeModel(
+    varMap: Map<string, { staff: number; day: number; shift: number }>,
+    binaryVars: string[],
+    phase1Targets: { perShift: number[]; holidayTotal: number; totalCoverage: number; slotCoverage: Map<string, number> }
+  ): string {
+    const N = this.staff.length;
+
+    const constraintLines: string[] = [];
+    const cIdx = { val: 0 };
+    const auxBinaryVars: string[] = [];
+    this.writeCommonConstraints(constraintLines, varMap, cIdx, { auxBinaryVars });
+    this.writeCoverageConstraints(constraintLines, varMap, cIdx, phase1Targets);
+    this.writeLoadTrackingConstraints(constraintLines, varMap, cIdx);
+
+    const lines: string[] = [];
+    lines.push("Minimize");
+    lines.push("  obj:");
+    lines.push("  maxLoad - minLoad");
+
+    lines.push("Subject To");
+    lines.push(...constraintLines);
+
+    lines.push("Bounds");
+    lines.push(`  maxLoad >= 0`);
+    lines.push(`  minLoad >= 0`);
+    for (let i = 0; i < N; i++) {
+      lines.push(`  tw_${i} >= 0`);
+    }
+
+    const allBinary = [...binaryVars, ...auxBinaryVars];
+    lines.push("Binary");
+    for (let i = 0; i < allBinary.length; i += 20) {
+      lines.push("  " + allBinary.slice(i, i + 20).join(" "));
+    }
+
+    lines.push("End");
+    return lines.join("\n");
+  }
+
+  private buildDistributionModel(
+    varMap: Map<string, { staff: number; day: number; shift: number }>,
+    binaryVars: string[],
+    phase1Targets: { perShift: number[]; holidayTotal: number; totalCoverage: number; slotCoverage: Map<string, number> },
+    bestRange: number
+  ): string {
+    const N = this.staff.length;
+    const D = this.daysInMonth;
+    const S = this.config.shiftNames.length;
+
+    const SHIFT_W = 1_000;
+    const HOLIDAY_W = 100;
+    const LEVEL_W = 10;
+
+    const enableHolidayBalance = this.config.balanceHolidays && this.holidayDays.size > 0;
+
+    const totalMaxShifts = this.staff.reduce((sum, s) => sum + s.maxShifts, 0);
+    const staffShiftTargets = phase1Targets.perShift.map(total =>
+      this.staff.map(s => total * (s.maxShifts / totalMaxShifts))
+    );
+    const staffHolidayTargets = enableHolidayBalance
+      ? this.staff.map(s => phase1Targets.holidayTotal * (s.maxShifts / totalMaxShifts))
+      : this.staff.map(() => 0);
+
+    const levelSlackVars: string[] = [];
+    const constraintLines: string[] = [];
+    const cIdx = { val: 0 };
+    const auxBinaryVars: string[] = [];
+    this.writeCommonConstraints(constraintLines, varMap, cIdx, { auxBinaryVars });
+    this.writeSoftLevelConstraints(constraintLines, varMap, cIdx, levelSlackVars);
+    this.writeCoverageConstraints(constraintLines, varMap, cIdx, phase1Targets);
+    this.writeLoadTrackingConstraints(constraintLines, varMap, cIdx);
+
+    constraintLines.push(`  c${cIdx.val++}: maxLoad - minLoad <= ${fmt(bestRange)}`);
 
     for (let i = 0; i < N; i++) {
       for (let s = 0; s < S; s++) {
@@ -823,12 +892,12 @@ export class ShiftOptimizer {
     lines.push("Minimize");
     lines.push("  obj:");
     const objParts: string[] = [];
-    objParts.push(`${RANGE_W} maxLoad`);
-    objParts.push(`- ${RANGE_W} minLoad`);
+    let firstTerm = true;
     for (let i = 0; i < N; i++) {
       for (let s = 0; s < S; s++) {
         if (staffShiftTargets[s][i] > 0) {
-          objParts.push(`+ ${SHIFT_W} ds_${i}_${s}`);
+          objParts.push(`${firstTerm ? "" : "+ "}${SHIFT_W} ds_${i}_${s}`);
+          firstTerm = false;
         }
       }
     }
@@ -839,6 +908,9 @@ export class ShiftOptimizer {
     }
     for (const lv of levelSlackVars) {
       objParts.push(`+ ${LEVEL_W} ${lv}`);
+    }
+    if (objParts.length === 0) {
+      objParts.push("0 maxLoad");
     }
     lines.push(writeTerms(objParts, 8));
 
@@ -1385,15 +1457,32 @@ export class ShiftOptimizer {
   public async optimize(): Promise<OptimizerResult> {
     const levelCheck = this.checkLevelFillability();
     const hasLevels = !!(this.config.staffLevels && this.config.staffLevels.length > 0 && this.config.minStaffPerLevel);
-    const levelAutoSoftened = hasLevels && !levelCheck.canFillAll;
+    let levelAutoSoftened = hasLevels && !levelCheck.canFillAll;
 
     const feasibility = this.checkFeasibility();
+
+    if (feasibility.hardErrors.length > 0) {
+      console.error(`[OPT] Hard infeasibility detected — aborting before solver`);
+      for (const e of feasibility.hardErrors) console.error(`[OPT]   ${e}`);
+      const allDiags = [...feasibility.hardErrors, ...feasibility.levelErrors, ...feasibility.softWarnings];
+      return this.makeEmptyResult(
+        feasibility.hardErrors[0],
+        allDiags
+      );
+    }
+
+    if (feasibility.levelErrors.length > 0 && !levelAutoSoftened) {
+      console.warn(`[OPT] Level-only infeasibility detected — auto-downgrading to soft level constraints`);
+      for (const e of feasibility.levelErrors) console.warn(`[OPT]   ${e}`);
+      levelAutoSoftened = true;
+    }
+
     const feasibilityMsg = [...feasibility.softWarnings, ...feasibility.levelErrors].join(" ") || null;
 
     const { varMap, binaryVars } = this.prepareVariables();
 
     if (varMap.size === 0) {
-      return this.makeEmptyResult(feasibilityMsg || "No eligible assignments found.", levelCheck.levelShortages);
+      return this.makeEmptyResult(feasibilityMsg || "No eligible assignments found.", [...levelCheck.levelShortages, ...feasibility.levelErrors]);
     }
 
     const failStatuses = [
@@ -1412,7 +1501,7 @@ export class ShiftOptimizer {
     console.log(`[OPT] Setup: ${this.staff.length} staff, ${this.daysInMonth} days, ${this.config.shiftNames.length} shifts`);
     console.log(`[OPT] Total required: ${totalRequired}, capacity: ${totalMaxShifts}, vars: ${varMap.size}`);
     if (levelAutoSoftened) {
-      console.log(`[OPT] Level constraints will be SOFT only (shortage detected)`);
+      console.log(`[OPT] Level constraints will be SOFT only (shortage detected / auto-downgraded)`);
     }
 
     const solver = await createSolver();
@@ -1466,35 +1555,80 @@ export class ShiftOptimizer {
       finalSolution = phase1Solution;
       usedPhase = "1 (coverage only, fairness skipped)";
     } else {
-      const fairnessModel = this.buildFairnessModel(varMap, binaryVars, phase1Targets);
-      console.log(`[OPT] Phase 2 model: ${fairnessModel.length} chars, ${fairnessModel.split('\n').length} lines`);
-      usedPhase = "2";
+      const rangeModel = this.buildRangeModel(varMap, binaryVars, phase1Targets);
+      console.log(`[OPT] Phase 2A (range) model: ${rangeModel.length} chars, ${rangeModel.split('\n').length} lines`);
+      usedPhase = "2A";
+
+      let bestRange = Infinity;
+      let phase2aSolution: any = null;
 
       try {
-        const solver2 = await createSolver();
-        const phase2Solution = solver2.solve(fairnessModel, {
+        const solver2a = await createSolver();
+        phase2aSolution = solver2a.solve(rangeModel, {
           time_limit: 90,
           mip_rel_gap: 0.001,
           threads: 1,
           presolve: "on",
         });
 
-        console.log(`[OPT] Phase 2 status: ${phase2Solution.Status}, obj: ${phase2Solution.ObjectiveValue}`);
+        console.log(`[OPT] Phase 2A status: ${phase2aSolution.Status}, obj: ${phase2aSolution.ObjectiveValue}`);
 
-        if (phase2Solution.Status === "Time limit reached" && phase2Solution.Columns) {
-          console.warn(`[OPT] Phase 2 hit time limit, using best solution found`);
-          finalSolution = phase2Solution;
-        } else if (failStatuses.includes(phase2Solution.Status) || !phase2Solution.Columns) {
-          console.warn(`[OPT] Phase 2 FAILED (${phase2Solution.Status}), falling back to Phase 1`);
+        if (phase2aSolution.Columns) {
+          const cols = phase2aSolution.Columns;
+          const maxVal = cols["maxLoad"]?.Primal ?? 0;
+          const minVal = cols["minLoad"]?.Primal ?? 0;
+          bestRange = Math.ceil(maxVal - minVal);
+          console.log(`[OPT] Phase 2A bestRange: ${bestRange} (maxLoad=${maxVal.toFixed(1)}, minLoad=${minVal.toFixed(1)})`);
+
+          if (phase2aSolution.Status === "Time limit reached") {
+            console.warn(`[OPT] Phase 2A hit time limit, using best range found`);
+          }
+        }
+
+        if (failStatuses.includes(phase2aSolution.Status) || !phase2aSolution.Columns) {
+          console.warn(`[OPT] Phase 2A FAILED (${phase2aSolution.Status}), falling back to Phase 1`);
           finalSolution = phase1Solution;
-          usedPhase = "1 (Phase 2 fallback)";
-        } else {
-          finalSolution = phase2Solution;
+          usedPhase = "1 (Phase 2A fallback)";
+          phase2aSolution = null;
         }
       } catch (err: any) {
-        console.error("[OPT] Phase 2 CRASH, falling back to Phase 1:", String(err));
+        console.error("[OPT] Phase 2A CRASH, falling back to Phase 1:", String(err));
         finalSolution = phase1Solution;
-        usedPhase = "1 (Phase 2 crash fallback)";
+        usedPhase = "1 (Phase 2A crash fallback)";
+        phase2aSolution = null;
+      }
+
+      if (phase2aSolution && bestRange < Infinity) {
+        const distModel = this.buildDistributionModel(varMap, binaryVars, phase1Targets, bestRange);
+        console.log(`[OPT] Phase 2B (distribution) model: ${distModel.length} chars, ${distModel.split('\n').length} lines, range locked to ${bestRange}`);
+        usedPhase = "2B";
+
+        try {
+          const solver2b = await createSolver();
+          const phase2bSolution = solver2b.solve(distModel, {
+            time_limit: 90,
+            mip_rel_gap: 0.001,
+            threads: 1,
+            presolve: "on",
+          });
+
+          console.log(`[OPT] Phase 2B status: ${phase2bSolution.Status}, obj: ${phase2bSolution.ObjectiveValue}`);
+
+          if (phase2bSolution.Status === "Time limit reached" && phase2bSolution.Columns) {
+            console.warn(`[OPT] Phase 2B hit time limit, using best solution found`);
+            finalSolution = phase2bSolution;
+          } else if (failStatuses.includes(phase2bSolution.Status) || !phase2bSolution.Columns) {
+            console.warn(`[OPT] Phase 2B FAILED (${phase2bSolution.Status}), falling back to Phase 2A result`);
+            finalSolution = phase2aSolution;
+            usedPhase = "2A (Phase 2B fallback)";
+          } else {
+            finalSolution = phase2bSolution;
+          }
+        } catch (err: any) {
+          console.error("[OPT] Phase 2B CRASH, falling back to Phase 2A:", String(err));
+          finalSolution = phase2aSolution;
+          usedPhase = "2A (Phase 2B crash fallback)";
+        }
       }
     }
 
