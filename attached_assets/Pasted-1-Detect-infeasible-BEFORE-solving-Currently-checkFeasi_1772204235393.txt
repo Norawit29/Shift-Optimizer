@@ -1,0 +1,97 @@
+1️⃣ Detect infeasible BEFORE solving
+
+Currently checkFeasibility() only returns warnings but solver still runs.
+
+Modify optimize() so that:
+
+If checkFeasibility() returns a message that indicates HARD infeasibility (not just warning),
+
+Then DO NOT call the solver at all
+
+Immediately return makeEmptyResult(feasibilityMsg)
+
+Define HARD infeasibility as:
+
+available staff < required staff for any day/shift
+
+totalMaxShifts < totalRequired
+
+total staff at a required level < minimum level requirement
+
+Update checkFeasibility() to clearly distinguish:
+
+{
+   hardErrors: string[]
+   softWarnings: string[]
+}
+
+If hardErrors.length > 0, stop execution before building Phase 1 model.
+
+2️⃣ Auto downgrade (soften) impossible constraints
+
+If level constraints cause infeasibility:
+
+Automatically enable soft level constraints in Phase 1
+
+Set this.softLevelConstraints = true dynamically
+
+Specifically:
+
+If minStaffPerLevel is configured AND
+hard infeasibility is caused only by level shortage,
+then:
+
+Re-run Phase 1 with soft level constraints enabled
+
+Do NOT block the solver
+
+Let slack variables absorb shortage
+
+Slack penalty should remain high but finite.
+
+3️⃣ Return detailed user-facing explanation
+
+When returning result with infeasibility:
+
+Populate:
+
+result.feasibilityWarning
+result.unfilledSlots
+
+And include clear explanation like:
+
+"Day 12 Night Shift requires 1 RN but only 0 available due to blocked days."
+"Total RN capacity (40 shifts) is less than required RN shifts (60)."
+
+Also add:
+
+result.diagnostics?: string[]
+
+Populate it using diagnoseUnfilled(schedule) or feasibility hardErrors.
+
+Implementation Details
+
+Modify:
+
+checkFeasibility()
+
+optimize()
+
+makeEmptyResult()
+
+Do NOT change solver formulation unless needed.
+Do NOT remove existing logs.
+Keep Phase 1 + Phase 2 architecture intact.
+
+Goal
+
+The solver should:
+
+Never waste 30 seconds on clearly impossible cases
+
+Automatically soften level constraints instead of failing
+
+Provide actionable feedback to the end user
+
+Keep code clean and maintainable.
+Return full modified code sections, not partial snippets.
