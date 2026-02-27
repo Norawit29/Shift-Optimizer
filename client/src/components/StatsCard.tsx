@@ -150,25 +150,21 @@ function verifyConstraints(
       for (let lvl = 0; lvl < config.staffLevels.length; lvl++) {
         const minReq = mins[lvl] || 0;
         if (minReq <= 0) continue;
-        let shiftViolations = 0;
+        let shiftFilled = 0;
         let shiftTotal = 0;
         for (const daySchedule of schedule) {
+          shiftTotal++;
           const assignedEntries = daySchedule.shifts[s] || [];
           const filledEntries = assignedEntries.filter(e => !!e);
-          if (filledEntries.length === 0) continue;
-          shiftTotal++;
           const levelCount = filledEntries.filter(entry => {
             const member = staff.find(m => m.id === entry || m.name === entry);
             return member && (member.level ?? 0) === lvl;
           }).length;
-          if (levelCount < minReq) shiftViolations++;
+          if (levelCount >= minReq) shiftFilled++;
         }
         totalSlots += shiftTotal;
-        totalViolations += shiftViolations;
-        const statusText = shiftTotal > 0
-          ? `${shiftTotal - shiftViolations}/${shiftTotal}`
-          : "—";
-        perShiftDetails.push(`${config.shiftNames[s]}: ${config.staffLevels[lvl]} ≥${minReq} (${statusText})`);
+        totalViolations += (shiftTotal - shiftFilled);
+        perShiftDetails.push(`${config.shiftNames[s]}: ${config.staffLevels[lvl]} ≥${minReq} (${shiftFilled}/${shiftTotal})`);
       }
     }
     if (perShiftDetails.length > 0) {
