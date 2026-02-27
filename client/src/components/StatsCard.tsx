@@ -86,14 +86,30 @@ function verifyConstraints(
     for (const rule of config.maxConsecutiveRules) {
       const shiftNames = rule.shifts.map(i => config.shiftNames[i]).join("+");
       ruleDescs.push(`${shiftNames} ≤${rule.maxDays}`);
+      const isCombined = rule.shifts.length > 1;
       for (const [, assignments] of staffAssignments) {
-        const days = new Set(assignments.filter(a => rule.shifts.includes(a.shift)).map(a => a.day));
-        if (days.size === 0) continue;
-        const sortedDays = Array.from(days).sort((a, b) => a - b);
+        let qualifyingDays: number[];
+        if (isCombined) {
+          const dayShifts = new Map<number, Set<number>>();
+          for (const a of assignments) {
+            if (rule.shifts.includes(a.shift)) {
+              if (!dayShifts.has(a.day)) dayShifts.set(a.day, new Set());
+              dayShifts.get(a.day)!.add(a.shift);
+            }
+          }
+          qualifyingDays = Array.from(dayShifts.entries())
+            .filter(([, shifts]) => shifts.size >= 2)
+            .map(([day]) => day)
+            .sort((a, b) => a - b);
+        } else {
+          const days = new Set(assignments.filter(a => rule.shifts.includes(a.shift)).map(a => a.day));
+          qualifyingDays = Array.from(days).sort((a, b) => a - b);
+        }
+        if (qualifyingDays.length === 0) continue;
         let consecutive = 1;
         let streakViolated = false;
-        for (let i = 1; i < sortedDays.length; i++) {
-          if (sortedDays[i] === sortedDays[i - 1] + 1) {
+        for (let i = 1; i < qualifyingDays.length; i++) {
+          if (qualifyingDays[i] === qualifyingDays[i - 1] + 1) {
             consecutive++;
             if (consecutive > rule.maxDays && !streakViolated) {
               violations++;

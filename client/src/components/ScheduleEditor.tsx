@@ -396,10 +396,10 @@ export function ScheduleEditor({
 
   return (
     <>
-      <div className="flex gap-3 w-full items-stretch" data-testid="schedule-editor">
-        <div className="flex-1 min-w-0">
+      <div className="flex gap-3 w-full" style={{ height: "calc(100vh - 140px)" }} data-testid="schedule-editor">
+        <div className="flex-1 min-w-0 h-full">
           <Card className="border shadow-lg overflow-hidden bg-white dark:bg-zinc-900 h-full">
-            <ScrollArea className="h-[700px] w-full rounded-md">
+            <ScrollArea className="h-full w-full rounded-md">
               <div className="min-w-[800px]">
                 <Table>
                   <TableHeader className="bg-muted/50 sticky top-0 z-10">
@@ -546,7 +546,7 @@ export function ScheduleEditor({
           </Card>
         </div>
 
-        <div className="shrink-0 flex flex-col">
+        <div className="shrink-0 flex flex-col h-full">
           {!sidebarOpen && (
             <Button
               size="icon"
@@ -559,7 +559,7 @@ export function ScheduleEditor({
           )}
 
           {sidebarOpen && (
-            <Card className="min-w-[320px] w-auto max-w-[480px] border shadow-lg bg-white dark:bg-zinc-900 flex flex-col h-full" data-testid="staff-panel">
+            <Card className="min-w-[320px] w-auto max-w-[480px] border shadow-lg bg-white dark:bg-zinc-900 flex flex-col h-full overflow-hidden" data-testid="staff-panel">
               <div className="p-3 border-b shrink-0 flex items-center justify-between">
                 <h3 className="font-semibold text-sm">{t.editorStaffPanel}</h3>
                 <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setSidebarOpen(false)} data-testid="button-toggle-staff-panel">
