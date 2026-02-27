@@ -61,7 +61,12 @@ const getInitialConfig = (lang: string): SchedulerConfig => ({
   shiftsPerDay: 3,
   shiftNames: lang === "th" ? ["เช้า", "บ่าย", "ดึก"] : ["Morning", "Evening", "Night"],
   staffPerShift: [3, 3, 3],
-  consecutiveRules: [{ from: 2, to: 0 }],
+  consecutiveRules: [
+    { from: 2, to: 0 },
+    { from: 1, to: 2, type: 'sameDay' as const },
+    { from: 0, to: 1, type: 'sameDay' as const },
+  ],
+  maxConsecutiveRules: [{ shifts: [2], maxDays: 3 }],
 });
 
 const INITIAL_STAFF: StaffMember[] = [
