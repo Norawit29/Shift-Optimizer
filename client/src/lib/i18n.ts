@@ -281,6 +281,9 @@ const translations = {
     editorAssignedAnyway: "Staff assigned despite constraint violation",
     editorAtLimit: "At limit",
     editorOverLimit: "Over limit",
+    editorConfirmAssign: "Confirm",
+    editorCancelAssign: "Cancel",
+    editorConfirmViolation: "This assignment violates the following rules. Do you want to proceed?",
 
     // Partial result
     partialScheduleWarning: "Partial Schedule",
@@ -655,6 +658,9 @@ const translations = {
     editorAssignedAnyway: "จัดเวรแม้จะขัดเงื่อนไข",
     editorAtLimit: "ถึงจำกัด",
     editorOverLimit: "เกินจำกัด",
+    editorConfirmAssign: "ยืนยัน",
+    editorCancelAssign: "ยกเลิก",
+    editorConfirmViolation: "การจัดเวรนี้ขัดกับกฎต่อไปนี้ ต้องการดำเนินการต่อหรือไม่?",
 
     // Partial result
     partialScheduleWarning: "ตารางเวรไม่สมบูรณ์",

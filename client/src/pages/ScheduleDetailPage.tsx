@@ -123,7 +123,7 @@ export default function ScheduleDetailPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
-      <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+      <div className="max-w-[95vw] mx-auto px-4 py-8 space-y-6">
         <div className="flex items-center gap-4 flex-wrap">
           <Button variant="ghost" size="icon" onClick={() => setLocation("/history")} data-testid="button-back">
             <ArrowLeft className="w-5 h-5" />

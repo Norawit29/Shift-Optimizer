@@ -7,6 +7,7 @@ import { runOptimizerInWorker } from "@/lib/workerRunner";
 import { WizardStep } from "@/components/WizardStep";
 import { ScheduleView } from "@/components/ScheduleView";
 import { ScheduleEditor } from "@/components/ScheduleEditor";
+import { cn } from "@/lib/utils";
 import { StatsCard } from "@/components/StatsCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1442,7 +1443,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-8">
+      <main className={cn("mx-auto px-4 py-8", step === 4 ? "max-w-[95vw]" : "max-w-5xl")}>
         
         {/* STEP 1: CONFIGURATION */}
         <WizardStep 
@@ -2642,7 +2643,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           <WizardStep 
             isActive={true} 
             title={t.generatedSchedule}
-            className="max-w-6xl"
+            className="!max-w-none w-full"
           >
             {isOptimizing && (
               <div className="flex items-center justify-center p-8">
