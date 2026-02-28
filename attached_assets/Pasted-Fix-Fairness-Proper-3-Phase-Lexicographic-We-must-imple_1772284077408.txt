@@ -1,0 +1,105 @@
+Fix Fairness → Proper 3-Phase Lexicographic
+
+We must implement TRUE lexicographic fairness:
+
+Phase 2A → Maximize minLoad
+Phase 2B → Lock minLoad, Minimize maxLoad
+Phase 2C → Lock both, then smooth distribution
+
+Currently Phase 2B mixes maxLoad inside weighted objective — remove that.
+
+✅ 1️⃣ Add new method: buildMinMaxModel
+
+Create:
+
+private buildMinMaxModel(
+  varMap,
+  binaryVars,
+  phase1Targets,
+  bestMinLoad: number
+): string
+Constraints:
+
+writeCommonConstraints
+
+writeCoverageConstraints
+
+writeLoadTrackingConstraints
+
+Add:
+
+constraintLines.push(`  c${cIdx.val++}: minLoad >= ${fmt(bestMinLoad)}`);
+Objective:
+Minimize
+  obj:
+  maxLoad
+
+⚠️ No deviation terms here.
+
+Return LP string.
+
+✅ 2️⃣ Update optimize() fairness section
+
+Replace current Phase 2B logic.
+
+After Phase 2A:
+
+const bestMinLoad = Math.floor(phase2aSolution.Columns["minLoad"].Primal);
+
+Add:
+
+// Phase 2B – minimize maxLoad
+const minMaxModel = this.buildMinMaxModel(varMap, binaryVars, phase1Targets, bestMinLoad);
+const solver2b = await createSolver();
+const phase2bSolution = solver2b.solve(minMaxModel, settings);
+
+const bestMaxLoad = Math.ceil(phase2bSolution.Columns["maxLoad"].Primal);
+✅ 3️⃣ Fix buildDistributionModel()
+
+Modify signature:
+
+private buildDistributionModel(
+  varMap,
+  binaryVars,
+  phase1Targets,
+  bestMinLoad: number,
+  bestMaxLoad: number
+)
+Remove:
+const MAXLOAD_W = ...
+`${MAXLOAD_W} maxLoad`
+Add constraints:
+constraintLines.push(`  c${cIdx.val++}: minLoad >= ${fmt(bestMinLoad)}`);
+constraintLines.push(`  c${cIdx.val++}: maxLoad <= ${fmt(bestMaxLoad)}`);
+Objective should ONLY include:
+
+shift deviation (ds_)
+
+holiday deviation (dh_)
+
+level slack
+
+NO maxLoad term.
+
+✅ 4️⃣ Final solve flow
+
+Full fairness becomes:
+
+Phase 2A → maximize minLoad
+Phase 2B → minimize maxLoad
+Phase 2C → minimize deviation (lock both bounds)
+🚫 Do NOT change:
+
+Coverage phase
+
+Consecutive logic
+
+Greedy fill
+
+Level soft logic
+
+🎯 Expected Result
+
+Fairness no longer collapses.
+Shift smoothing returns.
+Min–Max tighter and stable even with 7-day rule.
