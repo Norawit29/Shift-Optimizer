@@ -806,7 +806,7 @@ export class ShiftOptimizer {
     }
   }
 
-  private buildRangeModel(
+  private buildMaxMinModel(
     varMap: Map<string, { staff: number; day: number; shift: number }>,
     binaryVars: string[],
     phase1Targets: { perShift: number[]; holidayTotal: number; totalCoverage: number; slotCoverage: Map<string, number> }
@@ -821,9 +821,9 @@ export class ShiftOptimizer {
     this.writeLoadTrackingConstraints(constraintLines, varMap, cIdx);
 
     const lines: string[] = [];
-    lines.push("Minimize");
+    lines.push("Maximize");
     lines.push("  obj:");
-    lines.push("  maxLoad - minLoad");
+    lines.push("  minLoad");
 
     lines.push("Subject To");
     lines.push(...constraintLines);
