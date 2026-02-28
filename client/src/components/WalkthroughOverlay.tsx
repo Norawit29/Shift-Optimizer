@@ -258,16 +258,13 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
     <div
       className="fixed inset-0 z-[9999]"
       data-testid="walkthrough-overlay"
-      style={{
-        opacity: isReady ? 1 : 0,
-      }}
     >
       <div className="absolute inset-0" style={{ pointerEvents: isReady ? "auto" : "none" }}>
         <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <mask id="wk-mask">
               <rect x="0" y="0" width="100%" height="100%" fill="white" />
-              {spotlight && (
+              {isReady && spotlight && (
                 <rect
                   x={spotlight.left}
                   y={spotlight.top}
@@ -287,7 +284,7 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
         </svg>
       </div>
 
-      {spotlight && (
+      {isReady && spotlight && (
         <div
           className="absolute rounded-xl pointer-events-none"
           style={{
@@ -300,7 +297,7 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
         />
       )}
 
-      {spotlight && (
+      {isReady && spotlight && (
         <div
           className="absolute"
           style={{
@@ -319,6 +316,7 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
         className="fixed bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 p-4 sm:p-5 z-[10001] max-h-[80vh] overflow-y-auto"
         style={{
           width: tooltipW,
+          visibility: isReady ? "visible" : "hidden",
           ...tooltipPos,
         }}
         data-testid="walkthrough-tooltip"
