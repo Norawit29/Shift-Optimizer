@@ -2730,6 +2730,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     staff={staff}
                     month={month}
                     year={year}
+                    onScheduleChange={handleScheduleEdit}
                   />
                 </TabsContent>
 
