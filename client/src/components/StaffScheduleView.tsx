@@ -72,6 +72,15 @@ export function StaffScheduleView({ schedule, config, staff, month, year }: Staf
     });
   }, [staff, schedule, config, S, hasLevels]);
 
+  const shiftTotalPerDay = useMemo(() => {
+    return config.shiftNames.map((_, shiftIdx) => {
+      const perDay = schedule.map(day => {
+        return (day.shifts[shiftIdx] || []).length;
+      });
+      return { shiftIdx, perDay };
+    });
+  }, [config.shiftNames, schedule]);
+
   const levelCounts = useMemo(() => {
     if (!hasLevels || !config.minStaffPerLevel) return null;
     const levelNames = config.staffLevels!;
@@ -95,7 +104,17 @@ export function StaffScheduleView({ schedule, config, staff, month, year }: Staf
 
   return (
     <Card className="border shadow-lg overflow-hidden bg-white dark:bg-zinc-900" data-testid="staff-schedule-view">
-      <ScrollArea className="h-[calc(100vh-220px)] w-full">
+      <div className="flex items-center gap-4 px-4 py-2 border-b bg-slate-50 dark:bg-slate-800/50 text-xs">
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block w-4 h-4 rounded bg-red-400 dark:bg-red-700" />
+          <span className="text-muted-foreground">{t.blockedDateLegend}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block w-4 h-4 rounded ring-2 ring-emerald-500 bg-blue-200 dark:bg-blue-800/60" />
+          <span className="text-muted-foreground">{t.requestedDateLegend}</span>
+        </div>
+      </div>
+      <ScrollArea className="h-[calc(100vh-260px)] w-full">
         <div className="min-w-max">
           <table className="text-xs border-collapse w-full">
             <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-800">
@@ -191,39 +210,66 @@ export function StaffScheduleView({ schedule, config, staff, month, year }: Staf
                 </tr>
               ))}
             </tbody>
-            {levelCounts && levelCounts.length > 0 && (
-              <tfoot>
-                <tr><td colSpan={999} className="p-1" /></tr>
-                {levelCounts.map((lc, lci) => {
-                  if (!lc) return null;
-                  const shiftBg = SHIFT_BG_COLORS[lc.shiftIdx % SHIFT_BG_COLORS.length];
-                  return (
-                    <tr key={lci} className="border-t">
-                      <td className="sticky left-0 z-10 bg-white dark:bg-zinc-900 p-1 font-medium border-r whitespace-nowrap">
-                        <span className={cn("inline-block px-1 rounded text-[10px]", shiftBg)}>
-                          {config.shiftNames[lc.shiftIdx]}
-                        </span>
-                        {" "}
-                        <span className="text-muted-foreground">{lc.levelName} ≥{lc.minReq}</span>
+            <tfoot>
+              <tr><td colSpan={999} className="p-1" /></tr>
+              {shiftTotalPerDay.map((st) => {
+                const shiftBg = SHIFT_BG_COLORS[st.shiftIdx % SHIFT_BG_COLORS.length];
+                const shiftText = SHIFT_TEXT_COLORS[st.shiftIdx % SHIFT_TEXT_COLORS.length];
+                const dayTotal = st.perDay.reduce((a, b) => a + b, 0);
+                return (
+                  <tr key={`total-${st.shiftIdx}`} className="border-t">
+                    <td className="sticky left-0 z-10 bg-slate-50 dark:bg-slate-800/50 p-1 font-bold border-r whitespace-nowrap">
+                      <span className={cn("inline-block px-1.5 py-0.5 rounded text-[10px]", shiftBg, shiftText)}>
+                        {config.shiftNames[st.shiftIdx]}
+                      </span>
+                      {" "}
+                      <span className="text-muted-foreground">{t.shiftTotalLabel}</span>
+                    </td>
+                    {hasLevels && <td className="sticky z-10 bg-slate-50 dark:bg-slate-800/50 border-r" style={{ left: "140px" }} />}
+                    {st.perDay.map((count, di) => (
+                      <td key={di} className={cn("p-0.5 text-center border-r font-bold text-[10px] bg-slate-50 dark:bg-slate-800/50", shiftText)}>
+                        {count}
                       </td>
-                      {hasLevels && <td className="sticky z-10 bg-white dark:bg-zinc-900 border-r" style={{ left: "140px" }} />}
-                      {lc.perDay.map((pd, di) => (
-                        <td
-                          key={di}
-                          className={cn(
-                            "p-0.5 text-center border-r font-medium text-[10px]",
-                            pd.met ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300" : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
-                          )}
-                        >
-                          {pd.count}
+                    ))}
+                    <td colSpan={S} className="border-r" />
+                    <td className="p-0.5 text-center font-bold text-[10px] bg-slate-100 dark:bg-slate-700">{dayTotal}</td>
+                  </tr>
+                );
+              })}
+              {levelCounts && levelCounts.length > 0 && (
+                <>
+                  <tr><td colSpan={999} className="p-0.5" /></tr>
+                  {levelCounts.map((lc, lci) => {
+                    if (!lc) return null;
+                    const shiftBg = SHIFT_BG_COLORS[lc.shiftIdx % SHIFT_BG_COLORS.length];
+                    return (
+                      <tr key={`lc-${lci}`} className="border-t">
+                        <td className="sticky left-0 z-10 bg-white dark:bg-zinc-900 p-1 font-medium border-r whitespace-nowrap">
+                          <span className={cn("inline-block px-1 rounded text-[10px]", shiftBg)}>
+                            {config.shiftNames[lc.shiftIdx]}
+                          </span>
+                          {" "}
+                          <span className="text-muted-foreground">{lc.levelName} ≥{lc.minReq}</span>
                         </td>
-                      ))}
-                      <td colSpan={S + 1} className="border-r" />
-                    </tr>
-                  );
-                })}
-              </tfoot>
-            )}
+                        {hasLevels && <td className="sticky z-10 bg-white dark:bg-zinc-900 border-r" style={{ left: "140px" }} />}
+                        {lc.perDay.map((pd, di) => (
+                          <td
+                            key={di}
+                            className={cn(
+                              "p-0.5 text-center border-r font-medium text-[10px]",
+                              pd.met ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300" : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
+                            )}
+                          >
+                            {pd.count}
+                          </td>
+                        ))}
+                        <td colSpan={S + 1} className="border-r" />
+                      </tr>
+                    );
+                  })}
+                </>
+              )}
+            </tfoot>
           </table>
         </div>
         <ScrollBar orientation="horizontal" />
