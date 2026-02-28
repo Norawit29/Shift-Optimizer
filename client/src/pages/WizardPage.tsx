@@ -1815,11 +1815,11 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                       return (
                         <div 
                           key={s.id} 
-                          className={`group flex items-center gap-2 rounded-md px-2 py-1.5 cursor-pointer transition-colors ${isSelected ? 'bg-primary/10 dark:bg-primary/15 ring-1 ring-primary/30' : 'hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
+                          className={`group flex items-center gap-1.5 rounded-md px-2 py-1.5 cursor-pointer transition-colors overflow-visible ${isSelected ? 'bg-primary/10 dark:bg-primary/15 ring-1 ring-primary/30' : 'hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
                           onClick={() => setSelectedStaffId(isSelected ? null : s.id)}
                           data-testid={`staff-card-${s.id}`}
                         >
-                          <div className="min-w-[100px] flex-[2] truncate">
+                          <div className="min-w-0 flex-1 truncate">
                             <Input 
                               value={s.name} 
                               onChange={e => { e.stopPropagation(); updateStaff(s.id, "name", e.target.value); }}
@@ -1863,11 +1863,11 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                             data-testid={`input-max-shifts-${s.id}`}
                           />
                           <button
-                            className="invisible group-hover:visible h-5 w-5 inline-flex items-center justify-center text-muted-foreground rounded-sm shrink-0"
+                            className="opacity-0 group-hover:opacity-100 focus:opacity-100 h-6 w-6 inline-flex items-center justify-center text-muted-foreground hover:text-destructive rounded-sm shrink-0 transition-opacity relative z-10"
                             onClick={(e) => { e.stopPropagation(); removeStaff(s.id); }}
                             data-testid={`button-remove-staff-${s.id}`}
                           >
-                            <X className="w-3 h-3" />
+                            <X className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       );
