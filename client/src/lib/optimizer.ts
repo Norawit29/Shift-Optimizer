@@ -530,6 +530,46 @@ export class ShiftOptimizer {
       }
     }
 
+    const MAX_CONSEC_WORK_DAYS = 7;
+    const workWindowSize = MAX_CONSEC_WORK_DAYS + 1;
+    for (let i = 0; i < N; i++) {
+      const wVars: string[] = [];
+      for (let d = 0; d < D; d++) {
+        const dayShiftVars: string[] = [];
+        for (let s = 0; s < S; s++) {
+          const v = this.vn(i, d, s);
+          if (varMap.has(v)) dayShiftVars.push(v);
+        }
+        if (dayShiftVars.length === 0) {
+          wVars.push("");
+          continue;
+        }
+        const wVar = `w_${i}_${d}`;
+        wVars.push(wVar);
+        if (options?.auxBinaryVars) options.auxBinaryVars.push(wVar);
+        for (const sv of dayShiftVars) {
+          lines.push(`  c${cIdx.val++}: ${wVar} - ${sv} >= 0`);
+        }
+        const sumTerms = dayShiftVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+        lines.push(`  c${cIdx.val++}:`);
+        lines.push(writeTerms([...sumTerms, `- ${dayShiftVars.length} ${wVar}`], 10));
+        lines.push(`  <= 0`);
+      }
+      for (let dStart = 0; dStart <= D - workWindowSize; dStart++) {
+        const windowWVars: string[] = [];
+        for (let dd = 0; dd < workWindowSize; dd++) {
+          const wv = wVars[dStart + dd];
+          if (wv) windowWVars.push(wv);
+        }
+        if (windowWVars.length > MAX_CONSEC_WORK_DAYS) {
+          const terms = windowWVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+          lines.push(`  c${cIdx.val++}:`);
+          lines.push(writeTerms(terms, 10));
+          lines.push(`  <= ${MAX_CONSEC_WORK_DAYS}`);
+        }
+      }
+    }
+
     for (let i = 0; i < N; i++) {
       const maxShifts = this.staff[i].maxShifts;
       const staffVars: string[] = [];
@@ -1235,6 +1275,25 @@ export class ShiftOptimizer {
                   }
                 }
                 if (violatesMaxConsec) continue;
+              }
+
+              {
+                let consecWorkDays = 1;
+                for (let dd = d - 1; dd >= 0; dd--) {
+                  let worked = false;
+                  for (let ss = 0; ss < S; ss++) {
+                    if (schedule[dd].shifts[ss]?.includes(member.id)) { worked = true; break; }
+                  }
+                  if (worked) consecWorkDays++; else break;
+                }
+                for (let dd = d + 1; dd < D; dd++) {
+                  let worked = false;
+                  for (let ss = 0; ss < S; ss++) {
+                    if (schedule[dd].shifts[ss]?.includes(member.id)) { worked = true; break; }
+                  }
+                  if (worked) consecWorkDays++; else break;
+                }
+                if (consecWorkDays > 7) continue;
               }
 
               if (arr.includes(member.id)) continue;

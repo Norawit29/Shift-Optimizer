@@ -189,6 +189,23 @@ function validateAssignment(
     warnings.push("maxShifts");
   }
 
+  const sortedDays = [...schedule].sort((a, b) => a.date - b.date);
+  const dayIdx = sortedDays.findIndex(d => d.date === dayDate);
+  if (dayIdx >= 0) {
+    let consecWork = 1;
+    for (let i = dayIdx - 1; i >= 0; i--) {
+      if (sortedDays[i].shifts.some(sh => sh.includes(staffId))) consecWork++;
+      else break;
+    }
+    for (let i = dayIdx + 1; i < sortedDays.length; i++) {
+      if (sortedDays[i].shifts.some(sh => sh.includes(staffId))) consecWork++;
+      else break;
+    }
+    if (consecWork > 7) {
+      warnings.push("maxConsecWorkDays");
+    }
+  }
+
   return warnings;
 }
 
@@ -358,6 +375,7 @@ export function ScheduleEditor({
             case "consecutiveNextDay": return t.editorConsecutiveViolation;
             case "maxShifts": return t.editorMaxShiftsReached;
             case "alreadyAssigned": return t.editorAlreadyAssigned;
+            case "maxConsecWorkDays": return (t as any).editorMaxConsecWorkDays || "Exceeds 7 consecutive working days";
             default: return w;
           }
         });
