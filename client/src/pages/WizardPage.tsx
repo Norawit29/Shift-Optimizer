@@ -1862,7 +1862,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                             data-testid={`input-max-shifts-${s.id}`}
                           />
                           <button
-                            className="invisible group-hover:visible h-5 w-5 inline-flex items-center justify-center text-muted-foreground rounded-sm shrink-0"
+                            className="opacity-40 hover:opacity-100 h-5 w-5 inline-flex items-center justify-center text-muted-foreground hover:text-red-500 rounded-sm shrink-0 transition-opacity"
                             onClick={(e) => { e.stopPropagation(); removeStaff(s.id); }}
                             data-testid={`button-remove-staff-${s.id}`}
                           >
