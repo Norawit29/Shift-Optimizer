@@ -849,12 +849,13 @@ export class ShiftOptimizer {
     varMap: Map<string, { staff: number; day: number; shift: number }>,
     binaryVars: string[],
     phase1Targets: { perShift: number[]; holidayTotal: number; totalCoverage: number; slotCoverage: Map<string, number> },
-    bestRange: number
+    bestMinLoad: number
   ): string {
     const N = this.staff.length;
     const D = this.daysInMonth;
     const S = this.config.shiftNames.length;
 
+    const MAXLOAD_W = 10_000;
     const SHIFT_W = 1_000;
     const HOLIDAY_W = 100;
     const LEVEL_W = 10;
@@ -878,7 +879,8 @@ export class ShiftOptimizer {
     this.writeCoverageConstraints(constraintLines, varMap, cIdx, phase1Targets);
     this.writeLoadTrackingConstraints(constraintLines, varMap, cIdx);
 
-    constraintLines.push(`  c${cIdx.val++}: maxLoad - minLoad <= ${fmt(bestRange)}`);
+    constraintLines.push(`  c${cIdx.val++}: minLoad >= ${fmt(bestMinLoad)}`);
+    constraintLines.push(`  c${cIdx.val++}: maxLoad >= 0`);
 
     for (let i = 0; i < N; i++) {
       for (let s = 0; s < S; s++) {
@@ -931,13 +933,11 @@ export class ShiftOptimizer {
     const lines: string[] = [];
     lines.push("Minimize");
     lines.push("  obj:");
-    const objParts: string[] = [];
-    let firstTerm = true;
+    const objParts: string[] = [`${MAXLOAD_W} maxLoad`];
     for (let i = 0; i < N; i++) {
       for (let s = 0; s < S; s++) {
         if (staffShiftTargets[s][i] > 0) {
-          objParts.push(`${firstTerm ? "" : "+ "}${SHIFT_W} ds_${i}_${s}`);
-          firstTerm = false;
+          objParts.push(`+ ${SHIFT_W} ds_${i}_${s}`);
         }
       }
     }
@@ -948,9 +948,6 @@ export class ShiftOptimizer {
     }
     for (const lv of levelSlackVars) {
       objParts.push(`+ ${LEVEL_W} ${lv}`);
-    }
-    if (objParts.length === 0) {
-      objParts.push("0 maxLoad");
     }
     lines.push(writeTerms(objParts, 8));
 
@@ -1614,16 +1611,16 @@ export class ShiftOptimizer {
       finalSolution = phase1Solution;
       usedPhase = "1 (coverage only, fairness skipped)";
     } else {
-      const rangeModel = this.buildRangeModel(varMap, binaryVars, phase1Targets);
-      console.log(`[OPT] Phase 2A (range) model: ${rangeModel.length} chars, ${rangeModel.split('\n').length} lines`);
+      const maxMinModel = this.buildMaxMinModel(varMap, binaryVars, phase1Targets);
+      console.log(`[OPT] Phase 2A (max-min) model: ${maxMinModel.length} chars, ${maxMinModel.split('\n').length} lines`);
       usedPhase = "2A";
 
-      let bestRange = Infinity;
+      let bestMinLoad = 0;
       let phase2aSolution: any = null;
 
       try {
         const solver2a = await createSolver();
-        phase2aSolution = solver2a.solve(rangeModel, {
+        phase2aSolution = solver2a.solve(maxMinModel, {
           time_limit: 90,
           mip_rel_gap: 0.001,
           threads: 1,
@@ -1634,13 +1631,12 @@ export class ShiftOptimizer {
 
         if (phase2aSolution.Columns) {
           const cols = phase2aSolution.Columns;
-          const maxVal = cols["maxLoad"]?.Primal ?? 0;
           const minVal = cols["minLoad"]?.Primal ?? 0;
-          bestRange = Math.ceil(maxVal - minVal);
-          console.log(`[OPT] Phase 2A bestRange: ${bestRange} (maxLoad=${maxVal.toFixed(1)}, minLoad=${minVal.toFixed(1)})`);
+          bestMinLoad = Math.floor(minVal);
+          console.log(`[OPT] Phase 2A bestMinLoad: ${bestMinLoad} (minLoad=${minVal.toFixed(1)})`);
 
           if (phase2aSolution.Status === "Time limit reached") {
-            console.warn(`[OPT] Phase 2A hit time limit, using best range found`);
+            console.warn(`[OPT] Phase 2A hit time limit, using best minLoad found`);
           }
         }
 
@@ -1657,9 +1653,9 @@ export class ShiftOptimizer {
         phase2aSolution = null;
       }
 
-      if (phase2aSolution && bestRange < Infinity) {
-        const distModel = this.buildDistributionModel(varMap, binaryVars, phase1Targets, bestRange);
-        console.log(`[OPT] Phase 2B (distribution) model: ${distModel.length} chars, ${distModel.split('\n').length} lines, range locked to ${bestRange}`);
+      if (phase2aSolution) {
+        const distModel = this.buildDistributionModel(varMap, binaryVars, phase1Targets, bestMinLoad);
+        console.log(`[OPT] Phase 2B (distribution) model: ${distModel.length} chars, ${distModel.split('\n').length} lines, minLoad locked to ${bestMinLoad}`);
         usedPhase = "2B";
 
         try {
