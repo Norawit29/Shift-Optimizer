@@ -217,25 +217,25 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
   }, [staff, schedule, config, hasLevels]);
 
   const shiftSummary = useMemo(() => {
-    if (!hasLevels || !config.minStaffPerLevel) return null;
-
     return config.shiftNames.map((shiftName, shiftIdx) => {
       const shiftColor = SHIFT_COLORS[shiftIdx % SHIFT_COLORS.length];
 
-      const levelRows = config.staffLevels!.map((lvlName, lvlIdx) => {
-        const minReq = config.minStaffPerLevel?.[shiftIdx]?.[lvlIdx] ?? 0;
-        const displayName = minReq > 0 ? `${lvlName} >=${minReq}` : lvlName;
+      const levelRows = hasLevels && config.staffLevels && config.minStaffPerLevel
+        ? config.staffLevels.map((lvlName, lvlIdx) => {
+            const minReq = config.minStaffPerLevel?.[shiftIdx]?.[lvlIdx] ?? 0;
+            const displayName = minReq > 0 ? `${lvlName} >=${minReq}` : lvlName;
 
-        const dayCounts = schedule.map(day => {
-          const assignedIds = (day.shifts[shiftIdx] || []).map(String);
-          return assignedIds.filter(id => {
-            const member = staff.find(s => s.id === id);
-            return member && (member.level ?? 0) === lvlIdx;
-          }).length;
-        });
+            const dayCounts = schedule.map(day => {
+              const assignedIds = (day.shifts[shiftIdx] || []).map(String);
+              return assignedIds.filter(id => {
+                const member = staff.find(s => s.id === id);
+                return member && (member.level ?? 0) === lvlIdx;
+              }).length;
+            });
 
-        return { displayName, minReq, dayCounts };
-      });
+            return { displayName, minReq, dayCounts };
+          })
+        : [];
 
       const totalRow = schedule.map(day => {
         return (day.shifts[shiftIdx] || []).filter(id => id && String(id).length > 0).length;
@@ -516,7 +516,7 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
               </tbody>
             </table>
 
-            {shiftSummary && (
+            {shiftSummary.length > 0 && (
               <div className="mt-2">
                 {shiftSummary.map((shift, shiftIdx) => (
                   <table key={shiftIdx} className="text-xs border-collapse w-full mb-1">
@@ -571,7 +571,9 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
                       ))}
 
                       <tr>
-                        <td className={cn("sticky left-0 z-10 p-1 border-b border-r bg-white dark:bg-zinc-900", stickyColWidth)}></td>
+                        <td className={cn("sticky left-0 z-10 p-1 border-b border-r font-bold text-[10px] bg-white dark:bg-zinc-900 text-right", stickyColWidth)}>
+                          {!hasLevels && t.totalLabel}
+                        </td>
                         {hasLevels && (
                           <td className={cn("sticky z-10 p-1 border-b border-r font-bold text-[10px] bg-white dark:bg-zinc-900", levelColWidth)} style={{ left: "180px" }}>
                             {t.totalLabel}
