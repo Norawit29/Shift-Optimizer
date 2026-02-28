@@ -407,6 +407,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const walkthroughStep4: WalkthroughStep[] = [
     { targetSelector: '[data-walkthrough="version-selector"]', titleKey: "wk4VersionTitle", descKey: "wk4VersionDesc", position: "bottom" },
     { targetSelector: '[data-walkthrough="view-tabs"]', titleKey: "wk4ViewTabsTitle", descKey: "wk4ViewTabsDesc", position: "bottom" },
+    { targetSelector: '[data-walkthrough="drag-drop-area"]', titleKey: "wk4DragDropTitle", descKey: "wk4DragDropDesc", position: "top" },
     { targetSelector: '[data-walkthrough="regenerate-btn"]', titleKey: "wk4RegenerateTitle", descKey: "wk4RegenerateDesc", position: "bottom" },
     { targetSelector: '[data-walkthrough="export-btn"]', titleKey: "wk4ExportTitle", descKey: "wk4ExportDesc", position: "bottom" },
   ];
@@ -2702,7 +2703,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                   <TabsTrigger value="stats" data-testid="tab-stats"><Activity className="w-4 h-4 mr-2" />{t.statistics}</TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="calendar" className="mt-0">
+                <TabsContent value="calendar" className="mt-0" data-walkthrough="drag-drop-area">
                   <ScheduleEditor
                     schedule={result.schedule}
                     config={{
