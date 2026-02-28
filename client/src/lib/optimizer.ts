@@ -336,6 +336,18 @@ export class ShiftOptimizer {
     return member.blocked.some(b => b.date === date && (b.shift === -1 || b.shift === shiftIdx));
   }
 
+  private computePerShiftAvailability(shiftIdx: number): number[] {
+    const D = this.daysInMonth;
+    return this.staff.map((_, i) => {
+      let count = 0;
+      for (let d = 0; d < D; d++) {
+        const req = this.getStaffPerShiftForDay(d + 1)[shiftIdx];
+        if (req > 0 && !this.isBlocked(i, d, shiftIdx)) count++;
+      }
+      return count;
+    });
+  }
+
   private isRequested(staffIdx: number, dayIdx: number, shiftIdx: number): boolean {
     const member = this.staff[staffIdx];
     const date = dayIdx + 1;
@@ -821,12 +833,29 @@ export class ShiftOptimizer {
 
     const enableHolidayBalance = this.config.balanceHolidays && this.holidayDays.size > 0;
 
-    const totalMaxShifts = this.staff.reduce((sum, s) => sum + s.maxShifts, 0);
-    const staffShiftTargets = phase1Targets.perShift.map(total =>
-      this.staff.map(s => total * (s.maxShifts / totalMaxShifts))
-    );
+    const staffShiftTargets = phase1Targets.perShift.map((total, s) => {
+      const avail = this.computePerShiftAvailability(s);
+      const totalAvail = avail.reduce((a, b) => a + b, 0);
+      if (totalAvail === 0) return this.staff.map(() => 0);
+      return this.staff.map((_, i) => total * (avail[i] / totalAvail));
+    });
     const staffHolidayTargets = enableHolidayBalance
-      ? this.staff.map(s => phase1Targets.holidayTotal * (s.maxShifts / totalMaxShifts))
+      ? (() => {
+          const holAvail = this.staff.map((_, i) => {
+            let count = 0;
+            for (let d = 0; d < this.daysInMonth; d++) {
+              if (!this.isHoliday(d + 1)) continue;
+              for (let sv = 0; sv < this.config.shiftNames.length; sv++) {
+                const req = this.getStaffPerShiftForDay(d + 1)[sv];
+                if (req > 0 && !this.isBlocked(i, d, sv)) { count++; break; }
+              }
+            }
+            return count;
+          });
+          const totalHolAvail = holAvail.reduce((a, b) => a + b, 0);
+          if (totalHolAvail === 0) return this.staff.map(() => 0);
+          return this.staff.map((_, i) => phase1Targets.holidayTotal * (holAvail[i] / totalHolAvail));
+        })()
       : this.staff.map(() => 0);
 
     const levelSlackVars: string[] = [];
@@ -910,7 +939,7 @@ export class ShiftOptimizer {
       objParts.push(`+ ${LEVEL_W} ${lv}`);
     }
     for (let i = 0; i < N; i++) {
-      objParts.push(`+ 1e-6 tw_${i}`);
+      objParts.push(`+ ${fmt(1e-6)} tw_${i}`);
     }
     if (objParts.length === 0) {
       objParts.push("0 maxLoad");

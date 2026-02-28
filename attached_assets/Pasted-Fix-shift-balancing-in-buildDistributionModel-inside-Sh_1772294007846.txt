@@ -1,0 +1,62 @@
+Fix shift balancing in buildDistributionModel() inside ShiftOptimizer — two targeted changes only, do not refactor anything else.
+
+Fix 1: Replace maxShifts-based targets with per-shift availability-based targets
+Add this new private method to the class:
+tsprivate computePerShiftAvailability(shiftIdx: number): number[] {
+  const D = this.daysInMonth;
+  return this.staff.map((_, i) => {
+    let count = 0;
+    for (let d = 0; d < D; d++) {
+      const req = this.getStaffPerShiftForDay(d + 1)[shiftIdx];
+      if (req > 0 && !this.isBlocked(i, d, shiftIdx)) count++;
+    }
+    return count;
+  });
+}
+Then inside buildDistributionModel(), replace the existing staffShiftTargets block:
+ts// REMOVE this:
+const totalMaxShifts = this.staff.reduce((sum, s) => sum + s.maxShifts, 0);
+const staffShiftTargets = phase1Targets.perShift.map(total =>
+  this.staff.map(s => total * (s.maxShifts / totalMaxShifts))
+);
+ts// REPLACE WITH this:
+const staffShiftTargets = phase1Targets.perShift.map((total, s) => {
+  const avail = this.computePerShiftAvailability(s);
+  const totalAvail = avail.reduce((a, b) => a + b, 0);
+  if (totalAvail === 0) return this.staff.map(() => 0);
+  return this.staff.map((_, i) => total * (avail[i] / totalAvail));
+});
+Also replace the staffHolidayTargets block below it:
+ts// REMOVE this:
+const staffHolidayTargets = enableHolidayBalance
+  ? this.staff.map(s => phase1Targets.holidayTotal * (s.maxShifts / totalMaxShifts))
+  : this.staff.map(() => 0);
+ts// REPLACE WITH this:
+const staffHolidayTargets = enableHolidayBalance
+  ? (() => {
+      const holAvail = this.staff.map((_, i) => {
+        let count = 0;
+        for (let d = 0; d < this.daysInMonth; d++) {
+          if (!this.isHoliday(d + 1)) continue;
+          for (let sv = 0; sv < this.config.shiftNames.length; sv++) {
+            const req = this.getStaffPerShiftForDay(d + 1)[sv];
+            if (req > 0 && !this.isBlocked(i, d, sv)) { count++; break; }
+          }
+        }
+        return count;
+      });
+      const totalHolAvail = holAvail.reduce((a, b) => a + b, 0);
+      if (totalHolAvail === 0) return this.staff.map(() => 0);
+      return this.staff.map((_, i) => phase1Targets.holidayTotal * (holAvail[i] / totalHolAvail));
+    })()
+  : this.staff.map(() => 0);
+Note: totalMaxShifts is no longer needed for targets but may still be used elsewhere in the file — do not remove it globally, only remove it from buildDistributionModel() if it's unused there after this change.
+
+Fix 2: Fix EPS tie-break term formatting in buildDistributionModel()
+Find this line inside the objective objParts loop:
+tsobjParts.push(`+ 1e-6 tw_${i}`);
+Replace with:
+tsobjParts.push(`+ ${fmt(1e-6)} tw_${i}`);
+This ensures HiGHS LP parser receives 0.000001 instead of 1e-6 which may not be recognized.
+
+That's all. Do not change any other logic, phase structure, constraints, or other methods.
