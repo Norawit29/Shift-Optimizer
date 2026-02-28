@@ -148,6 +148,7 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
   const { t } = useLanguage();
   const [dragOverTarget, setDragOverTarget] = useState<string | null>(null);
   const [draggingFrom, setDraggingFrom] = useState<string | null>(null);
+  const [draggingShiftKey, setDraggingShiftKey] = useState<string | null>(null);
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
 
   const editable = !!onScheduleChange;
@@ -227,6 +228,7 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
       e.dataTransfer.setData("application/json", JSON.stringify(dragData));
       e.dataTransfer.effectAllowed = "move";
       setDraggingFrom(`${rowIdx}-${dayDate}`);
+      setDraggingShiftKey(`${rowIdx}-${dayDate}-${shiftIndices.join(",")}`);
     },
     [editable]
   );
@@ -234,6 +236,7 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
   const handleDragEnd = useCallback(() => {
     setDragOverTarget(null);
     setDraggingFrom(null);
+    setDraggingShiftKey(null);
   }, []);
 
   const handleDragOver = useCallback(
@@ -461,32 +464,76 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
                         );
                       }
 
-                      const shiftLabel = cell.matchedShifts.map(si => config.shiftNames[si]).join("/");
-                      const primaryShift = cell.matchedShifts[0];
-                      const bgClass = SHIFT_BG_COLORS[primaryShift % SHIFT_BG_COLORS.length];
-                      const textClass = SHIFT_TEXT_COLORS[primaryShift % SHIFT_TEXT_COLORS.length];
+                      if (cell.matchedShifts.length === 1) {
+                        const si = cell.matchedShifts[0];
+                        const bgClass = SHIFT_BG_COLORS[si % SHIFT_BG_COLORS.length];
+                        const textClass = SHIFT_TEXT_COLORS[si % SHIFT_TEXT_COLORS.length];
+                        const shiftKey = `${ri}-${dayDate}-${si}`;
+                        const isDraggingThis = draggingShiftKey === shiftKey;
+
+                        return (
+                          <td
+                            key={ci}
+                            draggable={editable}
+                            onDragStart={editable ? (e) => handleDragStart(e, row.id, dayDate, [si], ri) : undefined}
+                            onDragEnd={editable ? handleDragEnd : undefined}
+                            onDragOver={editable ? (e) => handleDragOver(e, ri, dayDate) : undefined}
+                            onDragLeave={editable ? handleDragLeave : undefined}
+                            onDrop={editable ? (e) => handleDrop(e, ri, dayDate) : undefined}
+                            className={cn(
+                              "p-0.5 text-center border-r font-medium",
+                              editable && "cursor-grab active:cursor-grabbing",
+                              bgClass,
+                              textClass,
+                              cell.isRequested && "ring-2 ring-inset ring-emerald-500",
+                              isDragOver && !isDragging && "ring-2 ring-inset ring-blue-400 brightness-110",
+                              isDraggingThis && "opacity-50"
+                            )}
+                            data-testid={`staff-cell-${ri}-${dayDate}`}
+                          >
+                            {config.shiftNames[si]}
+                          </td>
+                        );
+                      }
 
                       return (
                         <td
                           key={ci}
-                          draggable={editable}
-                          onDragStart={editable ? (e) => handleDragStart(e, row.id, dayDate, cell.matchedShifts, ri) : undefined}
-                          onDragEnd={editable ? handleDragEnd : undefined}
+                          className={cn(
+                            "p-0 text-center border-r",
+                            isDragOver && !isDragging && "ring-2 ring-inset ring-blue-400 bg-blue-50 dark:bg-blue-900/20"
+                          )}
                           onDragOver={editable ? (e) => handleDragOver(e, ri, dayDate) : undefined}
                           onDragLeave={editable ? handleDragLeave : undefined}
                           onDrop={editable ? (e) => handleDrop(e, ri, dayDate) : undefined}
-                          className={cn(
-                            "p-0.5 text-center border-r font-medium",
-                            editable && "cursor-grab active:cursor-grabbing",
-                            bgClass,
-                            textClass,
-                            cell.isRequested && "ring-2 ring-inset ring-emerald-500",
-                            isDragOver && !isDragging && "ring-2 ring-inset ring-blue-400 brightness-110",
-                            isDragging && "opacity-50"
-                          )}
                           data-testid={`staff-cell-${ri}-${dayDate}`}
                         >
-                          {shiftLabel}
+                          <div className="flex flex-col gap-px">
+                            {cell.matchedShifts.map((si) => {
+                              const bgClass = SHIFT_BG_COLORS[si % SHIFT_BG_COLORS.length];
+                              const textClass = SHIFT_TEXT_COLORS[si % SHIFT_TEXT_COLORS.length];
+                              const shiftKey = `${ri}-${dayDate}-${si}`;
+                              const isDraggingThis = draggingShiftKey === shiftKey;
+                              return (
+                                <span
+                                  key={si}
+                                  draggable={editable}
+                                  onDragStart={editable ? (e) => { e.stopPropagation(); handleDragStart(e, row.id, dayDate, [si], ri); } : undefined}
+                                  onDragEnd={editable ? handleDragEnd : undefined}
+                                  className={cn(
+                                    "block px-0.5 py-px text-[10px] font-medium leading-tight rounded-sm",
+                                    editable && "cursor-grab active:cursor-grabbing",
+                                    bgClass,
+                                    textClass,
+                                    cell.isRequested && "ring-1 ring-emerald-500",
+                                    isDraggingThis && "opacity-50"
+                                  )}
+                                >
+                                  {config.shiftNames[si]}
+                                </span>
+                              );
+                            })}
+                          </div>
                         </td>
                       );
                     })}
