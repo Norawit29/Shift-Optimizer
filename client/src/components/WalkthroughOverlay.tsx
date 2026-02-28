@@ -197,7 +197,7 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
     }
 
     setIsReady(false);
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.scrollIntoView({ behavior: "instant", block: "center" });
 
     const timer = setTimeout(() => {
       setDisplayedStep(currentStep);
@@ -206,7 +206,7 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
         computePositions();
         setIsReady(true);
       });
-    }, 350);
+    }, 30);
     return () => clearTimeout(timer);
   }, [currentStep, step, steps.length, computePositions, onComplete]);
 
@@ -260,7 +260,6 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
       data-testid="walkthrough-overlay"
       style={{
         opacity: isReady ? 1 : 0,
-        transition: "opacity 0.2s ease",
       }}
     >
       <div className="absolute inset-0" style={{ pointerEvents: isReady ? "auto" : "none" }}>
