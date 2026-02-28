@@ -92,11 +92,9 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
   const [arrowPos, setArrowPos] = useState<React.CSSProperties>({});
   const [arrowDir, setArrowDir] = useState<"top" | "bottom" | "left" | "right">("top");
   const [isReady, setIsReady] = useState(false);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [tooltipW, setTooltipW] = useState(getTooltipWidth);
   const rafRef = useRef<number>(0);
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const hasShownRef = useRef(false);
 
   const step = steps[currentStep];
   const PAD = 8;
@@ -198,11 +196,7 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
       return;
     }
 
-    if (!hasShownRef.current) {
-      setIsReady(false);
-    } else {
-      setIsTransitioning(true);
-    }
+    setIsReady(false);
     el.scrollIntoView({ behavior: "smooth", block: "center" });
 
     const timer = setTimeout(() => {
@@ -210,13 +204,9 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
       computePositions();
       requestAnimationFrame(() => {
         computePositions();
-        if (!hasShownRef.current) {
-          hasShownRef.current = true;
-          setIsReady(true);
-        }
-        setIsTransitioning(false);
+        setIsReady(true);
       });
-    }, 300);
+    }, 350);
     return () => clearTimeout(timer);
   }, [currentStep, step, steps.length, computePositions, onComplete]);
 
@@ -286,7 +276,6 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
                   height={spotlight.height}
                   rx="12"
                   fill="black"
-                  style={{ transition: "x 0.25s ease, y 0.25s ease, width 0.25s ease, height 0.25s ease" }}
                 />
               )}
             </mask>
@@ -308,7 +297,6 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
             width: spotlight.width,
             height: spotlight.height,
             boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.5), 0 0 20px 4px rgba(59, 130, 246, 0.15)",
-            transition: "left 0.25s ease, top 0.25s ease, width 0.25s ease, height 0.25s ease",
           }}
         />
       )}
@@ -333,8 +321,6 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
         style={{
           width: tooltipW,
           ...tooltipPos,
-          opacity: isTransitioning ? 0 : 1,
-          transition: "opacity 0.15s ease, top 0.25s ease, left 0.25s ease",
         }}
         data-testid="walkthrough-tooltip"
       >
