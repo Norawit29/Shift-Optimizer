@@ -1,0 +1,138 @@
+Phase 2B Precision & Solver Quality Improvements
+
+We want to improve numerical stability, determinism, and solver quality in the existing multi-phase optimizer.
+
+⚠ DO NOT rewrite architecture
+⚠ DO NOT remove Phase 2A / Phase 2B
+⚠ DO NOT convert to unified objective
+
+Only apply the improvements listed below.
+
+1️⃣ Tighten mip gaps in Phase 2B (Quality Tighten)
+
+Problem:
+If mip_rel_gap = 0.001 and objective scale is large,
+solver may stop before true optimal.
+
+However:
+Gap tightening increases runtime.
+This does NOT fix structural instability from hard locks.
+
+Required Change
+
+In Phase 2B solve block, replace current solver config with:
+
+// === TIGHTER GAP FOR PHASE 2B ===
+const phase2bSolution = solver2b.solve(distModel, {
+  time_limit: 90,
+  mip_rel_gap: 1e-4,
+  mip_abs_gap: 1e-6,
+  threads: 1,
+  presolve: "on",
+});
+
+Add log:
+
+console.log("[OPT] Phase 2B using tightened mip gaps (1e-4 / 1e-6)");
+
+Do NOT change Phase 1 or Phase 2A settings.
+
+2️⃣ Fix bestRange Precision (Remove Math.ceil)
+
+Current code:
+
+bestRange = Math.ceil(maxVal - minVal);
+
+This causes:
+2.0000001 → 3
+or floating noise shrinking feasible region.
+
+This is a precision bug.
+
+Replace With:
+// === RANGE PRECISION FIX ===
+const rawRange = maxVal - minVal;
+bestRange = Math.round(rawRange + 1e-6);
+
+console.log(`[OPT] Phase 2A raw range=${rawRange}, locked range=${bestRange}`);
+
+Do NOT use Math.ceil.
+
+3️⃣ Add Deterministic Tie-Break Epsilon in Phase 2B Objective
+
+Problem:
+If objective ties, solver may choose arbitrary solution.
+
+Solution:
+Add tiny epsilon to enforce deterministic selection.
+
+Inside buildDistributionModel() objective section,
+append:
+
+// === EPSILON TIE BREAK ===
+// Ensures deterministic selection when objective values tie
+// Must remain << LEVEL_W
+for (let i = 0; i < N; i++) {
+  objParts.push(`+ 1e-6 tw_${i}`);
+}
+
+Important:
+Ensure epsilon is MUCH smaller than LEVEL_W (which is 10).
+Do NOT modify existing weight hierarchy.
+
+4️⃣ Smarter Alternative to Increasing time_limit
+
+Instead of blindly increasing:
+
+time_limit = 180
+
+Implement smarter quality/runtime trade-off.
+
+Replace Phase 2B solve config with adaptive strategy:
+
+// === ADAPTIVE GAP STRATEGY ===
+let phase2bTimeLimit: number;
+let phase2bGap: number;
+
+if (this.staff.length <= 40) {
+  // small model: prioritize quality
+  phase2bTimeLimit = 90;
+  phase2bGap = 1e-4;
+} else if (this.staff.length <= 80) {
+  // medium model: balanced
+  phase2bTimeLimit = 120;
+  phase2bGap = 5e-4;
+} else {
+  // large model: avoid proof explosion
+  phase2bTimeLimit = 90;
+  phase2bGap = 1e-3;
+}
+
+console.log(`[OPT] Phase 2B adaptive config: time_limit=${phase2bTimeLimit}, mip_rel_gap=${phase2bGap}`);
+
+const phase2bSolution = solver2b.solve(distModel, {
+  time_limit: phase2bTimeLimit,
+  mip_rel_gap: phase2bGap,
+  mip_abs_gap: 1e-6,
+  threads: 1,
+  presolve: "on",
+});
+
+This avoids long 3-minute waits while still improving quality.
+
+🚨 Important Notes
+
+• Do NOT change objective weights
+• Do NOT change architecture
+• Do NOT remove hard lock constraint
+• Do NOT rewrite solver flow
+
+This is strictly solver tuning + precision hygiene.
+
+✅ Expected Results
+
+• Fewer false optima in Phase 2B
+• No 2.0000001 → 3 rounding bug
+• More deterministic schedules
+• Better runtime/quality balance
+• No unnecessary 180-second solves

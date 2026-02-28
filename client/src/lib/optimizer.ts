@@ -909,6 +909,9 @@ export class ShiftOptimizer {
     for (const lv of levelSlackVars) {
       objParts.push(`+ ${LEVEL_W} ${lv}`);
     }
+    for (let i = 0; i < N; i++) {
+      objParts.push(`+ 1e-6 tw_${i}`);
+    }
     if (objParts.length === 0) {
       objParts.push("0 maxLoad");
     }
@@ -1577,8 +1580,9 @@ export class ShiftOptimizer {
           const cols = phase2aSolution.Columns;
           const maxVal = cols["maxLoad"]?.Primal ?? 0;
           const minVal = cols["minLoad"]?.Primal ?? 0;
-          bestRange = Math.ceil(maxVal - minVal);
-          console.log(`[OPT] Phase 2A bestRange: ${bestRange} (maxLoad=${maxVal.toFixed(1)}, minLoad=${minVal.toFixed(1)})`);
+          const rawRange = maxVal - minVal;
+          bestRange = Math.round(rawRange + 1e-6);
+          console.log(`[OPT] Phase 2A raw range=${rawRange}, locked range=${bestRange} (maxLoad=${maxVal.toFixed(1)}, minLoad=${minVal.toFixed(1)})`);
 
           if (phase2aSolution.Status === "Time limit reached") {
             console.warn(`[OPT] Phase 2A hit time limit, using best range found`);
@@ -1605,9 +1609,23 @@ export class ShiftOptimizer {
 
         try {
           const solver2b = await createSolver();
+          let phase2bTimeLimit: number;
+          let phase2bGap: number;
+          if (this.staff.length <= 40) {
+            phase2bTimeLimit = 90;
+            phase2bGap = 1e-4;
+          } else if (this.staff.length <= 80) {
+            phase2bTimeLimit = 120;
+            phase2bGap = 5e-4;
+          } else {
+            phase2bTimeLimit = 90;
+            phase2bGap = 1e-3;
+          }
+          console.log(`[OPT] Phase 2B adaptive config: time_limit=${phase2bTimeLimit}, mip_rel_gap=${phase2bGap}`);
           const phase2bSolution = solver2b.solve(distModel, {
-            time_limit: 90,
-            mip_rel_gap: 0.001,
+            time_limit: phase2bTimeLimit,
+            mip_rel_gap: phase2bGap,
+            mip_abs_gap: 1e-6,
             threads: 1,
             presolve: "on",
           });
