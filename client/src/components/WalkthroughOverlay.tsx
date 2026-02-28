@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/context/LanguageContext";
 import { X, ChevronLeft, ChevronRight, EyeOff } from "lucide-react";
@@ -96,11 +96,7 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
   const rafRef = useRef<number>(0);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
-  const availableSteps = useMemo(() => {
-    return steps.filter(s => document.querySelector(s.targetSelector) !== null);
-  }, [steps]);
-
-  const step = availableSteps[currentStep];
+  const step = steps[currentStep];
   const PAD = 8;
   const SAFE_MARGIN = 12;
 
@@ -189,13 +185,10 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
   }, [step]);
 
   useEffect(() => {
-    if (!step) {
-      onComplete();
-      return;
-    }
+    if (!step) return;
     const el = document.querySelector(step.targetSelector) as HTMLElement | null;
     if (!el) {
-      if (currentStep < availableSteps.length - 1) {
+      if (currentStep < steps.length - 1) {
         setCurrentStep(prev => prev + 1);
       } else {
         onComplete();
@@ -204,7 +197,7 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
     }
 
     setIsReady(false);
-    el.scrollIntoView({ behavior: "instant", block: "center" });
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
 
     const timer = setTimeout(() => {
       setDisplayedStep(currentStep);
@@ -213,9 +206,9 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
         computePositions();
         setIsReady(true);
       });
-    }, 30);
+    }, 350);
     return () => clearTimeout(timer);
-  }, [currentStep, step, availableSteps.length, computePositions, onComplete]);
+  }, [currentStep, step, steps.length, computePositions, onComplete]);
 
   useEffect(() => {
     const update = () => {
@@ -231,7 +224,7 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
   }, [computePositions]);
 
   const handleNext = () => {
-    if (currentStep < availableSteps.length - 1) {
+    if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
       onComplete();
@@ -257,7 +250,7 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
     right: "border-t-8 border-b-8 border-l-8 border-t-transparent border-b-transparent border-l-white dark:border-l-slate-800",
   };
 
-  const displayStep = availableSteps[displayedStep] || step;
+  const displayStep = steps[displayedStep] || step;
   const titleText = (t as any)[displayStep.titleKey] || displayStep.titleKey;
   const descText = (t as any)[displayStep.descKey] || displayStep.descKey;
 
@@ -265,13 +258,17 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
     <div
       className="fixed inset-0 z-[9999]"
       data-testid="walkthrough-overlay"
+      style={{
+        opacity: isReady ? 1 : 0,
+        transition: "opacity 0.2s ease",
+      }}
     >
       <div className="absolute inset-0" style={{ pointerEvents: isReady ? "auto" : "none" }}>
         <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <mask id="wk-mask">
               <rect x="0" y="0" width="100%" height="100%" fill="white" />
-              {isReady && spotlight && (
+              {spotlight && (
                 <rect
                   x={spotlight.left}
                   y={spotlight.top}
@@ -291,7 +288,7 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
         </svg>
       </div>
 
-      {isReady && spotlight && (
+      {spotlight && (
         <div
           className="absolute rounded-xl pointer-events-none"
           style={{
@@ -304,7 +301,7 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
         />
       )}
 
-      {isReady && spotlight && (
+      {spotlight && (
         <div
           className="absolute"
           style={{
@@ -323,7 +320,6 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
         className="fixed bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 p-4 sm:p-5 z-[10001] max-h-[80vh] overflow-y-auto"
         style={{
           width: tooltipW,
-          visibility: isReady ? "visible" : "hidden",
           ...tooltipPos,
         }}
         data-testid="walkthrough-tooltip"
@@ -335,7 +331,7 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
 
         <div className="flex items-center justify-between mb-2 sm:mb-3">
           <span className="text-[11px] sm:text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full">
-            {displayedStep + 1} / {availableSteps.length}
+            {displayedStep + 1} / {steps.length}
           </span>
           <button
             onClick={handleSkip}
@@ -382,10 +378,10 @@ export function WalkthroughOverlay({ steps, onComplete, onNeverShow }: Walkthrou
               className="bg-blue-600 hover:bg-blue-700 text-white h-8 px-3 sm:px-4 text-xs sm:text-sm"
               data-testid="button-walkthrough-next"
             >
-              {displayedStep === availableSteps.length - 1
+              {displayedStep === steps.length - 1
                 ? ((t as any).walkthroughDone || "Done")
                 : ((t as any).walkthroughNext || "Next")}
-              {displayedStep < availableSteps.length - 1 && <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-0.5 sm:ml-1" />}
+              {displayedStep < steps.length - 1 && <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-0.5 sm:ml-1" />}
             </Button>
           </div>
         </div>

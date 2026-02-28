@@ -9,7 +9,6 @@ import { ScheduleView } from "@/components/ScheduleView";
 import { ScheduleEditor } from "@/components/ScheduleEditor";
 import { cn } from "@/lib/utils";
 import { StatsCard } from "@/components/StatsCard";
-import { StaffScheduleView } from "@/components/StaffScheduleView";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -407,7 +406,6 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const walkthroughStep4: WalkthroughStep[] = [
     { targetSelector: '[data-walkthrough="version-selector"]', titleKey: "wk4VersionTitle", descKey: "wk4VersionDesc", position: "bottom" },
     { targetSelector: '[data-walkthrough="view-tabs"]', titleKey: "wk4ViewTabsTitle", descKey: "wk4ViewTabsDesc", position: "bottom" },
-    { targetSelector: '[data-walkthrough="drag-drop-area"]', titleKey: "wk4DragDropTitle", descKey: "wk4DragDropDesc", position: "top" },
     { targetSelector: '[data-walkthrough="regenerate-btn"]', titleKey: "wk4RegenerateTitle", descKey: "wk4RegenerateDesc", position: "bottom" },
     { targetSelector: '[data-walkthrough="export-btn"]', titleKey: "wk4ExportTitle", descKey: "wk4ExportDesc", position: "bottom" },
   ];
@@ -1807,7 +1805,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     </div>
                   )}
                   
-                  <div className="space-y-1 max-h-[420px] overflow-y-auto overflow-x-auto pr-1" data-walkthrough="staff-list">
+                  <div className="space-y-1 max-h-[420px] overflow-y-auto pr-1" data-walkthrough="staff-list">
                     {staff.map((s) => {
                       const blockedCount = s.blocked?.length || 0;
                       const requestedCount = s.requested?.length || 0;
@@ -1815,11 +1813,11 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                       return (
                         <div 
                           key={s.id} 
-                          className={`group flex items-center gap-1.5 rounded-md px-2 py-1.5 cursor-pointer transition-colors min-w-max ${isSelected ? 'bg-primary/10 dark:bg-primary/15 ring-1 ring-primary/30' : 'hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
+                          className={`group flex items-center gap-2 rounded-md px-2 py-1.5 cursor-pointer transition-colors ${isSelected ? 'bg-primary/10 dark:bg-primary/15 ring-1 ring-primary/30' : 'hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
                           onClick={() => setSelectedStaffId(isSelected ? null : s.id)}
                           data-testid={`staff-card-${s.id}`}
                         >
-                          <div className="min-w-[120px] flex-1">
+                          <div className="min-w-[100px] flex-[2] truncate">
                             <Input 
                               value={s.name} 
                               onChange={e => { e.stopPropagation(); updateStaff(s.id, "name", e.target.value); }}
@@ -1863,11 +1861,11 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                             data-testid={`input-max-shifts-${s.id}`}
                           />
                           <button
-                            className="opacity-0 group-hover:opacity-100 focus:opacity-100 h-6 w-6 inline-flex items-center justify-center text-muted-foreground hover:text-destructive rounded-sm shrink-0 transition-opacity relative z-10"
+                            className="invisible group-hover:visible h-5 w-5 inline-flex items-center justify-center text-muted-foreground rounded-sm shrink-0"
                             onClick={(e) => { e.stopPropagation(); removeStaff(s.id); }}
                             data-testid={`button-remove-staff-${s.id}`}
                           >
-                            <X className="w-3.5 h-3.5" />
+                            <X className="w-3 h-3" />
                           </button>
                         </div>
                       );
@@ -2698,29 +2696,12 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               <Tabs defaultValue="calendar">
                 <TabsList className="mb-4" data-walkthrough="view-tabs">
                   <TabsTrigger value="calendar" data-testid="tab-calendar"><CalendarIcon className="w-4 h-4 mr-2" />{t.calendarView}</TabsTrigger>
-                  <TabsTrigger value="staffView" data-testid="tab-staff-view"><Users className="w-4 h-4 mr-2" />{t.staffView}</TabsTrigger>
                   <TabsTrigger value="summary" data-testid="tab-summary"><Check className="w-4 h-4 mr-2" />{t.summary}</TabsTrigger>
                   <TabsTrigger value="stats" data-testid="tab-stats"><Activity className="w-4 h-4 mr-2" />{t.statistics}</TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="calendar" className="mt-0" data-walkthrough="drag-drop-area">
+                <TabsContent value="calendar" className="mt-0">
                   <ScheduleEditor
-                    schedule={result.schedule}
-                    config={{
-                      ...config,
-                      useCustomRange,
-                      customStartDate: useCustomRange ? customStartDate : undefined,
-                      customEndDate: useCustomRange ? customEndDate : undefined,
-                    }}
-                    staff={staff}
-                    month={month}
-                    year={year}
-                    onScheduleChange={handleScheduleEdit}
-                  />
-                </TabsContent>
-
-                <TabsContent value="staffView" className="mt-0">
-                  <StaffScheduleView
                     schedule={result.schedule}
                     config={{
                       ...config,

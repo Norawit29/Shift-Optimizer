@@ -37,7 +37,7 @@ The project utilizes a monorepo structure comprising three main parts:
     - **Phase 2B (Distribution)**: `buildDistributionModel()` — Locks range from Phase 2A (`maxLoad - minLoad <= bestRange`). Minimizes per-shift balance (ds_*), holiday balance (dh_*), and soft level slack (lslk_*). Level constraints added as soft only (slack + penalty weight 10). `writeSoftLevelConstraints()` generates the soft level constraint block.
 - **Feasibility Checking**: `checkFeasibility()` returns `{ hardErrors, levelErrors, softWarnings }`. Hard errors (all staff blocked, all maxShifts=0) cause immediate abort before solver runs. Level errors auto-downgrade to soft constraints. Soft warnings are passed through to results as diagnostics.
 - **Optimization Details**: The optimizer is fully deterministic. Solver settings: time_limit=90s, mip_rel_gap=0.001, threads=1, presolve=on per phase. Worker timeout: 210s. Greedy post-processing fills remaining slots respecting all hard constraints. `checkLevelFillability()` runs pre-solve to detect level shortages for diagnostics.
-- **User Workflow**: A multi-step wizard guides users through schedule configuration, staff management, blocked dates, optimization, and export. Step 4 results include three view tabs: Calendar View (drag-and-drop editor), Staff View (`StaffScheduleView.tsx` — staff rows × date columns mirroring Excel Sheet 2), and Summary/Statistics.
+- **User Workflow**: A multi-step wizard guides users through schedule configuration, staff management, blocked dates, optimization, and export.
 
 ### Backend (`server/`)
 
