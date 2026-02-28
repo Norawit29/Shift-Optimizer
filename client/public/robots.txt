@@ -31,4 +31,10 @@ Allow: /
 User-agent: Google-InspectionTool
 Allow: /
 
-Sitemap: https://shiftscheduler.replit.app/sitemap.xml
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: meta-externalagent
+Allow: /
+
+Sitemap: https://shift-optimizer.com/sitemap.xml
