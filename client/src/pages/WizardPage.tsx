@@ -1807,7 +1807,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     </div>
                   )}
                   
-                  <div className="space-y-1 max-h-[420px] overflow-y-auto pr-1" data-walkthrough="staff-list">
+                  <div className="space-y-1 max-h-[420px] overflow-y-auto overflow-x-hidden" data-walkthrough="staff-list">
                     {staff.map((s) => {
                       const blockedCount = s.blocked?.length || 0;
                       const requestedCount = s.requested?.length || 0;
