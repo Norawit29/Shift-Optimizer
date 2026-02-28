@@ -9,7 +9,6 @@ import { ScheduleView } from "@/components/ScheduleView";
 import { ScheduleEditor } from "@/components/ScheduleEditor";
 import { cn } from "@/lib/utils";
 import { StatsCard } from "@/components/StatsCard";
-import { StaffScheduleView } from "@/components/StaffScheduleView";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -2697,7 +2696,6 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               <Tabs defaultValue="calendar">
                 <TabsList className="mb-4" data-walkthrough="view-tabs">
                   <TabsTrigger value="calendar" data-testid="tab-calendar"><CalendarIcon className="w-4 h-4 mr-2" />{t.calendarView}</TabsTrigger>
-                  <TabsTrigger value="staff-schedule" data-testid="tab-staff-schedule"><Users className="w-4 h-4 mr-2" />{t.staffSchedule}</TabsTrigger>
                   <TabsTrigger value="summary" data-testid="tab-summary"><Check className="w-4 h-4 mr-2" />{t.summary}</TabsTrigger>
                   <TabsTrigger value="stats" data-testid="tab-stats"><Activity className="w-4 h-4 mr-2" />{t.statistics}</TabsTrigger>
                 </TabsList>
@@ -2715,21 +2713,6 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     month={month}
                     year={year}
                     onScheduleChange={handleScheduleEdit}
-                  />
-                </TabsContent>
-
-                <TabsContent value="staff-schedule" className="mt-0">
-                  <StaffScheduleView
-                    schedule={result.schedule}
-                    config={{
-                      ...config,
-                      useCustomRange,
-                      customStartDate: useCustomRange ? customStartDate : undefined,
-                      customEndDate: useCustomRange ? customEndDate : undefined,
-                    }}
-                    staff={staff}
-                    month={month}
-                    year={year}
                   />
                 </TabsContent>
 

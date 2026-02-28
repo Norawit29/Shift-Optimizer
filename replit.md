@@ -11,7 +11,6 @@ Key capabilities include:
 - Implementation of requested/preferred shifts as hard constraints.
 - Rules for maximum consecutive shifts for specific staff groups.
 - Support for multiple staff levels with minimum staffing requirements per level, enforced via soft constraints to ensure feasibility.
-- Per-staff schedule view tab (Excel sheet 2 format: rows=staff, columns=days) with color-coded shifts and level count summaries.
 
 The project aims to simplify hospital shift management, improve fairness in scheduling, and reduce the administrative burden on managers.
 

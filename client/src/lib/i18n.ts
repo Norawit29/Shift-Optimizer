@@ -255,9 +255,6 @@ const translations = {
     exportExcel: "Export Excel",
     scheduleView: "Schedule View",
     staffSchedule: "Staff Schedule",
-    blockedDateLegend: "Blocked date",
-    requestedDateLegend: "Requested date",
-    shiftTotalLabel: "Total",
     scheduleNotFound: "Schedule not found",
 
     // Quick Export
@@ -640,9 +637,6 @@ const translations = {
     exportExcel: "ส่งออก Excel",
     scheduleView: "มุมมองตารางเวร",
     staffSchedule: "ตารางเวรรายบุคคล",
-    blockedDateLegend: "วันที่บล็อก",
-    requestedDateLegend: "วันที่ขอ",
-    shiftTotalLabel: "รวม",
     scheduleNotFound: "ไม่พบตารางเวร",
 
     // Quick Export
