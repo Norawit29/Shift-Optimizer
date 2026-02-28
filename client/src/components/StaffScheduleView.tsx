@@ -603,6 +603,17 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
         </ScrollArea>
       </Card>
 
+      <div className="flex flex-wrap items-center gap-4 mt-3 px-1 text-xs text-muted-foreground" data-testid="staff-view-legend">
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block w-4 h-4 rounded-sm" style={{ backgroundColor: "#FF4444" }} />
+          <span>{(t as any).legendBlocked || "วันที่ Block"}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="inline-block w-4 h-4 rounded-sm border-2 border-emerald-500 bg-white dark:bg-zinc-900" />
+          <span>{(t as any).legendRequested || "เวรที่ขออยู่"}</span>
+        </div>
+      </div>
+
       <Dialog open={pendingAssignment !== null} onOpenChange={(open) => { if (!open) handleCancelPending(); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
