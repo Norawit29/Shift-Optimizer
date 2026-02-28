@@ -1807,7 +1807,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     </div>
                   )}
                   
-                  <div className="space-y-1 max-h-[420px] overflow-y-auto pr-1" data-walkthrough="staff-list">
+                  <div className="space-y-1 max-h-[420px] overflow-y-auto overflow-x-auto pr-1" data-walkthrough="staff-list">
                     {staff.map((s) => {
                       const blockedCount = s.blocked?.length || 0;
                       const requestedCount = s.requested?.length || 0;
@@ -1815,11 +1815,11 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                       return (
                         <div 
                           key={s.id} 
-                          className={`group flex items-center gap-1.5 rounded-md px-2 py-1.5 cursor-pointer transition-colors overflow-visible ${isSelected ? 'bg-primary/10 dark:bg-primary/15 ring-1 ring-primary/30' : 'hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
+                          className={`group flex items-center gap-1.5 rounded-md px-2 py-1.5 cursor-pointer transition-colors min-w-max ${isSelected ? 'bg-primary/10 dark:bg-primary/15 ring-1 ring-primary/30' : 'hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
                           onClick={() => setSelectedStaffId(isSelected ? null : s.id)}
                           data-testid={`staff-card-${s.id}`}
                         >
-                          <div className="min-w-0 flex-1 truncate">
+                          <div className="min-w-[120px] flex-1">
                             <Input 
                               value={s.name} 
                               onChange={e => { e.stopPropagation(); updateStaff(s.id, "name", e.target.value); }}
