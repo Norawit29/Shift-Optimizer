@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, Fragment } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -212,63 +212,74 @@ export function StaffScheduleView({ schedule, config, staff, month, year }: Staf
             </tbody>
             <tfoot>
               <tr><td colSpan={999} className="p-1" /></tr>
-              {shiftTotalPerDay.map((st) => {
-                const shiftBg = SHIFT_BG_COLORS[st.shiftIdx % SHIFT_BG_COLORS.length];
-                const shiftText = SHIFT_TEXT_COLORS[st.shiftIdx % SHIFT_TEXT_COLORS.length];
-                const dayTotal = st.perDay.reduce((a, b) => a + b, 0);
+              {config.shiftNames.map((shiftName, shiftIdx) => {
+                const shiftBg = SHIFT_BG_COLORS[shiftIdx % SHIFT_BG_COLORS.length];
+                const shiftText = SHIFT_TEXT_COLORS[shiftIdx % SHIFT_TEXT_COLORS.length];
+                const st = shiftTotalPerDay[shiftIdx];
+                const minReq = config.staffPerShift[shiftIdx] || 0;
+                const levelRowsForShift = levelCounts?.filter(lc => lc && lc.shiftIdx === shiftIdx) || [];
+
                 return (
-                  <tr key={`total-${st.shiftIdx}`} className="border-t">
-                    <td className="sticky left-0 z-10 bg-slate-50 dark:bg-slate-800/50 p-1 font-bold border-r whitespace-nowrap">
-                      <span className={cn("inline-block px-1.5 py-0.5 rounded text-[10px]", shiftBg, shiftText)}>
-                        {config.shiftNames[st.shiftIdx]}
-                      </span>
-                      {" "}
-                      <span className="text-muted-foreground">{t.shiftTotalLabel}</span>
-                    </td>
-                    {hasLevels && <td className="sticky z-10 bg-slate-50 dark:bg-slate-800/50 border-r" style={{ left: "140px" }} />}
-                    {st.perDay.map((count, di) => (
-                      <td key={di} className={cn("p-0.5 text-center border-r font-bold text-[10px] bg-slate-50 dark:bg-slate-800/50", shiftText)}>
-                        {count}
+                  <Fragment key={`group-${shiftIdx}`}>
+                    {levelRowsForShift.map((lc, lci) => {
+                      if (!lc) return null;
+                      return (
+                        <tr key={`lc-${shiftIdx}-${lci}`} className="border-t">
+                          <td className="sticky left-0 z-10 bg-white dark:bg-zinc-900 p-1 font-medium border-r whitespace-nowrap">
+                            <span className={cn("inline-block px-1 rounded text-[10px]", shiftBg)}>
+                              {shiftName}
+                            </span>
+                            {" "}
+                            <span className="text-muted-foreground">{lc.levelName} ≥{lc.minReq}</span>
+                          </td>
+                          {hasLevels && <td className="sticky z-10 bg-white dark:bg-zinc-900 border-r" style={{ left: "140px" }} />}
+                          {lc.perDay.map((pd, di) => (
+                            <td
+                              key={di}
+                              className={cn(
+                                "p-0.5 text-center border-r font-medium text-[10px]",
+                                pd.met ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300" : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
+                              )}
+                            >
+                              {pd.count}
+                            </td>
+                          ))}
+                          <td colSpan={S + 1} className="border-r" />
+                        </tr>
+                      );
+                    })}
+                    <tr className="border-t">
+                      <td className="sticky left-0 z-10 bg-slate-50 dark:bg-slate-800/50 p-1 font-bold border-r whitespace-nowrap">
+                        <span className={cn("inline-block px-1.5 py-0.5 rounded text-[10px]", shiftBg, shiftText)}>
+                          {shiftName}
+                        </span>
+                        {" "}
+                        <span className="text-muted-foreground">{t.shiftTotalLabel}</span>
                       </td>
-                    ))}
-                    <td colSpan={S} className="border-r" />
-                    <td className="p-0.5 text-center font-bold text-[10px] bg-slate-100 dark:bg-slate-700">{dayTotal}</td>
-                  </tr>
-                );
-              })}
-              {levelCounts && levelCounts.length > 0 && (
-                <>
-                  <tr><td colSpan={999} className="p-0.5" /></tr>
-                  {levelCounts.map((lc, lci) => {
-                    if (!lc) return null;
-                    const shiftBg = SHIFT_BG_COLORS[lc.shiftIdx % SHIFT_BG_COLORS.length];
-                    return (
-                      <tr key={`lc-${lci}`} className="border-t">
-                        <td className="sticky left-0 z-10 bg-white dark:bg-zinc-900 p-1 font-medium border-r whitespace-nowrap">
-                          <span className={cn("inline-block px-1 rounded text-[10px]", shiftBg)}>
-                            {config.shiftNames[lc.shiftIdx]}
-                          </span>
-                          {" "}
-                          <span className="text-muted-foreground">{lc.levelName} ≥{lc.minReq}</span>
-                        </td>
-                        {hasLevels && <td className="sticky z-10 bg-white dark:bg-zinc-900 border-r" style={{ left: "140px" }} />}
-                        {lc.perDay.map((pd, di) => (
+                      {hasLevels && <td className="sticky z-10 bg-slate-50 dark:bg-slate-800/50 border-r" style={{ left: "140px" }} />}
+                      {st.perDay.map((count, di) => {
+                        const met = minReq > 0 ? count >= minReq : true;
+                        return (
                           <td
                             key={di}
                             className={cn(
-                              "p-0.5 text-center border-r font-medium text-[10px]",
-                              pd.met ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300" : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
+                              "p-0.5 text-center border-r font-bold text-[10px]",
+                              met ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300" : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
                             )}
                           >
-                            {pd.count}
+                            {count}
                           </td>
-                        ))}
-                        <td colSpan={S + 1} className="border-r" />
-                      </tr>
-                    );
-                  })}
-                </>
-              )}
+                        );
+                      })}
+                      <td colSpan={S} className="border-r" />
+                      <td className="p-0.5 text-center font-bold text-[10px] bg-slate-100 dark:bg-slate-700">{st.perDay.reduce((a, b) => a + b, 0)}</td>
+                    </tr>
+                    {shiftIdx < config.shiftNames.length - 1 && (
+                      <tr><td colSpan={999} className="p-0.5" /></tr>
+                    )}
+                  </Fragment>
+                );
+              })}
             </tfoot>
           </table>
         </div>
