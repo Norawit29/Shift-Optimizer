@@ -1807,7 +1807,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     </div>
                   )}
                   
-                  <div className="space-y-1 max-h-[420px] overflow-y-auto overflow-x-auto" data-walkthrough="staff-list">
+                  <div className="space-y-1 max-h-[420px] overflow-y-auto pr-1" data-walkthrough="staff-list">
                     {staff.map((s) => {
                       const blockedCount = s.blocked?.length || 0;
                       const requestedCount = s.requested?.length || 0;
@@ -1815,11 +1815,11 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                       return (
                         <div 
                           key={s.id} 
-                          className={`group flex items-center gap-2 rounded-md px-2 py-1.5 cursor-pointer transition-colors whitespace-nowrap w-fit min-w-full ${isSelected ? 'bg-primary/10 dark:bg-primary/15 shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.3)]' : 'hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
+                          className={`group flex items-center gap-2 rounded-md px-2 py-1.5 cursor-pointer transition-colors ${isSelected ? 'bg-primary/10 dark:bg-primary/15 ring-1 ring-primary/30' : 'hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
                           onClick={() => setSelectedStaffId(isSelected ? null : s.id)}
                           data-testid={`staff-card-${s.id}`}
                         >
-                          <div className="min-w-[120px] shrink-0">
+                          <div className="min-w-[100px] flex-[2] truncate">
                             <Input 
                               value={s.name} 
                               onChange={e => { e.stopPropagation(); updateStaff(s.id, "name", e.target.value); }}
@@ -1863,7 +1863,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                             data-testid={`input-max-shifts-${s.id}`}
                           />
                           <button
-                            className="opacity-40 hover:opacity-100 h-5 w-5 inline-flex items-center justify-center text-muted-foreground hover:text-destructive rounded-sm shrink-0 transition-opacity"
+                            className="invisible group-hover:visible h-5 w-5 inline-flex items-center justify-center text-muted-foreground rounded-sm shrink-0"
                             onClick={(e) => { e.stopPropagation(); removeStaff(s.id); }}
                             data-testid={`button-remove-staff-${s.id}`}
                           >
