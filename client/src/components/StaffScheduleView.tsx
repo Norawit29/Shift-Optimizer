@@ -110,7 +110,7 @@ export function StaffScheduleView({ schedule, config, staff, month, year }: Staf
           <span className="text-muted-foreground">{t.blockedDateLegend}</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="inline-block w-4 h-4 rounded ring-2 ring-emerald-500 bg-blue-200 dark:bg-blue-800/60" />
+          <span className="inline-block w-4 h-4 rounded ring-2 ring-emerald-500 bg-white dark:bg-zinc-900" />
           <span className="text-muted-foreground">{t.requestedDateLegend}</span>
         </div>
       </div>
