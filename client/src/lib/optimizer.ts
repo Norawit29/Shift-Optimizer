@@ -806,7 +806,7 @@ export class ShiftOptimizer {
     }
   }
 
-  private buildMaxMinModel(
+  private buildRangeModel(
     varMap: Map<string, { staff: number; day: number; shift: number }>,
     binaryVars: string[],
     phase1Targets: { perShift: number[]; holidayTotal: number; totalCoverage: number; slotCoverage: Map<string, number> }
@@ -821,51 +821,9 @@ export class ShiftOptimizer {
     this.writeLoadTrackingConstraints(constraintLines, varMap, cIdx);
 
     const lines: string[] = [];
-    lines.push("Maximize");
-    lines.push("  obj:");
-    lines.push("  minLoad");
-
-    lines.push("Subject To");
-    lines.push(...constraintLines);
-
-    lines.push("Bounds");
-    lines.push(`  maxLoad >= 0`);
-    lines.push(`  minLoad >= 0`);
-    for (let i = 0; i < N; i++) {
-      lines.push(`  tw_${i} >= 0`);
-    }
-
-    const allBinary = [...binaryVars, ...auxBinaryVars];
-    lines.push("Binary");
-    for (let i = 0; i < allBinary.length; i += 20) {
-      lines.push("  " + allBinary.slice(i, i + 20).join(" "));
-    }
-
-    lines.push("End");
-    return lines.join("\n");
-  }
-
-  private buildMinMaxModel(
-    varMap: Map<string, { staff: number; day: number; shift: number }>,
-    binaryVars: string[],
-    phase1Targets: { perShift: number[]; holidayTotal: number; totalCoverage: number; slotCoverage: Map<string, number> },
-    bestMinLoad: number
-  ): string {
-    const N = this.staff.length;
-
-    const constraintLines: string[] = [];
-    const cIdx = { val: 0 };
-    const auxBinaryVars: string[] = [];
-    this.writeCommonConstraints(constraintLines, varMap, cIdx, { auxBinaryVars });
-    this.writeCoverageConstraints(constraintLines, varMap, cIdx, phase1Targets);
-    this.writeLoadTrackingConstraints(constraintLines, varMap, cIdx);
-
-    constraintLines.push(`  c${cIdx.val++}: minLoad >= ${fmt(bestMinLoad)}`);
-
-    const lines: string[] = [];
     lines.push("Minimize");
     lines.push("  obj:");
-    lines.push("  maxLoad");
+    lines.push("  maxLoad - minLoad");
 
     lines.push("Subject To");
     lines.push(...constraintLines);
@@ -891,8 +849,7 @@ export class ShiftOptimizer {
     varMap: Map<string, { staff: number; day: number; shift: number }>,
     binaryVars: string[],
     phase1Targets: { perShift: number[]; holidayTotal: number; totalCoverage: number; slotCoverage: Map<string, number> },
-    bestMinLoad: number,
-    bestMaxLoad: number
+    bestRange: number
   ): string {
     const N = this.staff.length;
     const D = this.daysInMonth;
@@ -921,8 +878,7 @@ export class ShiftOptimizer {
     this.writeCoverageConstraints(constraintLines, varMap, cIdx, phase1Targets);
     this.writeLoadTrackingConstraints(constraintLines, varMap, cIdx);
 
-    constraintLines.push(`  c${cIdx.val++}: minLoad >= ${fmt(bestMinLoad)}`);
-    constraintLines.push(`  c${cIdx.val++}: maxLoad <= ${fmt(bestMaxLoad)}`);
+    constraintLines.push(`  c${cIdx.val++}: maxLoad - minLoad <= ${fmt(bestRange)}`);
 
     for (let i = 0; i < N; i++) {
       for (let s = 0; s < S; s++) {
@@ -991,8 +947,7 @@ export class ShiftOptimizer {
       }
     }
     for (const lv of levelSlackVars) {
-      objParts.push(`${firstTerm ? "" : "+ "}${LEVEL_W} ${lv}`);
-      firstTerm = false;
+      objParts.push(`+ ${LEVEL_W} ${lv}`);
     }
     if (objParts.length === 0) {
       objParts.push("0 maxLoad");
@@ -1659,16 +1614,16 @@ export class ShiftOptimizer {
       finalSolution = phase1Solution;
       usedPhase = "1 (coverage only, fairness skipped)";
     } else {
-      const maxMinModel = this.buildMaxMinModel(varMap, binaryVars, phase1Targets);
-      console.log(`[OPT] Phase 2A (max-min) model: ${maxMinModel.length} chars, ${maxMinModel.split('\n').length} lines`);
+      const rangeModel = this.buildRangeModel(varMap, binaryVars, phase1Targets);
+      console.log(`[OPT] Phase 2A (range) model: ${rangeModel.length} chars, ${rangeModel.split('\n').length} lines`);
       usedPhase = "2A";
 
-      let bestMinLoad = 0;
+      let bestRange = Infinity;
       let phase2aSolution: any = null;
 
       try {
         const solver2a = await createSolver();
-        phase2aSolution = solver2a.solve(maxMinModel, {
+        phase2aSolution = solver2a.solve(rangeModel, {
           time_limit: 90,
           mip_rel_gap: 0.001,
           threads: 1,
@@ -1679,12 +1634,13 @@ export class ShiftOptimizer {
 
         if (phase2aSolution.Columns) {
           const cols = phase2aSolution.Columns;
+          const maxVal = cols["maxLoad"]?.Primal ?? 0;
           const minVal = cols["minLoad"]?.Primal ?? 0;
-          bestMinLoad = Math.floor(minVal);
-          console.log(`[OPT] Phase 2A bestMinLoad: ${bestMinLoad} (minLoad=${minVal.toFixed(1)})`);
+          bestRange = Math.ceil(maxVal - minVal);
+          console.log(`[OPT] Phase 2A bestRange: ${bestRange} (maxLoad=${maxVal.toFixed(1)}, minLoad=${minVal.toFixed(1)})`);
 
           if (phase2aSolution.Status === "Time limit reached") {
-            console.warn(`[OPT] Phase 2A hit time limit, using best minLoad found`);
+            console.warn(`[OPT] Phase 2A hit time limit, using best range found`);
           }
         }
 
@@ -1701,16 +1657,14 @@ export class ShiftOptimizer {
         phase2aSolution = null;
       }
 
-      if (phase2aSolution) {
-        let bestMaxLoad = Infinity;
-        let phase2bSolution: any = null;
+      if (phase2aSolution && bestRange < Infinity) {
+        const distModel = this.buildDistributionModel(varMap, binaryVars, phase1Targets, bestRange);
+        console.log(`[OPT] Phase 2B (distribution) model: ${distModel.length} chars, ${distModel.split('\n').length} lines, range locked to ${bestRange}`);
+        usedPhase = "2B";
 
         try {
-          const minMaxModel = this.buildMinMaxModel(varMap, binaryVars, phase1Targets, bestMinLoad);
-          console.log(`[OPT] Phase 2B (min-max) model: ${minMaxModel.length} chars, ${minMaxModel.split('\n').length} lines, minLoad locked to ${bestMinLoad}`);
-
           const solver2b = await createSolver();
-          phase2bSolution = solver2b.solve(minMaxModel, {
+          const phase2bSolution = solver2b.solve(distModel, {
             time_limit: 90,
             mip_rel_gap: 0.001,
             threads: 1,
@@ -1719,64 +1673,20 @@ export class ShiftOptimizer {
 
           console.log(`[OPT] Phase 2B status: ${phase2bSolution.Status}, obj: ${phase2bSolution.ObjectiveValue}`);
 
-          if (phase2bSolution.Columns) {
-            const maxVal = phase2bSolution.Columns["maxLoad"]?.Primal ?? 0;
-            bestMaxLoad = Math.ceil(maxVal);
-            console.log(`[OPT] Phase 2B bestMaxLoad: ${bestMaxLoad} (maxLoad=${maxVal.toFixed(1)})`);
-
-            if (phase2bSolution.Status === "Time limit reached") {
-              console.warn(`[OPT] Phase 2B hit time limit, using best maxLoad found`);
-            }
-          }
-
-          if (failStatuses.includes(phase2bSolution.Status) || !phase2bSolution.Columns) {
+          if (phase2bSolution.Status === "Time limit reached" && phase2bSolution.Columns) {
+            console.warn(`[OPT] Phase 2B hit time limit, using best solution found`);
+            finalSolution = phase2bSolution;
+          } else if (failStatuses.includes(phase2bSolution.Status) || !phase2bSolution.Columns) {
             console.warn(`[OPT] Phase 2B FAILED (${phase2bSolution.Status}), falling back to Phase 2A result`);
             finalSolution = phase2aSolution;
             usedPhase = "2A (Phase 2B fallback)";
-            phase2bSolution = null;
           } else {
             finalSolution = phase2bSolution;
-            usedPhase = "2B";
           }
         } catch (err: any) {
           console.error("[OPT] Phase 2B CRASH, falling back to Phase 2A:", String(err));
           finalSolution = phase2aSolution;
           usedPhase = "2A (Phase 2B crash fallback)";
-          phase2bSolution = null;
-        }
-
-        if (phase2bSolution && bestMaxLoad < Infinity) {
-          try {
-            const distModel = this.buildDistributionModel(varMap, binaryVars, phase1Targets, bestMinLoad, bestMaxLoad);
-            console.log(`[OPT] Phase 2C (distribution) model: ${distModel.length} chars, ${distModel.split('\n').length} lines, minLoad=${bestMinLoad}, maxLoad=${bestMaxLoad}`);
-
-            const solver2c = await createSolver();
-            const phase2cSolution = solver2c.solve(distModel, {
-              time_limit: 90,
-              mip_rel_gap: 0.001,
-              threads: 1,
-              presolve: "on",
-            });
-
-            console.log(`[OPT] Phase 2C status: ${phase2cSolution.Status}, obj: ${phase2cSolution.ObjectiveValue}`);
-
-            if (phase2cSolution.Status === "Time limit reached" && phase2cSolution.Columns) {
-              console.warn(`[OPT] Phase 2C hit time limit, using best solution found`);
-              finalSolution = phase2cSolution;
-              usedPhase = "2C";
-            } else if (failStatuses.includes(phase2cSolution.Status) || !phase2cSolution.Columns) {
-              console.warn(`[OPT] Phase 2C FAILED (${phase2cSolution.Status}), falling back to Phase 2B result`);
-              finalSolution = phase2bSolution;
-              usedPhase = "2B (Phase 2C fallback)";
-            } else {
-              finalSolution = phase2cSolution;
-              usedPhase = "2C";
-            }
-          } catch (err: any) {
-            console.error("[OPT] Phase 2C CRASH, falling back to Phase 2B:", String(err));
-            finalSolution = phase2bSolution;
-            usedPhase = "2B (Phase 2C crash fallback)";
-          }
         }
       }
     }
