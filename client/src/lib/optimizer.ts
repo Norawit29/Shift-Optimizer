@@ -869,23 +869,23 @@ export class ShiftOptimizer {
 
     constraintLines.push(`  c${cIdx.val++}: maxLoad - minLoad <= ${fmt(bestRange)}`);
 
-    const shiftRangeVars: string[] = [];
-    for (let s = 0; s < S; s++) {
-      const hasTarget = this.staff.some((_, i) => staffShiftTargets[s][i] > 0);
-      if (!hasTarget) continue;
-      const maxVar = `maxSL_${s}`;
-      const minVar = `minSL_${s}`;
-      shiftRangeVars.push(maxVar, minVar);
-      for (let i = 0; i < N; i++) {
-        if (staffShiftTargets[s][i] === 0) continue;
-        constraintLines.push(`  c${cIdx.val++}: ts_${i}_${s} - ${maxVar} <= 0`);
-        constraintLines.push(`  c${cIdx.val++}: - ts_${i}_${s} + ${minVar} <= 0`);
+    const staffShiftTargetsInt = staffShiftTargets.map((targets, s) => {
+      const total = phase1Targets.perShift[s];
+      const floors = targets.map(t => Math.floor(t));
+      const floorSum = floors.reduce((a, b) => a + b, 0);
+      const remainder = Math.round(total) - floorSum;
+      const fracs = targets.map((t, i) => ({ i, frac: t - Math.floor(t) }));
+      fracs.sort((a, b) => b.frac - a.frac);
+      const rounded = [...floors];
+      for (let k = 0; k < remainder && k < fracs.length; k++) {
+        rounded[fracs[k].i]++;
       }
-    }
+      return rounded;
+    });
 
     for (let i = 0; i < N; i++) {
       for (let s = 0; s < S; s++) {
-        const target = staffShiftTargets[s][i];
+        const target = staffShiftTargetsInt[s][i];
         if (target === 0) continue;
 
         const shiftVars: string[] = [];
@@ -901,8 +901,8 @@ export class ShiftOptimizer {
         constraintLines.push(writeTerms(defTerms, 10));
         constraintLines.push(`  = 0`);
 
-        constraintLines.push(`  c${cIdx.val++}: ts_${i}_${s} - ds_${i}_${s} <= ${fmt(target)}`);
-        constraintLines.push(`  c${cIdx.val++}: - ts_${i}_${s} - ds_${i}_${s} <= ${fmt(-target)}`);
+        constraintLines.push(`  c${cIdx.val++}: ts_${i}_${s} - ds_${i}_${s} <= ${target}`);
+        constraintLines.push(`  c${cIdx.val++}: - ts_${i}_${s} - ds_${i}_${s} <= ${-target}`);
       }
     }
 
@@ -938,18 +938,11 @@ export class ShiftOptimizer {
     let firstTerm = true;
     for (let i = 0; i < N; i++) {
       for (let s = 0; s < S; s++) {
-        if (staffShiftTargets[s][i] > 0) {
+        if (staffShiftTargetsInt[s][i] > 0) {
           objParts.push(`${firstTerm ? "" : "+ "}${SHIFT_W} ds_${i}_${s}`);
           firstTerm = false;
         }
       }
-    }
-    const SHIFT_RANGE_W = 500;
-    for (let s = 0; s < S; s++) {
-      const hasTarget = this.staff.some((_, i) => staffShiftTargets[s][i] > 0);
-      if (!hasTarget) continue;
-      objParts.push(`+ ${SHIFT_RANGE_W} maxSL_${s}`);
-      objParts.push(`- ${SHIFT_RANGE_W} minSL_${s}`);
     }
     if (enableHolidayBalance && staffHolidayTargets.some(t => t > 0)) {
       for (let i = 0; i < N; i++) {
@@ -978,7 +971,7 @@ export class ShiftOptimizer {
     }
     for (let i = 0; i < N; i++) {
       for (let s = 0; s < S; s++) {
-        if (staffShiftTargets[s][i] > 0) {
+        if (staffShiftTargetsInt[s][i] > 0) {
           lines.push(`  ts_${i}_${s} >= 0`);
           lines.push(`  ds_${i}_${s} >= 0`);
         }
@@ -992,12 +985,6 @@ export class ShiftOptimizer {
     }
     for (const lv of levelSlackVars) {
       lines.push(`  ${lv} >= 0`);
-    }
-    for (let s = 0; s < S; s++) {
-      const hasTarget = this.staff.some((_, i) => staffShiftTargets[s][i] > 0);
-      if (!hasTarget) continue;
-      lines.push(`  maxSL_${s} >= 0`);
-      lines.push(`  minSL_${s} >= 0`);
     }
 
     const allBinary = [...binaryVars, ...auxBinaryVars];
