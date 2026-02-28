@@ -1815,7 +1815,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                       return (
                         <div 
                           key={s.id} 
-                          className={`group flex items-center gap-2 rounded-md px-2 py-1.5 cursor-pointer transition-colors ${isSelected ? 'bg-primary/10 dark:bg-primary/15 ring-1 ring-primary/30' : 'hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
+                          className={`group flex items-center gap-2 rounded-md px-2 py-1.5 cursor-pointer transition-colors w-full ${isSelected ? 'bg-primary/10 dark:bg-primary/15 shadow-[inset_0_0_0_1px_hsl(var(--primary)/0.3)]' : 'hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
                           onClick={() => setSelectedStaffId(isSelected ? null : s.id)}
                           data-testid={`staff-card-${s.id}`}
                         >
