@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useCreateSchedule } from "@/hooks/use-schedules";
 import { type StaffMember, type SchedulerConfig, type OptimizerResult, type DaySchedule } from "@shared/schema";
 import { useAuth } from "@/context/AuthContext";
@@ -42,7 +42,8 @@ import {
   Layers,
   AlertTriangle,
   Upload,
-  Download
+  Download,
+  GripVertical
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { nanoid } from "nanoid";
@@ -436,6 +437,54 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   });
   const [config, setConfig] = useState<SchedulerConfig>(() => getInitialConfig(localStorage.getItem("app-lang") || "th"));
   const [staff, setStaff] = useState<StaffMember[]>(INITIAL_STAFF);
+  const [dragStaffIdx, setDragStaffIdx] = useState<number | null>(null);
+  const [dragOverStaffIdx, setDragOverStaffIdx] = useState<number | null>(null);
+  const staffListRef = useRef<HTMLDivElement>(null);
+  const autoScrollRef = useRef<number | null>(null);
+
+  const startAutoScroll = useCallback((direction: "up" | "down") => {
+    if (autoScrollRef.current) return;
+    const speed = direction === "up" ? -6 : 6;
+    autoScrollRef.current = window.setInterval(() => {
+      staffListRef.current?.scrollBy({ top: speed });
+    }, 16);
+  }, []);
+
+  const stopAutoScroll = useCallback(() => {
+    if (autoScrollRef.current) {
+      clearInterval(autoScrollRef.current);
+      autoScrollRef.current = null;
+    }
+  }, []);
+
+  const handleStaffDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const container = staffListRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    const y = e.clientY;
+    const edgeZone = 50;
+    if (y - rect.top < edgeZone) {
+      startAutoScroll("up");
+    } else if (rect.bottom - y < edgeZone) {
+      startAutoScroll("down");
+    } else {
+      stopAutoScroll();
+    }
+  }, [startAutoScroll, stopAutoScroll]);
+
+  const handleStaffDrop = useCallback((targetIdx: number) => {
+    if (dragStaffIdx === null || dragStaffIdx === targetIdx) return;
+    setStaff(prev => {
+      const updated = [...prev];
+      const [moved] = updated.splice(dragStaffIdx, 1);
+      updated.splice(targetIdx, 0, moved);
+      return updated;
+    });
+    setDragStaffIdx(null);
+    setDragOverStaffIdx(null);
+    stopAutoScroll();
+  }, [dragStaffIdx, stopAutoScroll]);
   const [showBulkAdd, setShowBulkAdd] = useState(false);
   const [bulkCount, setBulkCount] = useState(10);
   const [bulkPrefix, setBulkPrefix] = useState("");
@@ -1840,18 +1889,38 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     </div>
                   )}
                   
-                  <div className="space-y-1 max-h-[420px] overflow-y-auto pr-1" data-walkthrough="staff-list">
-                    {staff.map((s) => {
+                  <div
+                    ref={staffListRef}
+                    className="space-y-1 max-h-[420px] overflow-y-auto pr-1"
+                    data-walkthrough="staff-list"
+                    onDragOver={handleStaffDragOver}
+                    onDragLeave={stopAutoScroll}
+                    onDrop={stopAutoScroll}
+                  >
+                    {staff.map((s, si) => {
                       const blockedCount = s.blocked?.length || 0;
                       const requestedCount = s.requested?.length || 0;
                       const isSelected = selectedStaffId === s.id;
+                      const isDragging = dragStaffIdx === si;
+                      const isDragOver = dragOverStaffIdx === si;
                       return (
                         <div 
-                          key={s.id} 
-                          className={`group flex items-center gap-2 rounded-md px-2 py-1.5 cursor-pointer transition-colors ${isSelected ? 'bg-primary/10 dark:bg-primary/15 ring-1 ring-primary/30' : 'hover:bg-slate-100 dark:hover:bg-slate-800/50'}`}
+                          key={s.id}
+                          draggable
+                          onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; setDragStaffIdx(si); }}
+                          onDragEnd={() => { setDragStaffIdx(null); setDragOverStaffIdx(null); stopAutoScroll(); }}
+                          onDragOver={(e) => { e.preventDefault(); setDragOverStaffIdx(si); }}
+                          onDrop={(e) => { e.preventDefault(); handleStaffDrop(si); }}
+                          className={cn(
+                            "group flex items-center gap-2 rounded-md px-2 py-1.5 cursor-pointer transition-colors",
+                            isSelected ? 'bg-primary/10 dark:bg-primary/15 ring-1 ring-primary/30' : 'hover:bg-slate-100 dark:hover:bg-slate-800/50',
+                            isDragging && "opacity-40",
+                            isDragOver && dragStaffIdx !== si && "border-t-2 border-primary"
+                          )}
                           onClick={() => setSelectedStaffId(isSelected ? null : s.id)}
                           data-testid={`staff-card-${s.id}`}
                         >
+                          <GripVertical className="w-3.5 h-3.5 text-muted-foreground/40 shrink-0 cursor-grab active:cursor-grabbing" />
                           <div className="min-w-[100px] flex-[2] truncate">
                             <Input 
                               value={s.name} 
