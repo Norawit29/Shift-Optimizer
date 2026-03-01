@@ -778,6 +778,9 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     }
     
     const newMember: StaffMember = { id: nanoid(), name, maxShifts: 20, blocked: [] };
+    if (config.staffLevels && config.staffLevels.length > 0) {
+      newMember.level = config.staffLevels[config.staffLevels.length - 1];
+    }
     setStaff(insertStaffGroupedByLevel(staff, [newMember]));
   };
 
