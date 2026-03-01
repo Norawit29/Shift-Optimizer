@@ -1,0 +1,119 @@
+Add a true lexicographic Phase 2C after Phase 2B to stabilize fairness hierarchy.
+
+Do NOT change buildDistributionModel structure significantly.
+Do NOT change solver pipeline logic other than inserting Phase 2C.
+Do NOT modify Phase 1 or Phase 2A behavior.
+
+We will:
+
+Keep Phase 2A → minimize maxLoad - minLoad
+
+Keep Phase 2B → minimize Σ ds_i_s (with range locked)
+
+Add Phase 2C → lock deviation and re-solve with tie-breaking objective only
+
+🔧 Step 1 — After successful Phase 2B solve
+
+Inside optimize(), locate this block:
+
+const phase2bSolution = solver2b.solve(...)
+
+After confirming it is feasible and selected as finalSolution, insert:
+
+🔹 Extract bestDeviation
+let bestDeviation = 0;
+if (phase2bSolution && phase2bSolution.Columns) {
+  const cols = phase2bSolution.Columns;
+  for (const key in cols) {
+    if (key.startsWith("ds_")) {
+      bestDeviation += cols[key].Primal || 0;
+    }
+  }
+}
+console.log(`[OPT] Phase 2B best deviation: ${bestDeviation}`);
+🔧 Step 2 — Build Phase 2C model
+
+Create a new method:
+
+private buildTieBreakModel(
+  varMap,
+  binaryVars,
+  phase1Targets,
+  bestRange: number,
+  bestDeviation: number
+): string
+
+Inside:
+
+1️⃣ Copy buildDistributionModel logic
+2️⃣ Keep ALL constraints identical
+3️⃣ Add extra constraint:
+
+constraintLines.push(`  c${cIdx.val++}:`);
+constraintLines.push(writeTerms(
+  allDeviationVars.map((v, idx) => idx === 0 ? v : `+ ${v}`),
+  10
+));
+constraintLines.push(`  <= ${fmt(bestDeviation)}`);
+
+Where:
+
+const allDeviationVars = [];
+for (let i = 0; i < N; i++) {
+  for (let s = 0; s < S; s++) {
+    if (staffShiftTargetsInt[s][i] > 0) {
+      allDeviationVars.push(`ds_${i}_${s}`);
+    }
+  }
+}
+🔧 Step 3 — Replace Objective
+
+In Phase 2C model:
+
+REMOVE SHIFT_W * ds_i_s terms.
+
+Keep only:
+
++ 1e-6 * tw_i
++ HOLIDAY_W * dh_i
++ LEVEL_W * levelSlack
+
+Objective should now be pure tie-breaking:
+
+Minimize:
+  epsilon * Σ tw_i
+  + holiday slack
+  + level slack
+
+No ds_i_s weight anymore.
+
+🔧 Step 4 — Solve Phase 2C
+
+Back in optimize(), after Phase 2B success:
+
+const tieModel = this.buildTieBreakModel(
+  varMap,
+  binaryVars,
+  phase1Targets,
+  bestRange,
+  bestDeviation
+);
+
+const solver2c = await createSolver();
+const phase2cSolution = solver2c.solve(tieModel, {
+  time_limit: 60,
+  mip_rel_gap: 1e-4,
+  threads: 1,
+  presolve: "on"
+});
+🔹 Fallback logic
+
+If Phase 2C fails or times out without solution:
+
+finalSolution = phase2bSolution;
+usedPhase = "2B (Phase 2C fallback)";
+
+Else:
+
+finalSolution = phase2cSolution;
+usedPhase = "2C";
