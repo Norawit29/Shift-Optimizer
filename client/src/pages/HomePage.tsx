@@ -440,7 +440,7 @@ export default function HomePage() {
 
       <footer className="border-t border-slate-100 dark:border-slate-800/50 py-10 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto text-base text-slate-500 dark:text-slate-400">
-          <div className="flex flex-col items-center gap-5">
+          <div className="flex flex-col items-start gap-5">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7">
                 <img src="/favicon.svg" alt="โปรแกรมจัดตารางเวร Shift Optimizer" width="28" height="28" className="w-7 h-7 rounded-md" />
