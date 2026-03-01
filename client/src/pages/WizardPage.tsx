@@ -738,21 +738,6 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     setConfig({ ...config, shiftsPerDay: val, shiftNames: newNames, staffPerShift: newCounts, shiftHours: newHours, holidayStaffPerShift: newHolCounts, minStaffPerLevel: newMinPerLevel });
   };
 
-  const insertStaffGroupedByLevel = (current: StaffMember[], newMembers: StaffMember[]): StaffMember[] => {
-    if (!config.staffLevels || config.staffLevels.length === 0) {
-      return [...current, ...newMembers];
-    }
-    const all = [...current, ...newMembers];
-    const levelOrder = new Map<string, number>();
-    config.staffLevels.forEach((lvl, idx) => levelOrder.set(lvl, idx));
-    all.sort((a, b) => {
-      const la = a.level ? (levelOrder.get(a.level) ?? config.staffLevels!.length) : config.staffLevels!.length;
-      const lb = b.level ? (levelOrder.get(b.level) ?? config.staffLevels!.length) : config.staffLevels!.length;
-      return la - lb;
-    });
-    return all;
-  };
-
   const addStaff = () => {
     const randomNames = ["Dr. Smith", "Nurse Jackie", "Dr. Strange", "Nurse Joy", "Dr. House", "Nurse Ratched", "Dr. Watson", "Nurse Nightingale", "Dr. Grey", "Nurse Somsri", "Dr. Somchai"];
     const existingNames = new Set(staff.map(s => s.name.toLowerCase()));
@@ -765,11 +750,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
       name = `Staff Member ${staff.length + 1}`;
     }
     
-    const newMember: StaffMember = { id: nanoid(), name, maxShifts: 20, blocked: [] };
-    if (config.staffLevels && config.staffLevels.length > 0) {
-      newMember.level = config.staffLevels[config.staffLevels.length - 1];
-    }
-    setStaff(insertStaffGroupedByLevel(staff, [newMember]));
+    setStaff([...staff, { id: nanoid(), name, maxShifts: 20, blocked: [] }]);
   };
 
   const addBulkStaff = () => {
@@ -787,7 +768,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
       }
       newStaff.push(member);
     }
-    setStaff(insertStaffGroupedByLevel(staff, newStaff));
+    setStaff([...staff, ...newStaff]);
     setShowBulkAdd(false);
     setBulkStartNum(bulkStartNum + bulkCount);
   };
@@ -821,7 +802,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
         maxShifts: globalMaxShifts,
         blocked: [],
       }));
-      setStaff(insertStaffGroupedByLevel(staff, newStaff));
+      setStaff([...staff, ...newStaff]);
       toast({ title: t.uploadExcelSuccess.replace("{count}", String(names.length)) });
     } catch {
       toast({ title: t.uploadExcelError, variant: "destructive" });
@@ -855,14 +836,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   };
 
   const updateStaff = (id: string, field: keyof StaffMember, value: any) => {
-    const updated = staff.map(s => s.id === id ? { ...s, [field]: value } : s);
-    if (field === "level" && config.staffLevels && config.staffLevels.length > 0) {
-      const member = updated.find(s => s.id === id)!;
-      const without = updated.filter(s => s.id !== id);
-      setStaff(insertStaffGroupedByLevel(without, [member]));
-    } else {
-      setStaff(updated);
-    }
+    setStaff(staff.map(s => s.id === id ? { ...s, [field]: value } : s));
   };
 
   const toggleBlockedDate = (staffId: string, date: number, shiftIdx: number) => {
