@@ -13,7 +13,9 @@ import {
   ChevronDown,
   Calendar,
   FileText,
+  Mail,
 } from "lucide-react";
+import { SiFacebook } from "react-icons/si";
 import { LazyMotion, domAnimation, m, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/context/LanguageContext";
@@ -443,6 +445,26 @@ export default function HomePage() {
               <img src="/favicon.svg" alt="โปรแกรมจัดตารางเวร Shift Optimizer" width="24" height="24" className="w-6 h-6 rounded-md" />
             </div>
             <span className="font-medium" data-testid="text-footer-app-name">{t.appName}</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <a
+              href="mailto:contact@shift-optimizer.com"
+              className="flex items-center gap-1.5 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+              data-testid="link-footer-email"
+            >
+              <Mail className="w-4 h-4" />
+              <span>contact@shift-optimizer.com</span>
+            </a>
+            <a
+              href="https://www.facebook.com/profile.php?id=61564671372755"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+              data-testid="link-footer-facebook"
+            >
+              <SiFacebook className="w-4 h-4" />
+              <span>Facebook</span>
+            </a>
           </div>
           <span data-testid="text-footer-copyright">Copyright &copy; 2026 Shift Optimizer All rights reserved.</span>
         </div>
