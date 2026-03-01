@@ -742,27 +742,15 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     if (!config.staffLevels || config.staffLevels.length === 0) {
       return [...current, ...newMembers];
     }
-    const result = [...current];
-    for (const member of newMembers) {
-      const level = member.level;
-      if (!level) {
-        result.push(member);
-        continue;
-      }
-      let lastIdx = -1;
-      for (let i = result.length - 1; i >= 0; i--) {
-        if (result[i].level === level) {
-          lastIdx = i;
-          break;
-        }
-      }
-      if (lastIdx >= 0) {
-        result.splice(lastIdx + 1, 0, member);
-      } else {
-        result.push(member);
-      }
-    }
-    return result;
+    const all = [...current, ...newMembers];
+    const levelOrder = new Map<string, number>();
+    config.staffLevels.forEach((lvl, idx) => levelOrder.set(lvl, idx));
+    all.sort((a, b) => {
+      const la = a.level ? (levelOrder.get(a.level) ?? config.staffLevels!.length) : config.staffLevels!.length;
+      const lb = b.level ? (levelOrder.get(b.level) ?? config.staffLevels!.length) : config.staffLevels!.length;
+      return la - lb;
+    });
+    return all;
   };
 
   const addStaff = () => {
