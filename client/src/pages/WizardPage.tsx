@@ -738,6 +738,33 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     setConfig({ ...config, shiftsPerDay: val, shiftNames: newNames, staffPerShift: newCounts, shiftHours: newHours, holidayStaffPerShift: newHolCounts, minStaffPerLevel: newMinPerLevel });
   };
 
+  const insertStaffGroupedByLevel = (current: StaffMember[], newMembers: StaffMember[]): StaffMember[] => {
+    if (!config.staffLevels || config.staffLevels.length === 0) {
+      return [...current, ...newMembers];
+    }
+    const result = [...current];
+    for (const member of newMembers) {
+      const level = member.level;
+      if (!level) {
+        result.push(member);
+        continue;
+      }
+      let lastIdx = -1;
+      for (let i = result.length - 1; i >= 0; i--) {
+        if (result[i].level === level) {
+          lastIdx = i;
+          break;
+        }
+      }
+      if (lastIdx >= 0) {
+        result.splice(lastIdx + 1, 0, member);
+      } else {
+        result.push(member);
+      }
+    }
+    return result;
+  };
+
   const addStaff = () => {
     const randomNames = ["Dr. Smith", "Nurse Jackie", "Dr. Strange", "Nurse Joy", "Dr. House", "Nurse Ratched", "Dr. Watson", "Nurse Nightingale", "Dr. Grey", "Nurse Somsri", "Dr. Somchai"];
     const existingNames = new Set(staff.map(s => s.name.toLowerCase()));
@@ -750,7 +777,8 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
       name = `Staff Member ${staff.length + 1}`;
     }
     
-    setStaff([...staff, { id: nanoid(), name, maxShifts: 20, blocked: [] }]);
+    const newMember: StaffMember = { id: nanoid(), name, maxShifts: 20, blocked: [] };
+    setStaff(insertStaffGroupedByLevel(staff, [newMember]));
   };
 
   const addBulkStaff = () => {
@@ -768,7 +796,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
       }
       newStaff.push(member);
     }
-    setStaff([...staff, ...newStaff]);
+    setStaff(insertStaffGroupedByLevel(staff, newStaff));
     setShowBulkAdd(false);
     setBulkStartNum(bulkStartNum + bulkCount);
   };
@@ -802,7 +830,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
         maxShifts: globalMaxShifts,
         blocked: [],
       }));
-      setStaff([...staff, ...newStaff]);
+      setStaff(insertStaffGroupedByLevel(staff, newStaff));
       toast({ title: t.uploadExcelSuccess.replace("{count}", String(names.length)) });
     } catch {
       toast({ title: t.uploadExcelError, variant: "destructive" });
@@ -836,7 +864,14 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   };
 
   const updateStaff = (id: string, field: keyof StaffMember, value: any) => {
-    setStaff(staff.map(s => s.id === id ? { ...s, [field]: value } : s));
+    const updated = staff.map(s => s.id === id ? { ...s, [field]: value } : s);
+    if (field === "level" && config.staffLevels && config.staffLevels.length > 0) {
+      const member = updated.find(s => s.id === id)!;
+      const without = updated.filter(s => s.id !== id);
+      setStaff(insertStaffGroupedByLevel(without, [member]));
+    } else {
+      setStaff(updated);
+    }
   };
 
   const toggleBlockedDate = (staffId: string, date: number, shiftIdx: number) => {
