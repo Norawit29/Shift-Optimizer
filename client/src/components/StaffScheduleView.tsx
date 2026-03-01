@@ -15,12 +15,6 @@ import { useLanguage } from "@/context/LanguageContext";
 import type { DaySchedule, SchedulerConfig, StaffMember } from "@shared/schema";
 import { format, addDays, parseISO, setDate } from "date-fns";
 import { AlertTriangle, Thermometer } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 const SHIFT_BG_COLORS = [
   "bg-blue-200 dark:bg-blue-800/60",
@@ -53,9 +47,16 @@ function getConsecutiveStreak(
 }
 
 function getStreakColor(streak: number): string | null {
-  if (streak >= 7) return "rgba(239, 68, 68, 0.18)";
-  if (streak >= 6) return "rgba(251, 146, 60, 0.15)";
-  if (streak >= 5) return "rgba(250, 204, 21, 0.12)";
+  if (streak >= 7) return "#fca5a5";
+  if (streak >= 6) return "#fdba74";
+  if (streak >= 5) return "#fde68a";
+  return null;
+}
+
+function getStreakColorDark(streak: number): string | null {
+  if (streak >= 7) return "#991b1b";
+  if (streak >= 6) return "#9a3412";
+  if (streak >= 5) return "#854d0e";
   return null;
 }
 
@@ -526,33 +527,14 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
                       const isDragging = draggingFrom === `${ri}-${dayDate}`;
 
                       const streakInfo = showHeatmap && streakMap ? streakMap.get(`${row.id}-${ci}`) : undefined;
-                      const streakOverlay = streakInfo ? getStreakColor(streakInfo.streak) : null;
-                      const streakStyle = streakOverlay ? { boxShadow: `inset 0 0 0 100px ${streakOverlay}` } : undefined;
+                      const heatmapActive = showHeatmap && cell.matchedShifts.length > 0;
+                      const streakBg = streakInfo ? getStreakColor(streakInfo.streak) : null;
+                      const streakBgDark = streakInfo ? getStreakColorDark(streakInfo.streak) : null;
+                      const heatmapNoBg = heatmapActive && !streakBg;
+                      const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
+                      const streakStyle = streakBg ? { backgroundColor: isDark ? (streakBgDark || undefined) : streakBg } : (heatmapActive ? { backgroundColor: isDark ? "#27272a" : "#f8fafc" } : undefined);
 
-                      const buildTooltipText = () => {
-                        if (!streakInfo || streakInfo.streak < 5) return null;
-                        const startDate = schedule[streakInfo.startDay].date;
-                        const endDate = dayDate;
-                        return t.streakTooltip
-                          .replace("{days}", String(streakInfo.streak))
-                          .replace("{from}", String(startDate))
-                          .replace("{to}", String(endDate));
-                      };
-
-                      const wrapWithTooltip = (content: JSX.Element, key: number) => {
-                        const tip = buildTooltipText();
-                        if (!tip) return content;
-                        return (
-                          <TooltipProvider key={key} delayDuration={200}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>{content}</TooltipTrigger>
-                              <TooltipContent side="top" className="text-xs max-w-[200px]">
-                                {tip}
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        );
-                      };
+                      const streakLabel = streakInfo && streakInfo.streak >= 5 ? `${streakInfo.streak}d` : null;
 
                       if (cell.isBlocked && cell.matchedShifts.length === 0) {
                         return (
@@ -589,7 +571,7 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
                         const shiftKey = `${ri}-${dayDate}-${si}`;
                         const isDraggingThis = draggingShiftKey === shiftKey;
 
-                        const cellEl = (
+                        return (
                           <td
                             key={ci}
                             draggable={editable}
@@ -599,11 +581,11 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
                             onDragLeave={editable ? handleDragLeave : undefined}
                             onDrop={editable ? (e) => handleDrop(e, ri, dayDate) : undefined}
                             className={cn(
-                              "p-0.5 text-center border-r font-medium",
+                              "p-0.5 text-center border-r font-medium relative",
                               editable && "cursor-grab active:cursor-grabbing",
-                              bgClass,
-                              textClass,
-                              cell.isRequested && "ring-2 ring-inset ring-emerald-500",
+                              !heatmapActive && bgClass,
+                              heatmapActive ? "text-zinc-800 dark:text-zinc-200" : textClass,
+                              cell.isRequested && !heatmapActive && "ring-2 ring-inset ring-emerald-500",
                               isDragOver && !isDragging && "ring-2 ring-inset ring-blue-400 brightness-110",
                               isDraggingThis && "opacity-50"
                             )}
@@ -611,16 +593,20 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
                             data-testid={`staff-cell-${ri}-${dayDate}`}
                           >
                             {config.shiftNames[si]}
+                            {streakLabel && (
+                              <span className="absolute top-0 right-0 text-[7px] leading-none font-bold text-red-600 dark:text-red-400 opacity-70">
+                                {streakLabel}
+                              </span>
+                            )}
                           </td>
                         );
-                        return wrapWithTooltip(cellEl, ci);
                       }
 
-                      const multiCellEl = (
+                      return (
                         <td
                           key={ci}
                           className={cn(
-                            "p-0 text-center border-r",
+                            "p-0 text-center border-r relative",
                             isDragOver && !isDragging && "ring-2 ring-inset ring-blue-400 bg-blue-50 dark:bg-blue-900/20"
                           )}
                           style={streakStyle}
@@ -644,9 +630,9 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
                                   className={cn(
                                     "block px-0.5 py-px text-[10px] font-medium leading-tight rounded-sm",
                                     editable && "cursor-grab active:cursor-grabbing",
-                                    bgClass,
-                                    textClass,
-                                    cell.isRequested && "ring-1 ring-emerald-500",
+                                    !heatmapActive && bgClass,
+                                    heatmapActive ? "text-zinc-800 dark:text-zinc-200" : textClass,
+                                    cell.isRequested && !heatmapActive && "ring-1 ring-emerald-500",
                                     isDraggingThis && "opacity-50"
                                   )}
                                 >
@@ -655,9 +641,13 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
                               );
                             })}
                           </div>
+                          {streakLabel && (
+                            <span className="absolute top-0 right-0 text-[7px] leading-none font-bold text-red-600 dark:text-red-400 opacity-70">
+                              {streakLabel}
+                            </span>
+                          )}
                         </td>
                       );
-                      return wrapWithTooltip(multiCellEl, ci);
                     })}
                     {row.shiftTotals.map((total, si) => (
                       <td key={`st-${si}`} className="p-1 text-center border-r font-medium">{total}</td>
