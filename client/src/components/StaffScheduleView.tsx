@@ -187,7 +187,9 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
         return { matchedShifts, isBlocked, isRequested };
       });
       const levelLabel = hasLevels ? (config.staffLevels![(s.level ?? 0)] || "") : "";
-      return { id: s.id, name: s.name, levelLabel, dayCells, shiftTotals, grandTotal };
+      const shiftHours = config.shiftHours || config.shiftNames.map(() => 8);
+      const totalHours = shiftTotals.reduce((sum, count, si) => sum + count * (shiftHours[si] || 0), 0);
+      return { id: s.id, name: s.name, levelLabel, dayCells, shiftTotals, grandTotal, totalHours };
     });
   }, [staff, schedule, config, S, hasLevels]);
 
@@ -411,8 +413,11 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
                       {name}
                     </th>
                   ))}
-                  <th className="p-1.5 text-center font-bold border-b min-w-[44px] bg-slate-200 dark:bg-slate-700">
+                  <th className="p-1.5 text-center font-bold border-b border-r min-w-[44px] bg-slate-200 dark:bg-slate-700">
                     {t.total}
+                  </th>
+                  <th className="p-1.5 text-center font-bold border-b min-w-[52px] bg-amber-100 dark:bg-amber-900/40">
+                    {t.totalHours}
                   </th>
                 </tr>
               </thead>
@@ -540,7 +545,8 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
                     {row.shiftTotals.map((total, si) => (
                       <td key={`st-${si}`} className="p-1 text-center border-r font-medium">{total}</td>
                     ))}
-                    <td className="p-1 text-center font-bold bg-slate-50 dark:bg-slate-900/50">{row.grandTotal}</td>
+                    <td className="p-1 text-center font-bold border-r bg-slate-50 dark:bg-slate-900/50">{row.grandTotal}</td>
+                    <td className="p-1 text-center font-bold bg-amber-50 dark:bg-amber-900/20">{row.totalHours}</td>
                   </tr>
                 ))}
               </tbody>

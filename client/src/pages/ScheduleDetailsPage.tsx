@@ -29,7 +29,7 @@ async function exportToExcel(
   result: DaySchedule[],
   config: SchedulerConfig,
   staff: StaffMember[],
-  labels: { date: string; day: string; staffName: string; total: string; summary: string; schedule: string; staffSchedule: string; level: string }
+  labels: { date: string; day: string; staffName: string; total: string; totalHours: string; summary: string; schedule: string; staffSchedule: string; level: string }
 ) {
   const isCustomRange = config.useCustomRange && config.customStartDate;
   const baseDate = isCustomRange
@@ -65,9 +65,10 @@ async function exportToExcel(
 
   const ws2 = wb.addWorksheet(labels.summary);
   const hasLevels = config.staffLevels && config.staffLevels.length > 0;
+  const shiftHours = config.shiftHours || config.shiftNames.map(() => 8);
   const summaryHeaders = hasLevels
-    ? [labels.staffName, labels.level, ...config.shiftNames, labels.total]
-    : [labels.staffName, ...config.shiftNames, labels.total];
+    ? [labels.staffName, labels.level, ...config.shiftNames, labels.total, labels.totalHours]
+    : [labels.staffName, ...config.shiftNames, labels.total, labels.totalHours];
   ws2.addRow(summaryHeaders);
   staff.forEach(s => {
     const row: (string | number)[] = [s.name];
@@ -75,25 +76,30 @@ async function exportToExcel(
       row.push(config.staffLevels![(s.level ?? 0)] || config.staffLevels![0] || "");
     }
     let total = 0;
+    const shiftCounts: number[] = [];
     config.shiftNames.forEach((_, shiftIdx) => {
       const count = result.reduce((acc, day) =>
         acc + (day.shifts[shiftIdx]?.map(String).includes(s.id) ? 1 : 0), 0);
       row.push(count);
+      shiftCounts.push(count);
       total += count;
     });
     row.push(total);
+    const totalHrs = shiftCounts.reduce((sum, c, si) => sum + c * (shiftHours[si] || 0), 0);
+    row.push(totalHrs);
     ws2.addRow(row);
   });
   ws2.getColumn(1).width = 20;
   for (let i = 2; i <= config.shiftNames.length + 1; i++) ws2.getColumn(i).width = 12;
   ws2.getColumn(config.shiftNames.length + 2).width = 8;
+  ws2.getColumn(config.shiftNames.length + 3).width = 10;
   ws2.getRow(1).font = { bold: true };
 
   const dateHeaders = result.map((day) => format(getDateForIdx(day.date), "d MMM"));
   const ws3 = wb.addWorksheet(labels.staffSchedule);
   const matrixHeaders = hasLevels
-    ? [labels.staffName, labels.level, ...dateHeaders, ...config.shiftNames, labels.total]
-    : [labels.staffName, ...dateHeaders, ...config.shiftNames, labels.total];
+    ? [labels.staffName, labels.level, ...dateHeaders, ...config.shiftNames, labels.total, labels.totalHours]
+    : [labels.staffName, ...dateHeaders, ...config.shiftNames, labels.total, labels.totalHours];
   const headerRow = ws3.addRow(matrixHeaders);
   headerRow.font = { bold: true };
   headerRow.eachCell(cell => {
@@ -127,6 +133,8 @@ async function exportToExcel(
 
     shiftTotals.forEach(ct => rowValues.push(ct));
     rowValues.push(grandTotal);
+    const totalHrs = shiftTotals.reduce((sum, c, si) => sum + c * (shiftHours[si] || 0), 0);
+    rowValues.push(totalHrs);
 
     const excelRow = ws3.addRow(rowValues);
 
@@ -147,7 +155,8 @@ async function exportToExcel(
   if (hasLevels) ws3.getColumn(2).width = 14;
   for (let i = 2 + ws3ColOffset; i <= dateHeaders.length + 1 + ws3ColOffset; i++) ws3.getColumn(i).width = 10;
   for (let i = dateHeaders.length + 2 + ws3ColOffset; i <= dateHeaders.length + 1 + ws3ColOffset + config.shiftNames.length; i++) ws3.getColumn(i).width = 12;
-  ws3.getColumn(matrixHeaders.length).width = 8;
+  ws3.getColumn(matrixHeaders.length - 1).width = 8;
+  ws3.getColumn(matrixHeaders.length).width = 10;
 
   const buffer = await wb.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
@@ -211,7 +220,7 @@ export default function ScheduleDetailsPage() {
           <div className="flex items-center gap-2">
             <LanguageToggle />
             <Button
-              onClick={() => exportToExcel(schedule.name, schedule.month, schedule.year, resultAsDaySchedule, schedule.config, schedule.staff, { date: t.date, day: t.day, staffName: t.staffName, total: t.total, summary: t.summary, schedule: t.scheduleView, staffSchedule: t.staffSchedule, level: t.level })}
+              onClick={() => exportToExcel(schedule.name, schedule.month, schedule.year, resultAsDaySchedule, schedule.config, schedule.staff, { date: t.date, day: t.day, staffName: t.staffName, total: t.total, totalHours: t.totalHours, summary: t.summary, schedule: t.scheduleView, staffSchedule: t.staffSchedule, level: t.level })}
               variant="default"
               data-testid="button-export-excel"
             >

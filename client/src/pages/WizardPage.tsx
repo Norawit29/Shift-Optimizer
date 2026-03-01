@@ -64,6 +64,7 @@ const getInitialConfig = (lang: string): SchedulerConfig => ({
   shiftsPerDay: 3,
   shiftNames: lang === "th" ? ["เช้า", "บ่าย", "ดึก"] : ["Morning", "Evening", "Night"],
   staffPerShift: [3, 3, 3],
+  shiftHours: [8, 8, 8],
   consecutiveRules: [
     { from: 2, to: 0 },
     { from: 1, to: 2, type: 'sameDay' as const },
@@ -192,9 +193,11 @@ async function exportToExcel(
 
   const dateHeaders = result.map((day) => format(getDateForIdx(day.date), "d MMM"));
   const ws3 = wb.addWorksheet(labels.staffSchedule);
+  const totalHoursLabel = lang === "th" ? "ชม.รวม" : "Total Hrs";
+  const shiftHours = config.shiftHours || config.shiftNames.map(() => 8);
   const matrixHeaders = hasLevels
-    ? [labels.staffName, labels.level, ...dateHeaders, ...config.shiftNames, labels.total]
-    : [labels.staffName, ...dateHeaders, ...config.shiftNames, labels.total];
+    ? [labels.staffName, labels.level, ...dateHeaders, ...config.shiftNames, labels.total, totalHoursLabel]
+    : [labels.staffName, ...dateHeaders, ...config.shiftNames, labels.total, totalHoursLabel];
   const headerRow = ws3.addRow(matrixHeaders);
   headerRow.font = { bold: true };
   headerRow.eachCell(cell => {
@@ -249,6 +252,16 @@ async function exportToExcel(
     const totalCell = excelRow.getCell(totalCol);
     totalCell.value = { formula: `SUM(${firstShiftLetter}${excelRowNum}:${lastShiftLetter}${excelRowNum})`, result: grandTotal } as any;
 
+    const totalHoursCol = totalCol + 1;
+    const totalHoursVal = shiftTotals.reduce((sum: number, count: number, si: number) => sum + count * (shiftHours[si] || 0), 0);
+    const hoursParts = config.shiftNames.map((_, si) => {
+      const shiftLetter = colLetter(dateHeaders.length + 2 + ws3ColOffset + si);
+      return `${shiftLetter}${excelRowNum}*${shiftHours[si] || 0}`;
+    });
+    const totalHoursCell = excelRow.getCell(totalHoursCol);
+    totalHoursCell.value = { formula: hoursParts.join("+"), result: totalHoursVal } as any;
+    totalHoursCell.font = { bold: true };
+
     dayCellInfo.forEach((info, ci) => {
       const dayDate = result[ci].date;
       const hasFullDayBlock = s.blocked.some(b => b.date === dayDate && b.shift === -1);
@@ -280,7 +293,8 @@ async function exportToExcel(
   if (hasLevels) ws3.getColumn(2).width = 14;
   for (let i = 2 + ws3ColOffset; i <= dateHeaders.length + 1 + ws3ColOffset; i++) ws3.getColumn(i).width = 10;
   for (let i = dateHeaders.length + 2 + ws3ColOffset; i <= dateHeaders.length + 1 + ws3ColOffset + config.shiftNames.length; i++) ws3.getColumn(i).width = 12;
-  ws3.getColumn(matrixHeaders.length).width = 8;
+  ws3.getColumn(matrixHeaders.length - 1).width = 8;
+  ws3.getColumn(matrixHeaders.length).width = 10;
 
   if (hasLevels) {
     ws3.addRow([]);
@@ -627,6 +641,12 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     setConfig({ ...config, staffPerShift: newCounts });
   };
 
+  const updateShiftHours = (idx: number, hours: number) => {
+    const newHours = [...(config.shiftHours || config.shiftNames.map(() => 8))];
+    newHours[idx] = Math.max(0, hours);
+    setConfig({ ...config, shiftHours: newHours });
+  };
+
   const updateHolidayStaffCount = (idx: number, count: number) => {
     const newCounts = [...(config.holidayStaffPerShift || config.staffPerShift)];
     newCounts[idx] = Math.max(0, count);
@@ -697,22 +717,25 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     if (val < 1 || val > 5) return;
     const newNames = [...config.shiftNames];
     const newCounts = [...config.staffPerShift];
+    const newHours = [...(config.shiftHours || config.shiftNames.map(() => 8))];
     const newHolCounts = config.holidayStaffPerShift ? [...config.holidayStaffPerShift] : undefined;
     let newMinPerLevel = config.minStaffPerLevel ? config.minStaffPerLevel.map(row => [...row]) : undefined;
     if (val > config.shiftsPerDay) {
       for (let i = config.shiftsPerDay; i < val; i++) {
         newNames.push(`Shift ${i + 1}`);
         newCounts.push(1);
+        newHours.push(8);
         if (newHolCounts) newHolCounts.push(1);
         if (newMinPerLevel) newMinPerLevel.push((config.staffLevels || []).map(() => 0));
       }
     } else {
       newNames.splice(val);
       newCounts.splice(val);
+      newHours.splice(val);
       if (newHolCounts) newHolCounts.splice(val);
       if (newMinPerLevel) newMinPerLevel.splice(val);
     }
-    setConfig({ ...config, shiftsPerDay: val, shiftNames: newNames, staffPerShift: newCounts, holidayStaffPerShift: newHolCounts, minStaffPerLevel: newMinPerLevel });
+    setConfig({ ...config, shiftsPerDay: val, shiftNames: newNames, staffPerShift: newCounts, shiftHours: newHours, holidayStaffPerShift: newHolCounts, minStaffPerLevel: newMinPerLevel });
   };
 
   const addStaff = () => {
@@ -1516,6 +1539,17 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                           value={config.staffPerShift[i]} 
                           onChange={e => updateStaffCount(i, parseInt(e.target.value))} 
                           data-testid={`input-staff-per-shift-${i}`}
+                        />
+                      </div>
+                      <div className="w-24 space-y-2">
+                        <Label>{t.shiftHoursLabel}</Label>
+                        <Input 
+                          type="number" 
+                          min={0} 
+                          step={0.5}
+                          value={(config.shiftHours || [])[i] ?? 8} 
+                          onChange={e => updateShiftHours(i, parseFloat(e.target.value) || 0)} 
+                          data-testid={`input-shift-hours-${i}`}
                         />
                       </div>
                     </div>
