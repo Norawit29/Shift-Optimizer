@@ -833,28 +833,30 @@ export class ShiftOptimizer {
 
     const enableHolidayBalance = this.config.balanceHolidays && this.holidayDays.size > 0;
 
-    const staffShiftTargets = phase1Targets.perShift.map((total, s) => {
-      const avail = this.computePerShiftAvailability(s);
-      const totalAvail = avail.reduce((a, b) => a + b, 0);
-      if (totalAvail === 0) return this.staff.map(() => 0);
-      return this.staff.map((_, i) => total * (avail[i] / totalAvail));
+    const staffShiftTargetsInt = phase1Targets.perShift.map((total) => {
+      const staffN = this.staff.length;
+      if (staffN === 0) return [];
+      const base = Math.floor(total / staffN);
+      const remainder = total - base * staffN;
+      const targets = new Array(staffN).fill(base);
+      for (let i = 0; i < remainder; i++) {
+        targets[i] += 1;
+      }
+      return targets;
     });
+
     const staffHolidayTargets = enableHolidayBalance
       ? (() => {
-          const holAvail = this.staff.map((_, i) => {
-            let count = 0;
-            for (let d = 0; d < this.daysInMonth; d++) {
-              if (!this.isHoliday(d + 1)) continue;
-              for (let sv = 0; sv < this.config.shiftNames.length; sv++) {
-                const req = this.getStaffPerShiftForDay(d + 1)[sv];
-                if (req > 0 && !this.isBlocked(i, d, sv)) { count++; break; }
-              }
-            }
-            return count;
-          });
-          const totalHolAvail = holAvail.reduce((a, b) => a + b, 0);
-          if (totalHolAvail === 0) return this.staff.map(() => 0);
-          return this.staff.map((_, i) => phase1Targets.holidayTotal * (holAvail[i] / totalHolAvail));
+          const staffN = this.staff.length;
+          if (staffN === 0) return [];
+          const total = phase1Targets.holidayTotal;
+          const base = Math.floor(total / staffN);
+          const remainder = total - base * staffN;
+          const targets = new Array(staffN).fill(base);
+          for (let i = 0; i < remainder; i++) {
+            targets[i] += 1;
+          }
+          return targets;
         })()
       : this.staff.map(() => 0);
 
@@ -868,20 +870,6 @@ export class ShiftOptimizer {
     this.writeLoadTrackingConstraints(constraintLines, varMap, cIdx);
 
     constraintLines.push(`  c${cIdx.val++}: maxLoad - minLoad <= ${fmt(bestRange)}`);
-
-    const staffShiftTargetsInt = staffShiftTargets.map((targets, s) => {
-      const total = phase1Targets.perShift[s];
-      const floors = targets.map(t => Math.floor(t));
-      const floorSum = floors.reduce((a, b) => a + b, 0);
-      const remainder = Math.round(total) - floorSum;
-      const fracs = targets.map((t, i) => ({ i, frac: t - Math.floor(t) }));
-      fracs.sort((a, b) => b.frac - a.frac);
-      const rounded = [...floors];
-      for (let k = 0; k < remainder && k < fracs.length; k++) {
-        rounded[fracs[k].i]++;
-      }
-      return rounded;
-    });
 
     for (let i = 0; i < N; i++) {
       for (let s = 0; s < S; s++) {
