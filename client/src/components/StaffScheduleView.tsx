@@ -442,7 +442,7 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
               onClick={() => setShowHeatmap(v => !v)}
               data-testid="button-toggle-heatmap"
             >
-              <img src={fireIconPath} alt="" className="w-4 h-4" style={{ imageRendering: "pixelated" }} />
+              <img src={fireIconPath} alt="" className="w-5 h-5" style={{ imageRendering: "pixelated" }} />
               {t.streakHeatmap}
             </Button>
           </div>
