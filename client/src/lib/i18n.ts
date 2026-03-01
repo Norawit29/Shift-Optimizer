@@ -259,6 +259,11 @@ const translations = {
     staffSchedule: "Staff Schedule",
     blockedDateLegend: "Blocked date",
     requestedDateLegend: "Requested date",
+    streakHeatmap: "Streak Heatmap",
+    streakTooltip: "{days} consecutive days (Day {from}–{to})",
+    streakLegend5: "5 consecutive",
+    streakLegend6: "6 consecutive",
+    streakLegend7: "7+ consecutive",
     shiftTotalLabel: "Total",
     scheduleNotFound: "Schedule not found",
 
@@ -646,6 +651,11 @@ const translations = {
     staffSchedule: "ตารางเวรรายบุคคล",
     blockedDateLegend: "วันที่บล็อก",
     requestedDateLegend: "วันที่ขอ",
+    streakHeatmap: "เวรติดต่อกัน",
+    streakTooltip: "ทำงานติดต่อกัน {days} วัน (วันที่ {from}–{to})",
+    streakLegend5: "5 วันติด",
+    streakLegend6: "6 วันติด",
+    streakLegend7: "7+ วันติด",
     shiftTotalLabel: "รวม",
     scheduleNotFound: "ไม่พบตารางเวร",
 

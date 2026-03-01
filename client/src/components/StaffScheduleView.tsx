@@ -14,7 +14,13 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/context/LanguageContext";
 import type { DaySchedule, SchedulerConfig, StaffMember } from "@shared/schema";
 import { format, addDays, parseISO, setDate } from "date-fns";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Thermometer } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const SHIFT_BG_COLORS = [
   "bg-blue-200 dark:bg-blue-800/60",
@@ -31,6 +37,40 @@ const SHIFT_TEXT_COLORS = [
   "text-orange-900 dark:text-orange-100",
   "text-rose-900 dark:text-rose-100",
 ];
+
+function getConsecutiveStreak(
+  schedule: DaySchedule[],
+  staffId: string,
+  dayIndex: number
+): number {
+  let streak = 0;
+  for (let d = dayIndex; d >= 0; d--) {
+    const worksToday = schedule[d].shifts.some(shift => shift.includes(staffId));
+    if (worksToday) streak++;
+    else break;
+  }
+  return streak;
+}
+
+function getStreakColor(streak: number): string | null {
+  if (streak >= 7) return "rgba(239, 68, 68, 0.18)";
+  if (streak >= 6) return "rgba(251, 146, 60, 0.15)";
+  if (streak >= 5) return "rgba(250, 204, 21, 0.12)";
+  return null;
+}
+
+function getStreakStartDay(
+  schedule: DaySchedule[],
+  staffId: string,
+  dayIndex: number
+): number {
+  let start = dayIndex;
+  for (let d = dayIndex; d >= 0; d--) {
+    if (schedule[d].shifts.some(shift => shift.includes(staffId))) start = d;
+    else break;
+  }
+  return start;
+}
 
 interface StaffScheduleViewProps {
   schedule: DaySchedule[];
@@ -150,6 +190,7 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
   const [draggingFrom, setDraggingFrom] = useState<string | null>(null);
   const [draggingShiftKey, setDraggingShiftKey] = useState<string | null>(null);
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
+  const [showHeatmap, setShowHeatmap] = useState(false);
 
   const editable = !!onScheduleChange;
 
@@ -192,6 +233,21 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
       return { id: s.id, name: s.name, levelLabel, dayCells, shiftTotals, grandTotal, totalHours };
     });
   }, [staff, schedule, config, S, hasLevels]);
+
+  const streakMap = useMemo(() => {
+    if (!showHeatmap) return null;
+    const map = new Map<string, { streak: number; startDay: number }>();
+    staff.forEach(s => {
+      schedule.forEach((_, ci) => {
+        const streak = getConsecutiveStreak(schedule, s.id, ci);
+        if (streak >= 5) {
+          const startDay = getStreakStartDay(schedule, s.id, ci);
+          map.set(`${s.id}-${ci}`, { streak, startDay });
+        }
+      });
+    });
+    return map;
+  }, [showHeatmap, staff, schedule]);
 
   const shiftTotalPerDay = useMemo(() => {
     return config.shiftNames.map((_, shiftIdx) => {
@@ -367,7 +423,7 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
   return (
     <>
       <Card className="border shadow-lg overflow-hidden bg-white dark:bg-zinc-900" data-testid="staff-schedule-view">
-        <div className="flex items-center gap-4 px-4 py-2 border-b bg-slate-50 dark:bg-slate-800/50 text-xs">
+        <div className="flex items-center gap-4 px-4 py-2 border-b bg-slate-50 dark:bg-slate-800/50 text-xs flex-wrap">
           <div className="flex items-center gap-1.5">
             <span className="inline-block w-4 h-4 rounded bg-red-400 dark:bg-red-700" />
             <span className="text-muted-foreground">{t.blockedDateLegend}</span>
@@ -376,7 +432,35 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
             <span className="inline-block w-4 h-4 rounded ring-2 ring-emerald-500 bg-white dark:bg-zinc-900" />
             <span className="text-muted-foreground">{t.requestedDateLegend}</span>
           </div>
+          <div className="ml-auto">
+            <Button
+              variant={showHeatmap ? "default" : "outline"}
+              size="sm"
+              className="h-6 text-[11px] gap-1 px-2"
+              onClick={() => setShowHeatmap(v => !v)}
+              data-testid="button-toggle-heatmap"
+            >
+              <Thermometer className="w-3 h-3" />
+              {t.streakHeatmap}
+            </Button>
+          </div>
         </div>
+        {showHeatmap && (
+          <div className="flex items-center gap-4 px-4 py-1.5 border-b bg-slate-50/50 dark:bg-slate-800/30 text-[11px]">
+            <div className="flex items-center gap-1.5">
+              <span className="inline-block w-4 h-4 rounded" style={{ background: "rgba(250, 204, 21, 0.35)" }} />
+              <span className="text-muted-foreground">{t.streakLegend5}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="inline-block w-4 h-4 rounded" style={{ background: "rgba(251, 146, 60, 0.4)" }} />
+              <span className="text-muted-foreground">{t.streakLegend6}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="inline-block w-4 h-4 rounded" style={{ background: "rgba(239, 68, 68, 0.4)" }} />
+              <span className="text-muted-foreground">{t.streakLegend7}</span>
+            </div>
+          </div>
+        )}
         <ScrollArea className="h-[calc(100vh-260px)] w-full">
           <div className="min-w-max">
             <table className="text-xs border-collapse w-full">
@@ -441,6 +525,35 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
                       const isDragOver = dragOverTarget === `${ri}-${dayDate}`;
                       const isDragging = draggingFrom === `${ri}-${dayDate}`;
 
+                      const streakInfo = showHeatmap && streakMap ? streakMap.get(`${row.id}-${ci}`) : undefined;
+                      const streakOverlay = streakInfo ? getStreakColor(streakInfo.streak) : null;
+                      const streakStyle = streakOverlay ? { boxShadow: `inset 0 0 0 100px ${streakOverlay}` } : undefined;
+
+                      const buildTooltipText = () => {
+                        if (!streakInfo || streakInfo.streak < 5) return null;
+                        const startDate = schedule[streakInfo.startDay].date;
+                        const endDate = dayDate;
+                        return t.streakTooltip
+                          .replace("{days}", String(streakInfo.streak))
+                          .replace("{from}", String(startDate))
+                          .replace("{to}", String(endDate));
+                      };
+
+                      const wrapWithTooltip = (content: JSX.Element, key: number) => {
+                        const tip = buildTooltipText();
+                        if (!tip) return content;
+                        return (
+                          <TooltipProvider key={key} delayDuration={200}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>{content}</TooltipTrigger>
+                              <TooltipContent side="top" className="text-xs max-w-[200px]">
+                                {tip}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        );
+                      };
+
                       if (cell.isBlocked && cell.matchedShifts.length === 0) {
                         return (
                           <td
@@ -476,7 +589,7 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
                         const shiftKey = `${ri}-${dayDate}-${si}`;
                         const isDraggingThis = draggingShiftKey === shiftKey;
 
-                        return (
+                        const cellEl = (
                           <td
                             key={ci}
                             draggable={editable}
@@ -494,20 +607,23 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
                               isDragOver && !isDragging && "ring-2 ring-inset ring-blue-400 brightness-110",
                               isDraggingThis && "opacity-50"
                             )}
+                            style={streakStyle}
                             data-testid={`staff-cell-${ri}-${dayDate}`}
                           >
                             {config.shiftNames[si]}
                           </td>
                         );
+                        return wrapWithTooltip(cellEl, ci);
                       }
 
-                      return (
+                      const multiCellEl = (
                         <td
                           key={ci}
                           className={cn(
                             "p-0 text-center border-r",
                             isDragOver && !isDragging && "ring-2 ring-inset ring-blue-400 bg-blue-50 dark:bg-blue-900/20"
                           )}
+                          style={streakStyle}
                           onDragOver={editable ? (e) => handleDragOver(e, ri, dayDate) : undefined}
                           onDragLeave={editable ? handleDragLeave : undefined}
                           onDrop={editable ? (e) => handleDrop(e, ri, dayDate) : undefined}
@@ -541,6 +657,7 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
                           </div>
                         </td>
                       );
+                      return wrapWithTooltip(multiCellEl, ci);
                     })}
                     {row.shiftTotals.map((total, si) => (
                       <td key={`st-${si}`} className="p-1 text-center border-r font-medium">{total}</td>
