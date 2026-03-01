@@ -828,8 +828,8 @@ export class ShiftOptimizer {
     const S = this.config.shiftNames.length;
 
     const SHIFT_W = 10_000;
-    const HOLIDAY_W = 100;
-    const LEVEL_W = 10;
+    const HOLIDAY_W = 1;
+    const LEVEL_W = 0.1;
 
     const enableHolidayBalance = this.config.balanceHolidays && this.holidayDays.size > 0;
 
