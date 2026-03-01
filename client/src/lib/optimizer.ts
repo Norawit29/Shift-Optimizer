@@ -827,7 +827,7 @@ export class ShiftOptimizer {
     const D = this.daysInMonth;
     const S = this.config.shiftNames.length;
 
-    const SHIFT_W = 1_000;
+    const SHIFT_W = 10_000;
     const HOLIDAY_W = 100;
     const LEVEL_W = 10;
 
