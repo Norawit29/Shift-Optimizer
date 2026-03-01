@@ -14,7 +14,8 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/context/LanguageContext";
 import type { DaySchedule, SchedulerConfig, StaffMember } from "@shared/schema";
 import { format, addDays, parseISO, setDate } from "date-fns";
-import { AlertTriangle, Flame } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
+import fireIconPath from "@assets/Screenshot_2569-03-01_at_17.34.15_1772361258844.png";
 
 const SHIFT_BG_COLORS = [
   "bg-blue-200 dark:bg-blue-800/60",
@@ -437,11 +438,11 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
             <Button
               variant={showHeatmap ? "default" : "outline"}
               size="sm"
-              className="h-7 text-sm gap-1.5 px-3"
+              className="h-6 text-xs gap-1 px-2"
               onClick={() => setShowHeatmap(v => !v)}
               data-testid="button-toggle-heatmap"
             >
-              <Flame className="w-4 h-4" />
+              <img src={fireIconPath} alt="" className="w-4 h-4" style={{ imageRendering: "pixelated" }} />
               {t.streakHeatmap}
             </Button>
           </div>
