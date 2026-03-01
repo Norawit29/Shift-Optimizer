@@ -438,21 +438,21 @@ export default function HomePage() {
         </section>
       </main>
 
-      <footer className="border-t border-slate-100 dark:border-slate-800/50 py-8 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 flex-wrap text-sm text-slate-500 dark:text-slate-400">
+      <footer className="border-t border-slate-100 dark:border-slate-800/50 py-10 px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto flex flex-col items-center gap-5 text-base text-slate-500 dark:text-slate-400">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6">
-              <img src="/favicon.svg" alt="โปรแกรมจัดตารางเวร Shift Optimizer" width="24" height="24" className="w-6 h-6 rounded-md" />
+            <div className="w-7 h-7">
+              <img src="/favicon.svg" alt="โปรแกรมจัดตารางเวร Shift Optimizer" width="28" height="28" className="w-7 h-7 rounded-md" />
             </div>
-            <span className="font-medium" data-testid="text-footer-app-name">{t.appName}</span>
+            <span className="font-medium text-lg" data-testid="text-footer-app-name">{t.appName}</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
             <a
               href="mailto:contact@shift-optimizer.com"
               className="flex items-center gap-1.5 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
               data-testid="link-footer-email"
             >
-              <Mail className="w-4 h-4" />
+              <Mail className="w-5 h-5" />
               <span>contact@shift-optimizer.com</span>
             </a>
             <a
@@ -462,11 +462,11 @@ export default function HomePage() {
               className="flex items-center gap-1.5 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
               data-testid="link-footer-facebook"
             >
-              <SiFacebook className="w-4 h-4" />
+              <SiFacebook className="w-5 h-5" />
               <span>Facebook</span>
             </a>
           </div>
-          <span data-testid="text-footer-copyright">Copyright &copy; 2026 Shift Optimizer All rights reserved.</span>
+          <span className="text-sm" data-testid="text-footer-copyright">Copyright &copy; 2026 Shift Optimizer All rights reserved.</span>
         </div>
       </footer>
     </div>
