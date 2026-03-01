@@ -440,13 +440,13 @@ export default function HomePage() {
 
       <footer className="border-t border-slate-100 dark:border-slate-800/50 py-10 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto text-base text-slate-500 dark:text-slate-400">
-          <div className="flex flex-col items-start gap-5">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7">
-                <img src="/favicon.svg" alt="โปรแกรมจัดตารางเวร Shift Optimizer" width="28" height="28" className="w-7 h-7 rounded-md" />
-              </div>
-              <span className="font-medium text-lg" data-testid="text-footer-app-name">{t.appName}</span>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-7 h-7">
+              <img src="/favicon.svg" alt="โปรแกรมจัดตารางเวร Shift Optimizer" width="28" height="28" className="w-7 h-7 rounded-md" />
             </div>
+            <span className="font-medium text-lg" data-testid="text-footer-app-name">{t.appName}</span>
+          </div>
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
               <a
                 href="mailto:contact@shift-optimizer.com"
@@ -467,8 +467,6 @@ export default function HomePage() {
                 <span>Facebook</span>
               </a>
             </div>
-          </div>
-          <div className="flex justify-end mt-4">
             <span className="text-sm" data-testid="text-footer-copyright">Copyright &copy; 2026 Shift Optimizer All rights reserved.</span>
           </div>
         </div>
