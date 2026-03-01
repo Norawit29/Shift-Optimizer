@@ -1,0 +1,73 @@
+Refactor ShiftOptimizer in optimizer.ts to add Phase 2C for holiday balancing, separated from Phase 2B shift distribution.
+Current problem: When balanceHolidays is enabled, the holiday deviation objective in Phase 2B conflicts with per-shift distribution, causing some staff to have very unequal shift type counts (e.g., morning shifts ranging from 2–9).
+Solution: Add Phase 2C as a separate optimization step
+
+Step 1: Modify buildDistributionModel
+Add a parameter enableHolidayBalance: boolean and wrap all holiday-related logic with it:
+typescriptprivate buildDistributionModel(
+  varMap, binaryVars, phase1Targets, bestRange,
+  enableHolidayBalance: boolean  // add this
+): string
+Inside the method, wrap holiday sections with if (enableHolidayBalance && ...) — specifically:
+
+staffHolidayTargets computation
+th_i / dh_i constraint lines
+dh_i objective terms
+th_i / dh_i bounds
+
+
+Step 2: Add buildHolidayModel method
+typescriptprivate buildHolidayModel(
+  varMap: Map<string, { staff: number; day: number; shift: number }>,
+  binaryVars: string[],
+  phase1Targets: { perShift: number[]; holidayTotal: number; totalCoverage: number; slotCoverage: Map<string, number> },
+  bestRange: number,
+  lockedShiftCounts: number[][]  // lockedShiftCounts[staffIdx][shiftIdx] = count from phase 2B
+): string
+```
+
+Structure:
+1. `writeCommonConstraints`
+2. `writeCoverageConstraints`
+3. `writeLoadTrackingConstraints`
+4. Lock range: `maxLoad - minLoad <= bestRange`
+5. Lock per-shift counts with ±1 tolerance:
+```
+for each staff i, shift s where lockedCount > 0:
+  sum(x_i_d_s for all d) >= max(0, lockedCount - 1)
+  sum(x_i_d_s for all d) <= lockedCount + 1
+
+Holiday deviation constraints and objective (same logic as current buildDistributionModel holiday section)
+Objective: Minimize sum(HOLIDAY_W * dh_i) + sum(1e-6 * tw_i)
+
+
+Step 3: Modify optimize() method
+After Phase 2B succeeds, extract locked shift counts:
+typescriptconst lockedShiftCounts: number[][] = this.staff.map((_, i) =>
+  this.config.shiftNames.map((_, s) =>
+    phase2bSchedule.flatMap(day => day.shifts[s])
+      .filter(id => id === this.staff[i].id).length
+  )
+);
+Then run Phase 2C only if balanceHolidays is enabled:
+typescriptif (this.config.balanceHolidays && this.holidayDays.size > 0 && phase1Targets.holidayTotal > 0) {
+  const holidayModel = this.buildHolidayModel(
+    varMap, binaryVars, phase1Targets, bestRange, lockedShiftCounts
+  );
+  // solve with same timeout/gap settings as 2B
+  // on success: finalSolution = phase2cSolution
+  // on fail/crash: fallback to phase2bSolution (log warning)
+}
+```
+
+---
+
+**Phase flow summary:**
+```
+Phase 1  → maximize coverage
+Phase 2A → minimize (maxLoad - minLoad)
+Phase 2B → minimize shift type deviation, NO holiday logic
+Phase 2C → minimize holiday deviation, lock shift counts ±1 from Phase 2B
+Constants to use:
+typescriptconst HOLIDAY_W = 100;
+Fallback behavior: If Phase 2C fails or crashes, use Phase 2B result silently (do not return error).

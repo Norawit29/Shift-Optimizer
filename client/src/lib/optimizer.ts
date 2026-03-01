@@ -828,10 +828,7 @@ export class ShiftOptimizer {
     const S = this.config.shiftNames.length;
 
     const SHIFT_W = 10_000;
-    const HOLIDAY_W = 1;
     const LEVEL_W = 0.1;
-
-    const enableHolidayBalance = this.config.balanceHolidays && this.holidayDays.size > 0;
 
     const staffShiftTargetsInt = phase1Targets.perShift.map((total) => {
       const staffN = this.staff.length;
@@ -844,21 +841,6 @@ export class ShiftOptimizer {
       }
       return targets;
     });
-
-    const staffHolidayTargets = enableHolidayBalance
-      ? (() => {
-          const staffN = this.staff.length;
-          if (staffN === 0) return [];
-          const total = phase1Targets.holidayTotal;
-          const base = Math.floor(total / staffN);
-          const remainder = total - base * staffN;
-          const targets = new Array(staffN).fill(base);
-          for (let i = 0; i < remainder; i++) {
-            targets[i] += 1;
-          }
-          return targets;
-        })()
-      : this.staff.map(() => 0);
 
     const levelSlackVars: string[] = [];
     const constraintLines: string[] = [];
@@ -894,31 +876,6 @@ export class ShiftOptimizer {
       }
     }
 
-    if (enableHolidayBalance && staffHolidayTargets.some(t => t > 0)) {
-      for (let i = 0; i < N; i++) {
-        const hTarget = staffHolidayTargets[i];
-        if (hTarget === 0) continue;
-        const holVars: string[] = [];
-        for (let d = 0; d < D; d++) {
-          if (!this.isHoliday(d + 1)) continue;
-          for (let s = 0; s < S; s++) {
-            const v = this.vn(i, d, s);
-            if (varMap.has(v)) holVars.push(v);
-          }
-        }
-        if (holVars.length === 0) continue;
-
-        const defTerms = holVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
-        defTerms.push(`- th_${i}`);
-        constraintLines.push(`  c${cIdx.val++}:`);
-        constraintLines.push(writeTerms(defTerms, 10));
-        constraintLines.push(`  = 0`);
-
-        constraintLines.push(`  c${cIdx.val++}: th_${i} - dh_${i} <= ${fmt(hTarget)}`);
-        constraintLines.push(`  c${cIdx.val++}: - th_${i} - dh_${i} <= ${fmt(-hTarget)}`);
-      }
-    }
-
     const lines: string[] = [];
     lines.push("Minimize");
     lines.push("  obj:");
@@ -930,11 +887,6 @@ export class ShiftOptimizer {
           objParts.push(`${firstTerm ? "" : "+ "}${SHIFT_W} ds_${i}_${s}`);
           firstTerm = false;
         }
-      }
-    }
-    if (enableHolidayBalance && staffHolidayTargets.some(t => t > 0)) {
-      for (let i = 0; i < N; i++) {
-        objParts.push(`+ ${HOLIDAY_W} dh_${i}`);
       }
     }
     for (const lv of levelSlackVars) {
@@ -965,14 +917,136 @@ export class ShiftOptimizer {
         }
       }
     }
-    if (enableHolidayBalance && staffHolidayTargets.some(t => t > 0)) {
-      for (let i = 0; i < N; i++) {
+    for (const lv of levelSlackVars) {
+      lines.push(`  ${lv} >= 0`);
+    }
+
+    const allBinary = [...binaryVars, ...auxBinaryVars];
+    lines.push("Binary");
+    for (let i = 0; i < allBinary.length; i += 20) {
+      lines.push("  " + allBinary.slice(i, i + 20).join(" "));
+    }
+
+    lines.push("End");
+    return lines.join("\n");
+  }
+
+  private buildHolidayModel(
+    varMap: Map<string, { staff: number; day: number; shift: number }>,
+    binaryVars: string[],
+    phase1Targets: { perShift: number[]; holidayTotal: number; totalCoverage: number; slotCoverage: Map<string, number> },
+    bestRange: number,
+    lockedShiftCounts: number[][]
+  ): string {
+    const N = this.staff.length;
+    const D = this.daysInMonth;
+    const S = this.config.shiftNames.length;
+
+    const HOLIDAY_W = 100;
+
+    const staffHolidayTargets = (() => {
+      if (N === 0) return [];
+      const total = phase1Targets.holidayTotal;
+      const base = Math.floor(total / N);
+      const remainder = total - base * N;
+      const targets = new Array(N).fill(base);
+      for (let i = 0; i < remainder; i++) {
+        targets[i] += 1;
+      }
+      return targets;
+    })();
+
+    const constraintLines: string[] = [];
+    const cIdx = { val: 0 };
+    const auxBinaryVars: string[] = [];
+    this.writeCommonConstraints(constraintLines, varMap, cIdx, { auxBinaryVars });
+    this.writeCoverageConstraints(constraintLines, varMap, cIdx, phase1Targets);
+    this.writeLoadTrackingConstraints(constraintLines, varMap, cIdx);
+
+    constraintLines.push(`  c${cIdx.val++}: maxLoad - minLoad <= ${fmt(bestRange)}`);
+
+    for (let i = 0; i < N; i++) {
+      for (let s = 0; s < S; s++) {
+        const locked = lockedShiftCounts[i][s];
+        if (locked === 0) continue;
+
+        const shiftVars: string[] = [];
+        for (let d = 0; d < D; d++) {
+          const v = this.vn(i, d, s);
+          if (varMap.has(v)) shiftVars.push(v);
+        }
+        if (shiftVars.length === 0) continue;
+
+        const sumTerms = shiftVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+
+        const lowerTerms = [...sumTerms];
+        constraintLines.push(`  c${cIdx.val++}:`);
+        constraintLines.push(writeTerms(lowerTerms, 10));
+        constraintLines.push(`  >= ${Math.max(0, locked - 1)}`);
+
+        const upperTerms = [...sumTerms];
+        constraintLines.push(`  c${cIdx.val++}:`);
+        constraintLines.push(writeTerms(upperTerms, 10));
+        constraintLines.push(`  <= ${locked + 1}`);
+      }
+    }
+
+    for (let i = 0; i < N; i++) {
+      const hTarget = staffHolidayTargets[i];
+      if (hTarget === 0) continue;
+      const holVars: string[] = [];
+      for (let d = 0; d < D; d++) {
+        if (!this.isHoliday(d + 1)) continue;
+        for (let s = 0; s < S; s++) {
+          const v = this.vn(i, d, s);
+          if (varMap.has(v)) holVars.push(v);
+        }
+      }
+      if (holVars.length === 0) continue;
+
+      const defTerms = holVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+      defTerms.push(`- th_${i}`);
+      constraintLines.push(`  c${cIdx.val++}:`);
+      constraintLines.push(writeTerms(defTerms, 10));
+      constraintLines.push(`  = 0`);
+
+      constraintLines.push(`  c${cIdx.val++}: th_${i} - dh_${i} <= ${fmt(hTarget)}`);
+      constraintLines.push(`  c${cIdx.val++}: - th_${i} - dh_${i} <= ${fmt(-hTarget)}`);
+    }
+
+    const lines: string[] = [];
+    lines.push("Minimize");
+    lines.push("  obj:");
+    const objParts: string[] = [];
+    let firstTerm = true;
+    for (let i = 0; i < N; i++) {
+      if (staffHolidayTargets[i] > 0) {
+        objParts.push(`${firstTerm ? "" : "+ "}${HOLIDAY_W} dh_${i}`);
+        firstTerm = false;
+      }
+    }
+    for (let i = 0; i < N; i++) {
+      objParts.push(`+ ${fmt(1e-6)} tw_${i}`);
+    }
+    if (objParts.length === 0) {
+      objParts.push("0 maxLoad");
+    }
+    lines.push(writeTerms(objParts, 8));
+
+    lines.push("Subject To");
+    lines.push(...constraintLines);
+
+    lines.push("Bounds");
+    lines.push(`  maxLoad >= 0`);
+    lines.push(`  minLoad >= 0`);
+    for (let i = 0; i < N; i++) {
+      lines.push(`  tw_${i} >= 0`);
+    }
+    for (let i = 0; i < N; i++) {
+      if (staffHolidayTargets[i] > 0) {
         lines.push(`  th_${i} >= 0`);
         lines.push(`  dh_${i} >= 0`);
       }
-    }
-    for (const lv of levelSlackVars) {
-      lines.push(`  ${lv} >= 0`);
     }
 
     const allBinary = [...binaryVars, ...auxBinaryVars];
@@ -1672,6 +1746,49 @@ export class ShiftOptimizer {
             usedPhase = "2A (Phase 2B fallback)";
           } else {
             finalSolution = phase2bSolution;
+          }
+
+          if (finalSolution === phase2bSolution && this.config.balanceHolidays && this.holidayDays.size > 0 && phase1Targets.holidayTotal > 0) {
+            const lockedShiftCounts: number[][] = this.staff.map((_, i) => {
+              return this.config.shiftNames.map((_, s) => {
+                let count = 0;
+                const cols = phase2bSolution.Columns || {};
+                for (let d = 0; d < this.daysInMonth; d++) {
+                  const v = this.vn(i, d, s);
+                  const col = cols[v];
+                  if (col && Math.round(col.Primal) === 1) count++;
+                }
+                return count;
+              });
+            });
+
+            try {
+              const holidayModel = this.buildHolidayModel(varMap, binaryVars, phase1Targets, bestRange, lockedShiftCounts);
+              console.log(`[OPT] Phase 2C (holiday) model: ${holidayModel.length} chars, ${holidayModel.split('\n').length} lines`);
+
+              const solver2c = await createSolver();
+              const phase2cSolution = solver2c.solve(holidayModel, {
+                time_limit: phase2bTimeLimit,
+                mip_rel_gap: phase2bGap,
+                mip_abs_gap: 1e-6,
+                threads: 1,
+                presolve: "on",
+              });
+
+              console.log(`[OPT] Phase 2C status: ${phase2cSolution.Status}, obj: ${phase2cSolution.ObjectiveValue}`);
+
+              if (phase2cSolution.Columns && !failStatuses.includes(phase2cSolution.Status)) {
+                finalSolution = phase2cSolution;
+                usedPhase = "2C";
+                if (phase2cSolution.Status === "Time limit reached") {
+                  console.warn(`[OPT] Phase 2C hit time limit, using best solution found`);
+                }
+              } else {
+                console.warn(`[OPT] Phase 2C FAILED (${phase2cSolution.Status}), keeping Phase 2B result`);
+              }
+            } catch (err: any) {
+              console.warn(`[OPT] Phase 2C CRASH, keeping Phase 2B result: ${String(err)}`);
+            }
           }
         } catch (err: any) {
           console.error("[OPT] Phase 2B CRASH, falling back to Phase 2A:", String(err));
