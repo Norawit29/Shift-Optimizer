@@ -883,6 +883,18 @@ export class ShiftOptimizer {
       return rounded;
     });
 
+    for (let s = 0; s < S; s++) {
+      const hasTarget = this.staff.some((_, i) => staffShiftTargetsInt[s][i] > 0);
+      if (!hasTarget) continue;
+      const maxVar = `maxSL_${s}`;
+      const minVar = `minSL_${s}`;
+      for (let i = 0; i < N; i++) {
+        if (staffShiftTargetsInt[s][i] === 0) continue;
+        constraintLines.push(`  c${cIdx.val++}: ts_${i}_${s} - ${maxVar} <= 0`);
+        constraintLines.push(`  c${cIdx.val++}: - ts_${i}_${s} + ${minVar} <= 0`);
+      }
+    }
+
     for (let i = 0; i < N; i++) {
       for (let s = 0; s < S; s++) {
         const target = staffShiftTargetsInt[s][i];
@@ -944,6 +956,13 @@ export class ShiftOptimizer {
         }
       }
     }
+    const SHIFT_RANGE_W = 50;
+    for (let s = 0; s < S; s++) {
+      const hasTarget = this.staff.some((_, i) => staffShiftTargetsInt[s][i] > 0);
+      if (!hasTarget) continue;
+      objParts.push(`+ ${SHIFT_RANGE_W} maxSL_${s}`);
+      objParts.push(`- ${SHIFT_RANGE_W} minSL_${s}`);
+    }
     if (enableHolidayBalance && staffHolidayTargets.some(t => t > 0)) {
       for (let i = 0; i < N; i++) {
         objParts.push(`+ ${HOLIDAY_W} dh_${i}`);
@@ -985,6 +1004,12 @@ export class ShiftOptimizer {
     }
     for (const lv of levelSlackVars) {
       lines.push(`  ${lv} >= 0`);
+    }
+    for (let s = 0; s < S; s++) {
+      const hasTarget = this.staff.some((_, i) => staffShiftTargetsInt[s][i] > 0);
+      if (!hasTarget) continue;
+      lines.push(`  maxSL_${s} >= 0`);
+      lines.push(`  minSL_${s} >= 0`);
     }
 
     const allBinary = [...binaryVars, ...auxBinaryVars];
