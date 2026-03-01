@@ -2781,18 +2781,24 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                                 <th key={i} className="p-3 text-center font-semibold">{name}</th>
                               ))}
                               <th className="p-3 text-center font-semibold text-primary">{t.total}</th>
+                              <th className="p-3 text-center font-semibold text-amber-600 dark:text-amber-400">{t.totalHours}</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {result.metrics.perStaff.map((s, i) => (
+                            {result.metrics.perStaff.map((s, i) => {
+                              const hrs = (config.shiftHours || config.shiftNames.map(() => 8));
+                              const totalHrs = s.byShift.reduce((sum, count, si) => sum + count * (hrs[si] || 0), 0);
+                              return (
                               <tr key={i} className="border-b hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors">
                                 <td className="p-3 font-medium">{s.name}</td>
                                 {s.byShift.map((count, j) => (
                                   <td key={j} className="p-3 text-center">{count}</td>
                                 ))}
                                 <td className="p-3 text-center font-bold text-primary">{s.total}</td>
+                                <td className="p-3 text-center font-bold text-amber-600 dark:text-amber-400">{totalHrs}</td>
                               </tr>
-                            ))}
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>
