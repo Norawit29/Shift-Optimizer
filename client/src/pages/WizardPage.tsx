@@ -1561,7 +1561,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
             onNewSchedule={handleNewSchedule}
           />
         )}
-        <main className={cn("flex-1 overflow-y-auto px-4 py-8 min-w-0", step === 4 ? "" : "max-w-5xl mx-auto")}>
+        <main className={cn("flex-1 overflow-y-auto px-4 py-8 min-w-0", step === 4 ? "" : "max-w-5xl mx-auto pb-24")}>
         
         {/* STEP 1: CONFIGURATION */}
         <WizardStep 
@@ -3081,7 +3081,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                 className="text-muted-foreground"
                 data-testid="button-back-footer"
               >
-                Back
+                {lang === "th" ? "ย้อนกลับ" : "Back"}
               </Button>
               
               <div className="flex gap-2">
