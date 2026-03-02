@@ -557,7 +557,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   }, [results, selectedVersion, config, staff, month, year, useCustomRange, customStartDate]);
 
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  const [loginPromptReason, setLoginPromptReason] = useState<"next" | "save">("next");
+  const [loginPromptReason, setLoginPromptReason] = useState<"next" | "save" | "export">("next");
   const [presetLoaded, setPresetLoaded] = useState(false);
   const [showPreCheckWarning, setShowPreCheckWarning] = useState(false);
   const [preCheckWarnings, setPreCheckWarnings] = useState<string[]>([]);
@@ -613,6 +613,8 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
       setShowLoginPrompt(false);
       if (loginPromptReason === "save") {
         savePreset();
+      } else if (loginPromptReason === "export") {
+        handleSaveClick();
       } else {
         setStep(s => Math.min(s + 1, 4));
       }
@@ -1446,6 +1448,11 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   };
 
   const handleSaveClick = () => {
+    if (!user) {
+      setLoginPromptReason("export");
+      setShowLoginPrompt(true);
+      return;
+    }
     if (results.length > 1) {
       setSaveVersion(selectedVersion);
       setShowSaveDialog(true);
@@ -3252,6 +3259,8 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               <DialogTitle className="text-lg">
                 {loginPromptReason === "save"
                   ? (lang === "th" ? "กรุณาเข้าสู่ระบบเพื่อบันทึกตาราง" : "Sign in to save your schedule")
+                  : loginPromptReason === "export"
+                  ? (lang === "th" ? "กรุณาเข้าสู่ระบบเพื่อดาวน์โหลด Excel" : "Sign in to export Excel")
                   : (lang === "th" ? "เข้าสู่ระบบเพื่อบันทึกข้อมูล" : "Sign in to save your data")}
               </DialogTitle>
               <DialogDescription className="text-sm leading-relaxed">
@@ -3259,6 +3268,10 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                   ? (lang === "th"
                     ? "เข้าสู่ระบบด้วย Google เพื่อบันทึกตารางเวรของคุณ"
                     : "Sign in with Google to save your schedule.")
+                  : loginPromptReason === "export"
+                  ? (lang === "th"
+                    ? "เข้าสู่ระบบด้วย Google เพื่อดาวน์โหลดตารางเวรเป็นไฟล์ Excel"
+                    : "Sign in with Google to download your schedule as an Excel file.")
                   : (lang === "th"
                     ? "เข้าสู่ระบบด้วย Google เพื่อบันทึกรายชื่อสตาฟและการตั้งค่า คุณจะไม่ต้องกรอกใหม่ทุกครั้ง"
                     : "Sign in with Google to save your staff list and settings. You won't need to re-enter them next time.")}
@@ -3279,9 +3292,9 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               }}
               data-testid="button-skip-login"
             >
-              {loginPromptReason === "save"
+              {loginPromptReason === "save" || loginPromptReason === "export"
                 ? (lang === "th" ? "ยกเลิก" : "Cancel")
-                : (lang === "th" ? "ข้ามไปก่อน" : "Skip for now")} {loginPromptReason !== "save" && <ArrowRight className="ml-1 h-4 w-4" />}
+                : (lang === "th" ? "ข้ามไปก่อน" : "Skip for now")} {loginPromptReason === "next" && <ArrowRight className="ml-1 h-4 w-4" />}
             </Button>
           </div>
         </DialogContent>
