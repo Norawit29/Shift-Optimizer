@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
 import { type InsertSchedule, type Schedule } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/context/LanguageContext";
 
 export function useSchedules() {
   return useQuery({
@@ -31,6 +32,7 @@ export function useSchedule(id: number) {
 export function useCreateSchedule() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { lang } = useLanguage();
 
   return useMutation({
     mutationFn: async (data: InsertSchedule) => {
@@ -50,13 +52,13 @@ export function useCreateSchedule() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.schedules.list.path] });
       toast({
-        title: "Success",
-        description: "Schedule saved successfully",
+        title: lang === "th" ? "สำเร็จ" : "Success",
+        description: lang === "th" ? "บันทึกตารางเวรแล้ว" : "Schedule saved successfully",
       });
     },
     onError: (error) => {
       toast({
-        title: "Error",
+        title: lang === "th" ? "เกิดข้อผิดพลาด" : "Error",
         description: error.message,
         variant: "destructive",
       });
@@ -67,6 +69,7 @@ export function useCreateSchedule() {
 export function useUpdateSchedule() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { lang } = useLanguage();
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<InsertSchedule> }) => {
@@ -88,13 +91,13 @@ export function useUpdateSchedule() {
       queryClient.invalidateQueries({ queryKey: [api.schedules.list.path] });
       queryClient.invalidateQueries({ queryKey: [api.schedules.get.path, variables.id] });
       toast({
-        title: "Success",
-        description: "Schedule updated successfully",
+        title: lang === "th" ? "สำเร็จ" : "Success",
+        description: lang === "th" ? "อัปเดตตารางเวรแล้ว" : "Schedule updated successfully",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Error",
+        title: lang === "th" ? "เกิดข้อผิดพลาด" : "Error",
         description: error.message,
         variant: "destructive",
       });
@@ -105,6 +108,7 @@ export function useUpdateSchedule() {
 export function useDeleteSchedule() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { lang } = useLanguage();
 
   return useMutation({
     mutationFn: async (id: number) => {
@@ -119,8 +123,8 @@ export function useDeleteSchedule() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.schedules.list.path] });
       toast({
-        title: "Deleted",
-        description: "Schedule removed successfully",
+        title: lang === "th" ? "ลบแล้ว" : "Deleted",
+        description: lang === "th" ? "ลบตารางเวรเรียบร้อย" : "Schedule removed successfully",
       });
     },
   });
