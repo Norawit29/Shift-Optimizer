@@ -158,46 +158,50 @@ export function ScheduleSidebar({ activeScheduleId, onLoadSchedule, onNewSchedul
         </ScrollArea>
       </div>
 
-      <Dialog open={deleteTarget !== null} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-red-500" />
-              {t.deleteScheduleConfirm}
-            </DialogTitle>
-            <DialogDescription>
-              {deleteScheduleName && <span className="font-medium text-foreground">"{deleteScheduleName}"</span>}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setDeleteTarget(null)} data-testid="button-cancel-delete">
-              {lang === "th" ? "ยกเลิก" : "Cancel"}
-            </Button>
-            <Button variant="destructive" onClick={confirmDelete} data-testid="button-confirm-delete">
-              {lang === "th" ? "ลบ" : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {deleteTarget !== null && (
+        <Dialog open={true} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-red-500" />
+                {t.deleteScheduleConfirm}
+              </DialogTitle>
+              <DialogDescription>
+                {deleteScheduleName && <span className="font-medium text-foreground">"{deleteScheduleName}"</span>}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => setDeleteTarget(null)} data-testid="button-cancel-delete">
+                {lang === "th" ? "ยกเลิก" : "Cancel"}
+              </Button>
+              <Button variant="destructive" onClick={confirmDelete} data-testid="button-confirm-delete">
+                {lang === "th" ? "ลบ" : "Delete"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
-      <Dialog open={loadTarget !== null} onOpenChange={(open) => { if (!open) setLoadTarget(null); }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>{t.loadScheduleConfirm}</DialogTitle>
-            <DialogDescription>
-              {loadTarget && <span className="font-medium text-foreground">"{loadTarget.name}"</span>}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setLoadTarget(null)} data-testid="button-cancel-load">
-              {lang === "th" ? "ยกเลิก" : "Cancel"}
-            </Button>
-            <Button onClick={confirmLoad} data-testid="button-confirm-load">
-              {lang === "th" ? "โหลด" : "Load"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {loadTarget !== null && (
+        <Dialog open={true} onOpenChange={(open) => { if (!open) setLoadTarget(null); }}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>{t.loadScheduleConfirm}</DialogTitle>
+              <DialogDescription>
+                {loadTarget && <span className="font-medium text-foreground">"{loadTarget.name}"</span>}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" onClick={() => setLoadTarget(null)} data-testid="button-cancel-load">
+                {lang === "th" ? "ยกเลิก" : "Cancel"}
+              </Button>
+              <Button onClick={confirmLoad} data-testid="button-confirm-load">
+                {lang === "th" ? "โหลด" : "Load"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 }
