@@ -226,8 +226,12 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
         });
         const isBlocked = s.blocked.some(b => b.date === day.date && b.shift === -1) ||
           config.shiftNames.every((_, si) => s.blocked.some(b => b.date === day.date && b.shift === si));
-        const isRequested = (s.requested || []).some(r => r.date === day.date && matchedShifts.includes(r.shift));
-        return { matchedShifts, isBlocked, isRequested };
+        const requestedShifts = new Set(
+          (s.requested || [])
+            .filter(r => r.date === day.date && matchedShifts.includes(r.shift))
+            .map(r => r.shift)
+        );
+        return { matchedShifts, isBlocked, requestedShifts };
       });
       const levelLabel = hasLevels ? (config.staffLevels![(s.level ?? 0)] || "") : "";
       const shiftHours = config.shiftHours || config.shiftNames.map(() => 8);
@@ -586,7 +590,7 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
                               editable && "cursor-grab active:cursor-grabbing",
                               !heatmapActive && bgClass,
                               heatmapActive ? "text-zinc-800 dark:text-zinc-200" : textClass,
-                              cell.isRequested && !heatmapActive && "ring-2 ring-inset ring-emerald-500",
+                              cell.requestedShifts.has(si) && !heatmapActive && "ring-2 ring-inset ring-emerald-500",
                               isDragOver && !isDragging && "ring-2 ring-inset ring-blue-400 brightness-110",
                               isDraggingThis && "opacity-50"
                             )}
@@ -633,7 +637,7 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
                                     editable && "cursor-grab active:cursor-grabbing",
                                     !heatmapActive && bgClass,
                                     heatmapActive ? "text-zinc-800 dark:text-zinc-200" : textClass,
-                                    cell.isRequested && !heatmapActive && "ring-1 ring-emerald-500",
+                                    cell.requestedShifts.has(si) && !heatmapActive && "ring-1 ring-emerald-500",
                                     isDraggingThis && "opacity-50"
                                   )}
                                 >
