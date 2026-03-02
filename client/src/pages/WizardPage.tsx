@@ -1359,9 +1359,12 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   };
 
   const handleLoadSchedule = useCallback((schedule: Schedule) => {
+    if (!window.confirm(t.loadScheduleConfirm)) return;
+
     const c = schedule.config;
+    const loadedStaff = schedule.staff.map((s: StaffMember) => ({ ...s, blocked: s.blocked || [], requested: s.requested || [] }));
     setConfig(c);
-    setStaff(schedule.staff.map((s: StaffMember) => ({ ...s, blocked: s.blocked || [], requested: s.requested || [] })));
+    setStaff(loadedStaff);
     setMonth(schedule.month);
     setYear(schedule.year);
     setScheduleName(schedule.name);
@@ -1375,9 +1378,29 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
       setUseCustomRange(false);
     }
     if (schedule.result && Array.isArray(schedule.result) && schedule.result.length > 0) {
+      const scheduleData = schedule.result as DaySchedule[];
+      const numShifts = c.shiftNames?.length || 3;
+      const perStaff = loadedStaff.map(s => {
+        const byShift = new Array(numShifts).fill(0);
+        let total = 0;
+        for (const day of scheduleData) {
+          if (day.shifts) {
+            for (let si = 0; si < day.shifts.length; si++) {
+              const shift = day.shifts[si];
+              if (shift && shift.assigned && shift.assigned.includes(s.id)) {
+                byShift[si] = (byShift[si] || 0) + 1;
+                total++;
+              }
+            }
+          }
+        }
+        return { name: s.name, total, byShift };
+      });
+      const totals = perStaff.map(p => p.total).filter(t => t > 0);
+      const range = totals.length > 0 ? Math.max(...totals) - Math.min(...totals) : 0;
       setResults([{
-        schedule: schedule.result as DaySchedule[],
-        metrics: null as any,
+        schedule: scheduleData,
+        metrics: { range, perStaff },
         isPartial: schedule.isPartial || false,
         unfilledSlots: schedule.unfilledSlots || [],
         diagnostics: []
