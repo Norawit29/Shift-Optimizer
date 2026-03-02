@@ -266,6 +266,16 @@ const translations = {
     streakLegend7: "7+ consecutive",
     shiftTotalLabel: "Total",
     scheduleNotFound: "Schedule not found",
+    mySchedules: "My Schedules",
+    newSchedule: "New Schedule",
+    loadSchedule: "Load",
+    overwriteSchedule: "Save",
+    savedAt: "Saved",
+    noSavedSchedules: "No saved schedules yet",
+    deleteScheduleConfirm: "Delete this schedule?",
+    scheduleLoaded: "Schedule loaded",
+    scheduleSaved: "Schedule saved",
+    scheduleUpdated: "Schedule updated",
 
     // Quick Export
     quickExport: "Quick Export",
@@ -658,6 +668,16 @@ const translations = {
     streakLegend7: "7+ วันติด",
     shiftTotalLabel: "รวม",
     scheduleNotFound: "ไม่พบตารางเวร",
+    mySchedules: "ตารางเวรของฉัน",
+    newSchedule: "สร้างตารางใหม่",
+    loadSchedule: "โหลด",
+    overwriteSchedule: "บันทึก",
+    savedAt: "บันทึกเมื่อ",
+    noSavedSchedules: "ยังไม่มีตารางที่บันทึก",
+    deleteScheduleConfirm: "ลบตารางนี้?",
+    scheduleLoaded: "โหลดตารางเวรแล้ว",
+    scheduleSaved: "บันทึกตารางเวรแล้ว",
+    scheduleUpdated: "อัปเดตตารางเวรแล้ว",
 
     // Quick Export
     quickExport: "ส่งออกด่วน",

@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { useCreateSchedule } from "@/hooks/use-schedules";
-import { type StaffMember, type SchedulerConfig, type OptimizerResult, type DaySchedule } from "@shared/schema";
+import { useCreateSchedule, useUpdateSchedule, useSchedules } from "@/hooks/use-schedules";
+import { type StaffMember, type SchedulerConfig, type OptimizerResult, type DaySchedule, type Schedule } from "@shared/schema";
+import { ScheduleSidebar } from "@/components/ScheduleSidebar";
 import { useAuth } from "@/context/AuthContext";
 import { GoogleSignInButton, UserMenu } from "@/components/GoogleSignIn";
 import { runOptimizerInWorker } from "@/lib/workerRunner";
@@ -494,7 +495,9 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const [globalMaxShifts, setGlobalMaxShifts] = useState(20);
   const [results, setResults] = useState<OptimizerResult[]>([]);
   const [selectedVersion, setSelectedVersion] = useState(0);
-  const [scheduleName, setScheduleName] = useState("My Schedule");
+  const [editingScheduleId, setEditingScheduleId] = useState<number | null>(null);
+  const [nameManuallyEdited, setNameManuallyEdited] = useState(false);
+  const [scheduleName, setScheduleName] = useState("");
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [saveVersion, setSaveVersion] = useState(0);
@@ -572,9 +575,22 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   };
   
   const createMutation = useCreateSchedule();
+  const updateMutation = useUpdateSchedule();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { t, dayNames, lang } = useLanguage();
+
+  useEffect(() => {
+    if (nameManuallyEdited) return;
+    const MONTHS_TH = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+    const MONTHS_EN = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    if (useCustomRange && customStartDate && customEndDate) {
+      setScheduleName(`${customStartDate} — ${customEndDate}`);
+    } else {
+      const mName = lang === "th" ? MONTHS_TH[month - 1] : MONTHS_EN[month - 1];
+      setScheduleName(`${mName} ${year}`);
+    }
+  }, [month, year, useCustomRange, customStartDate, customEndDate, lang, nameManuallyEdited]);
 
   const defaultShiftNamesTh = ["เช้า", "บ่าย", "ดึก"];
   const defaultShiftNamesEn = ["Morning", "Evening", "Night"];
@@ -1306,7 +1322,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
         customStartDate: useCustomRange ? customStartDate : undefined,
         customEndDate: useCustomRange ? customEndDate : undefined,
       };
-      await createMutation.mutateAsync({
+      const payload = {
         name: scheduleName,
         month,
         year,
@@ -1316,12 +1332,67 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
         isPartial: r.isPartial || false,
         unfilledSlots: r.unfilledSlots || [],
         isPublished: false
-      });
+      };
+      if (editingScheduleId) {
+        await updateMutation.mutateAsync({ id: editingScheduleId, data: payload });
+        toast({ title: t.scheduleUpdated });
+      } else {
+        const created = await createMutation.mutateAsync(payload);
+        if (created?.id) setEditingScheduleId(created.id);
+        toast({ title: t.scheduleSaved });
+      }
       setShowSaveDialog(false);
-      setLocation("/history");
     } catch (error) {
     }
   };
+
+  const handleLoadSchedule = useCallback((schedule: Schedule) => {
+    const c = schedule.config;
+    setConfig(c);
+    setStaff(schedule.staff.map((s: StaffMember) => ({ ...s, blocked: s.blocked || [], requested: s.requested || [] })));
+    setMonth(schedule.month);
+    setYear(schedule.year);
+    setScheduleName(schedule.name);
+    setNameManuallyEdited(true);
+    setEditingScheduleId(schedule.id);
+    if (c.useCustomRange && c.customStartDate) {
+      setUseCustomRange(true);
+      setCustomStartDate(c.customStartDate);
+      setCustomEndDate(c.customEndDate || "");
+    } else {
+      setUseCustomRange(false);
+    }
+    if (schedule.result && Array.isArray(schedule.result) && schedule.result.length > 0) {
+      setResults([{
+        schedule: schedule.result as DaySchedule[],
+        metrics: null as any,
+        isPartial: schedule.isPartial || false,
+        unfilledSlots: schedule.unfilledSlots || [],
+        diagnostics: []
+      }]);
+      setSelectedVersion(0);
+      setStep(4);
+    } else {
+      setResults([]);
+      setStep(1);
+    }
+    toast({ title: t.scheduleLoaded });
+  }, [toast, t]);
+
+  const handleNewSchedule = useCallback(() => {
+    setConfig(getInitialConfig(lang));
+    setStaff(INITIAL_STAFF);
+    setMonth(() => { const n = new Date(); const nx = new Date(n.getFullYear(), n.getMonth() + 1, 1); return nx.getMonth() + 1; });
+    setYear(() => { const n = new Date(); const nx = new Date(n.getFullYear(), n.getMonth() + 1, 1); return nx.getFullYear(); });
+    setEditingScheduleId(null);
+    setNameManuallyEdited(false);
+    setResults([]);
+    setSelectedVersion(0);
+    setStep(1);
+    setUseCustomRange(false);
+    setCustomStartDate("");
+    setCustomEndDate("");
+  }, [lang]);
 
   const doExcelExport = async (versionIdx: number) => {
     const r = results[versionIdx];
@@ -1374,7 +1445,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col">
       {walkthrough.active && step === 1 && (
         <WalkthroughOverlay
           steps={walkthroughStep1}
@@ -1435,14 +1506,14 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           
           <div className="flex items-center gap-2">
             {step === 4 && (
-              <Button onClick={handleSaveClick} disabled={!exportOnly && createMutation.isPending} className="bg-green-600 hover:bg-green-700" data-testid="button-save-schedule" data-walkthrough="export-btn">
-                {!exportOnly && createMutation.isPending
+              <Button onClick={handleSaveClick} disabled={!exportOnly && (createMutation.isPending || updateMutation.isPending)} className="bg-green-600 hover:bg-green-700" data-testid="button-save-schedule" data-walkthrough="export-btn">
+                {!exportOnly && (createMutation.isPending || updateMutation.isPending)
                   ? <Loader2 className="w-4 h-4 mr-2 animate-spin"/>
                   : exportOnly
                     ? <FileSpreadsheet className="w-4 h-4 mr-2" />
                     : <Save className="w-4 h-4 mr-2" />
                 }
-                {exportOnly ? t.exportExcel : t.saveSchedule}
+                {exportOnly ? t.exportExcel : editingScheduleId ? t.overwriteSchedule : t.saveSchedule}
               </Button>
             )}
           </div>
@@ -1456,7 +1527,15 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
         </div>
       </header>
 
-      <main className={cn("mx-auto px-4 py-8", step === 4 ? "max-w-[95vw]" : "max-w-5xl")}>
+      <div className="flex flex-1 overflow-hidden" style={{ height: "calc(100vh - 4.25rem)" }}>
+        {user && (
+          <ScheduleSidebar
+            activeScheduleId={editingScheduleId}
+            onLoadSchedule={handleLoadSchedule}
+            onNewSchedule={handleNewSchedule}
+          />
+        )}
+        <main className={cn("flex-1 overflow-y-auto px-4 py-8 min-w-0", step === 4 ? "" : "max-w-5xl mx-auto")}>
         
         {/* STEP 1: CONFIGURATION */}
         <WizardStep 
@@ -2723,7 +2802,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                   <Label>{t.scheduleName}</Label>
                   <Input 
                     value={scheduleName} 
-                    onChange={e => setScheduleName(e.target.value)} 
+                    onChange={e => { setScheduleName(e.target.value); setNameManuallyEdited(true); }} 
                     className="text-lg font-bold border-none shadow-none focus-visible:ring-0 px-0"
                     data-testid="input-schedule-name"
                   />
@@ -2994,6 +3073,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           </div>
         )}
       </main>
+      </div>
 
       <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
         <DialogContent className="max-w-lg">
