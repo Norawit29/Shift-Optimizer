@@ -1,0 +1,109 @@
+ปรับ Level constraint ให้เป็น Soft แต่ weight สูงมาก (almost-hard)
+โดยไม่ rewrite solver pipeline และไม่กระทบ phase structure
+
+🎯 Objective
+
+Level minimum ต้องยังเป็น soft constraint
+
+แต่ต้องมี weight สูงมากพอที่จะ dominate shift distribution
+
+ต้อง enforce ใน Phase 2B และ Phase 2C
+
+ห้ามแก้ buildRangeModel
+
+ห้ามเปลี่ยน solver phase flow
+
+🔧 Step 1 — Increase LEVEL_W (critical)
+
+ใน buildDistributionModel เปลี่ยน:
+
+const LEVEL_W = 0.1;
+
+เป็น dynamic weight แบบนี้:
+
+const SHIFT_W = 10_000;
+
+// Make level almost-hard by dominating shift deviation
+const LEVEL_W =
+  SHIFT_W *
+  this.staff.length *
+  this.daysInMonth;
+
+อย่าใช้ค่าคงที่เล็ก ๆ อีก
+
+🔧 Step 2 — Enforce Level in Phase 2C
+
+ใน buildHolidayModel เพิ่ม level soft constraint ด้วย
+
+หา block นี้:
+
+this.writeCommonConstraints(...)
+this.writeCoverageConstraints(...)
+this.writeLoadTrackingConstraints(...)
+
+เพิ่มบรรทัดนี้หลัง writeCommonConstraints:
+
+const levelSlackVars: string[] = [];
+this.writeSoftLevelConstraints(
+  constraintLines,
+  varMap,
+  cIdx,
+  levelSlackVars
+);
+🔧 Step 3 — Add level slack to objective in Phase 2C
+
+ใน buildHolidayModel section "Minimize"
+
+หลัง holiday deviation terms (dh_i)
+เพิ่ม level slack เข้า objective:
+
+for (const lv of levelSlackVars) {
+  objParts.push(`+ ${LEVEL_W} ${lv}`);
+}
+
+และต้อง declare LEVEL_W ด้านบนใน function นี้เหมือน Phase 2B
+
+🔧 Step 4 — Add Bounds for level slack in Phase 2C
+
+ใน section "Bounds" ของ buildHolidayModel เพิ่ม:
+
+for (const lv of levelSlackVars) {
+  lines.push(`  ${lv} >= 0`);
+}
+❗ DO NOT:
+
+ไม่แก้ buildCoverageModel
+
+ไม่แก้ buildRangeModel
+
+ไม่เปลี่ยน lexicographic order
+
+ไม่เปลี่ยน solver parameters
+
+ไม่เปลี่ยน fairness logic
+
+🧠 Expected Behavior After Patch
+
+Coverage ยังมาก่อนเสมอ
+
+Level violation จะเกิดเฉพาะเมื่อ unavoidable จริง ๆ
+
+Solver จะยอม sacrifice shift distribution ก่อน level
+
+Holiday balancing จะไม่ทำให้ level พังอีก
+
+🔍 Verification Checklist
+
+หลังแก้แล้ว ให้ log:
+
+จำนวน levelSlackVars
+
+objective magnitude
+
+final level violation count
+
+ควรเห็นว่า:
+
+level slack เกิดเฉพาะเมื่อ infeasible จริง
+
+distribution จะเบี้ยวแทน level

@@ -828,7 +828,7 @@ export class ShiftOptimizer {
     const S = this.config.shiftNames.length;
 
     const SHIFT_W = 10_000;
-    const LEVEL_W = 0.1;
+    const LEVEL_W = SHIFT_W * N * D;
 
     const staffShiftTargetsInt = phase1Targets.perShift.map((total) => {
       const staffN = this.staff.length;
@@ -943,6 +943,7 @@ export class ShiftOptimizer {
     const S = this.config.shiftNames.length;
 
     const HOLIDAY_W = 100;
+    const LEVEL_W = 10_000 * N * D;
 
     const staffHolidayTargets = (() => {
       if (N === 0) return [];
@@ -959,7 +960,9 @@ export class ShiftOptimizer {
     const constraintLines: string[] = [];
     const cIdx = { val: 0 };
     const auxBinaryVars: string[] = [];
+    const levelSlackVars: string[] = [];
     this.writeCommonConstraints(constraintLines, varMap, cIdx, { auxBinaryVars });
+    this.writeSoftLevelConstraints(constraintLines, varMap, cIdx, levelSlackVars);
     this.writeCoverageConstraints(constraintLines, varMap, cIdx, phase1Targets);
     this.writeLoadTrackingConstraints(constraintLines, varMap, cIdx);
 
@@ -1025,6 +1028,9 @@ export class ShiftOptimizer {
         firstTerm = false;
       }
     }
+    for (const lv of levelSlackVars) {
+      objParts.push(`+ ${LEVEL_W} ${lv}`);
+    }
     for (let i = 0; i < N; i++) {
       objParts.push(`+ ${fmt(1e-6)} tw_${i}`);
     }
@@ -1047,6 +1053,9 @@ export class ShiftOptimizer {
         lines.push(`  th_${i} >= 0`);
         lines.push(`  dh_${i} >= 0`);
       }
+    }
+    for (const lv of levelSlackVars) {
+      lines.push(`  ${lv} >= 0`);
     }
 
     const allBinary = [...binaryVars, ...auxBinaryVars];
