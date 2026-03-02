@@ -1416,10 +1416,8 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     if (results.length > 1) {
       setSaveVersion(selectedVersion);
       setShowSaveDialog(true);
-    } else if (exportOnly) {
-      doExcelExport(0);
     } else {
-      saveSchedule(0);
+      doExcelExport(0);
     }
   };
 
@@ -1506,14 +1504,9 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           
           <div className="flex items-center gap-2">
             {step === 4 && (
-              <Button onClick={handleSaveClick} disabled={!exportOnly && (createMutation.isPending || updateMutation.isPending)} className="bg-green-600 hover:bg-green-700" data-testid="button-save-schedule" data-walkthrough="export-btn">
-                {!exportOnly && (createMutation.isPending || updateMutation.isPending)
-                  ? <Loader2 className="w-4 h-4 mr-2 animate-spin"/>
-                  : exportOnly
-                    ? <FileSpreadsheet className="w-4 h-4 mr-2" />
-                    : <Save className="w-4 h-4 mr-2" />
-                }
-                {exportOnly ? t.exportExcel : editingScheduleId ? t.overwriteSchedule : t.saveSchedule}
+              <Button onClick={handleSaveClick} className="bg-green-600 hover:bg-green-700" data-testid="button-export-schedule" data-walkthrough="export-btn">
+                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                {t.exportExcel}
               </Button>
             )}
           </div>
@@ -2807,7 +2800,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     data-testid="input-schedule-name"
                   />
                 </div>
-                <Button onClick={handleSaveClick} disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-save-inline">
+                <Button onClick={() => saveSchedule(selectedVersion)} disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-save-inline">
                   {(createMutation.isPending || updateMutation.isPending)
                     ? <Loader2 className="w-4 h-4 mr-2 animate-spin"/>
                     : <Save className="w-4 h-4 mr-2" />
