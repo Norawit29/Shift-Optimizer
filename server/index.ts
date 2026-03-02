@@ -32,13 +32,6 @@ app.use(
 app.use(express.urlencoded({ extended: false }));
 
 app.use((req, res, next) => {
-  const host = req.get("host") || "";
-  const isHealthCheck = req.path === "/" && req.get("user-agent")?.includes("Go-http-client");
-  if (host.includes("replit.app") && !host.includes("localhost") && !isHealthCheck) {
-    const url = `https://shift-optimizer.com${req.originalUrl}`;
-    return res.redirect(301, url);
-  }
-
   res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
   res.setHeader("X-Frame-Options", "SAMEORIGIN");
   res.setHeader("X-Content-Type-Options", "nosniff");
