@@ -2833,7 +2833,14 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     data-testid="input-schedule-name"
                   />
                 </div>
-                <Button onClick={() => saveSchedule(selectedVersion)} disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-save-inline">
+                <Button onClick={() => {
+                  if (!user) {
+                    setLoginPromptReason("save");
+                    setShowLoginPrompt(true);
+                    return;
+                  }
+                  saveSchedule(selectedVersion);
+                }} disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-save-inline">
                   {(createMutation.isPending || updateMutation.isPending)
                     ? <Loader2 className="w-4 h-4 mr-2 animate-spin"/>
                     : <Save className="w-4 h-4 mr-2" />
@@ -3243,12 +3250,18 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
             </div>
             <DialogHeader className="space-y-1.5">
               <DialogTitle className="text-lg">
-                {lang === "th" ? "เข้าสู่ระบบเพื่อบันทึกข้อมูล" : "Sign in to save your data"}
+                {loginPromptReason === "save"
+                  ? (lang === "th" ? "กรุณาเข้าสู่ระบบเพื่อบันทึกตาราง" : "Sign in to save your schedule")
+                  : (lang === "th" ? "เข้าสู่ระบบเพื่อบันทึกข้อมูล" : "Sign in to save your data")}
               </DialogTitle>
               <DialogDescription className="text-sm leading-relaxed">
-                {lang === "th"
-                  ? "เข้าสู่ระบบด้วย Google เพื่อบันทึกรายชื่อสตาฟและการตั้งค่า คุณจะไม่ต้องกรอกใหม่ทุกครั้ง"
-                  : "Sign in with Google to save your staff list and settings. You won't need to re-enter them next time."}
+                {loginPromptReason === "save"
+                  ? (lang === "th"
+                    ? "เข้าสู่ระบบด้วย Google เพื่อบันทึกตารางเวรของคุณ"
+                    : "Sign in with Google to save your schedule.")
+                  : (lang === "th"
+                    ? "เข้าสู่ระบบด้วย Google เพื่อบันทึกรายชื่อสตาฟและการตั้งค่า คุณจะไม่ต้องกรอกใหม่ทุกครั้ง"
+                    : "Sign in with Google to save your staff list and settings. You won't need to re-enter them next time.")}
               </DialogDescription>
             </DialogHeader>
           </div>
@@ -3266,7 +3279,9 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               }}
               data-testid="button-skip-login"
             >
-              {lang === "th" ? "ข้ามไปก่อน" : "Skip for now"} <ArrowRight className="ml-1 h-4 w-4" />
+              {loginPromptReason === "save"
+                ? (lang === "th" ? "ยกเลิก" : "Cancel")
+                : (lang === "th" ? "ข้ามไปก่อน" : "Skip for now")} {loginPromptReason !== "save" && <ArrowRight className="ml-1 h-4 w-4" />}
             </Button>
           </div>
         </DialogContent>
