@@ -276,6 +276,7 @@ const translations = {
     scheduleLoaded: "Schedule loaded",
     scheduleSaved: "Schedule saved",
     scheduleUpdated: "Schedule updated",
+    maxSchedulesReached: "You can save up to 10 schedules. Please delete an existing one first.",
 
     // Quick Export
     quickExport: "Quick Export",
@@ -678,6 +679,7 @@ const translations = {
     scheduleLoaded: "โหลดตารางเวรแล้ว",
     scheduleSaved: "บันทึกตารางเวรแล้ว",
     scheduleUpdated: "อัปเดตตารางเวรแล้ว",
+    maxSchedulesReached: "บันทึกได้สูงสุด 10 ตาราง กรุณาลบตารางเดิมก่อน",
 
     // Quick Export
     quickExport: "ส่งออกด่วน",

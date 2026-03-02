@@ -564,6 +564,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const [preCheckConflicts, setPreCheckConflicts] = useState<string[]>([]);
   const [hasExported, setHasExported] = useState(false);
   const { user } = useAuth();
+  const { data: savedSchedules } = useSchedules();
 
   const handleModeSwitch = (mode: string) => {
     const newMode = mode === "custom";
@@ -1333,10 +1334,21 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
         unfilledSlots: r.unfilledSlots || [],
         isPublished: false
       };
-      if (editingScheduleId) {
+
+      const currentSchedule = editingScheduleId && savedSchedules
+        ? savedSchedules.find((s: Schedule) => s.id === editingScheduleId)
+        : null;
+      const nameChanged = currentSchedule && currentSchedule.name !== scheduleName;
+
+      if (editingScheduleId && !nameChanged) {
         await updateMutation.mutateAsync({ id: editingScheduleId, data: payload });
         toast({ title: t.scheduleUpdated });
       } else {
+        const count = savedSchedules?.length || 0;
+        if (count >= 10) {
+          toast({ title: t.maxSchedulesReached, variant: "destructive" });
+          return;
+        }
         const created = await createMutation.mutateAsync(payload);
         if (created?.id) setEditingScheduleId(created.id);
         toast({ title: t.scheduleSaved });
