@@ -1359,8 +1359,6 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   };
 
   const handleLoadSchedule = useCallback((schedule: Schedule) => {
-    if (!window.confirm(t.loadScheduleConfirm)) return;
-
     const c = schedule.config;
     const loadedStaff = schedule.staff.map((s: StaffMember) => ({ ...s, blocked: s.blocked || [], requested: s.requested || [] }));
     setConfig(c);
