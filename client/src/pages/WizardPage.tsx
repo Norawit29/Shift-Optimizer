@@ -2807,6 +2807,13 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     data-testid="input-schedule-name"
                   />
                 </div>
+                <Button onClick={handleSaveClick} disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-save-inline">
+                  {(createMutation.isPending || updateMutation.isPending)
+                    ? <Loader2 className="w-4 h-4 mr-2 animate-spin"/>
+                    : <Save className="w-4 h-4 mr-2" />
+                  }
+                  {editingScheduleId ? t.overwriteSchedule : t.saveSchedule}
+                </Button>
                 <Button variant="outline" onClick={() => setStep(3)} data-testid="button-adjust-rules">
                   <Settings2 className="w-4 h-4 mr-2" /> {t.adjustRules}
                 </Button>
