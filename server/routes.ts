@@ -61,6 +61,41 @@ export async function registerRoutes(
     res.json({ status: "ok" });
   });
 
+  app.get("/api/avatar/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId, 10);
+      if (isNaN(userId)) return res.status(400).end();
+
+      const [user] = await db.select({ picture: users.picture }).from(users).where(eq(users.id, userId)).limit(1);
+      if (!user?.picture) return res.status(404).end();
+
+      const picUrl = new URL(user.picture);
+      if (!picUrl.hostname.endsWith("googleusercontent.com")) return res.status(403).end();
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+      const imgRes = await fetch(user.picture, {
+        headers: { "User-Agent": "ShiftScheduler/1.0" },
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      if (!imgRes.ok) return res.status(502).end();
+
+      const contentType = imgRes.headers.get("content-type") || "image/jpeg";
+      if (!contentType.startsWith("image/")) return res.status(502).end();
+
+      const contentLength = parseInt(imgRes.headers.get("content-length") || "0", 10);
+      if (contentLength > 512 * 1024) return res.status(502).end();
+
+      res.setHeader("Content-Type", contentType);
+      res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+      const buffer = Buffer.from(await imgRes.arrayBuffer());
+      res.send(buffer);
+    } catch {
+      res.status(500).end();
+    }
+  });
+
   app.get("/api/auth/google-client-id", (_req, res) => {
     res.json({ clientId: process.env.GOOGLE_CLIENT_ID || "" });
   });

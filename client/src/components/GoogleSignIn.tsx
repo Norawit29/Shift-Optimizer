@@ -102,12 +102,11 @@ export function UserMenu() {
     <div className="flex items-center gap-2">
       {user.picture && (
         <img
-          src={user.picture}
+          src={`/api/avatar/${user.id}`}
           alt={user.name}
           width="32"
           height="32"
           className="w-8 h-8 rounded-full"
-          referrerPolicy="no-referrer"
           data-testid="img-user-avatar"
         />
       )}
