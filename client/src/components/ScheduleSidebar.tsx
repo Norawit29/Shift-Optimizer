@@ -46,24 +46,15 @@ export function ScheduleSidebar({ activeScheduleId, onLoadSchedule, onNewSchedul
 
   if (collapsed) {
     return (
-      <div className="w-10 shrink-0 border-r border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-zinc-900 flex flex-col items-center py-3 gap-2">
+      <div className="relative shrink-0 w-0">
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
-          className="w-8 h-8 p-0"
+          className="absolute top-3 left-2 z-10 w-8 h-8 p-0 rounded-full shadow-md bg-white dark:bg-zinc-800 border-slate-200 dark:border-slate-700"
           onClick={() => setCollapsed(false)}
           data-testid="button-expand-sidebar"
         >
           <ChevronRight className="w-4 h-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-8 h-8 p-0"
-          onClick={onNewSchedule}
-          data-testid="button-new-schedule-collapsed"
-        >
-          <Plus className="w-4 h-4" />
         </Button>
       </div>
     );
