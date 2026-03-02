@@ -1384,8 +1384,8 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
         for (const day of scheduleData) {
           if (day.shifts) {
             for (let si = 0; si < day.shifts.length; si++) {
-              const shift = day.shifts[si];
-              if (shift && shift.assigned && shift.assigned.includes(s.id)) {
+              const shiftArr = day.shifts[si];
+              if (Array.isArray(shiftArr) && shiftArr.includes(s.id)) {
                 byShift[si] = (byShift[si] || 0) + 1;
                 total++;
               }
@@ -1394,7 +1394,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
         }
         return { name: s.name, total, byShift };
       });
-      const totals = perStaff.map(p => p.total).filter(t => t > 0);
+      const totals = perStaff.map(p => p.total).filter(v => v > 0);
       const range = totals.length > 0 ? Math.max(...totals) - Math.min(...totals) : 0;
       setResults([{
         schedule: scheduleData,
