@@ -65,7 +65,7 @@ The project utilizes a monorepo structure comprising three main parts:
 ### Required Services
 
 - **PostgreSQL Database**: Primary data persistence layer.
-- **Sanity CMS**: Used for managing article and blog content, accessible via GROQ API.
+- **Sanity CMS**: Used for managing article, blog, and case study content, accessible via GROQ API. Content types: `article` and `caseStudy`.
 
 ### Key NPM Packages
 

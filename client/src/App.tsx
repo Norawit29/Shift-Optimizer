@@ -12,6 +12,8 @@ import { lazy, Suspense, startTransition, useEffect, useState } from "react";
 const LazyWizardPage = lazy(() => import("@/pages/WizardPage"));
 const LazyArticlesPage = lazy(() => import("@/pages/ArticlesPage"));
 const LazyArticlePage = lazy(() => import("@/pages/ArticlePage"));
+const LazyCaseStudiesPage = lazy(() => import("@/pages/CaseStudiesPage"));
+const LazyCaseStudyPage = lazy(() => import("@/pages/CaseStudyPage"));
 const LazyHistoryPage = lazy(() => import("@/pages/HistoryPage"));
 const LazyScheduleDetailPage = lazy(() => import("@/pages/ScheduleDetailPage"));
 
@@ -35,6 +37,8 @@ function Router() {
       <Route path="/create" component={WizardPageLoader} />
       <Route path="/articles">{() => <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><LazyArticlesPage /></Suspense>}</Route>
       <Route path="/articles/:slug">{() => <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><LazyArticlePage /></Suspense>}</Route>
+      <Route path="/case-studies">{() => <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><LazyCaseStudiesPage /></Suspense>}</Route>
+      <Route path="/case-studies/:slug">{() => <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><LazyCaseStudyPage /></Suspense>}</Route>
       <Route path="/history">{() => <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><LazyHistoryPage /></Suspense>}</Route>
       <Route path="/schedule/:id">{() => <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><LazyScheduleDetailPage /></Suspense>}</Route>
       <Route component={NotFound} />

@@ -19,6 +19,7 @@ export function Navbar({ isHomePage }: NavbarProps) {
   const [location] = useLocation();
 
   const isArticlesActive = location.startsWith("/articles");
+  const isCaseStudiesActive = location.startsWith("/case-studies");
 
   const sectionLinks = [
     { label: t.navHowItWorks, href: "#how-it-works", id: "how-it-works" },
@@ -107,6 +108,15 @@ export function Navbar({ isHomePage }: NavbarProps) {
                   {t.navArticles}
                 </Link>
               )}
+              {isCaseStudiesActive ? (
+                <span className="px-3.5 py-2 text-[15px] font-semibold text-primary rounded-lg" data-testid="nav-link-case-studies-active">
+                  {t.navCaseStudies}
+                </span>
+              ) : (
+                <Link href="/case-studies" className="px-3.5 py-2 text-[15px] font-medium text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors rounded-lg" data-testid="nav-link-case-studies">
+                  {t.navCaseStudies}
+                </Link>
+              )}
             </div>
           </div>
 
@@ -158,6 +168,15 @@ export function Navbar({ isHomePage }: NavbarProps) {
                   ) : (
                     <Link href="/articles" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors rounded-lg">
                       {t.navArticles}
+                    </Link>
+                  )}
+                  {isCaseStudiesActive ? (
+                    <span className="px-3 py-2.5 text-sm font-semibold text-primary rounded-lg">
+                      {t.navCaseStudies}
+                    </span>
+                  ) : (
+                    <Link href="/case-studies" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors rounded-lg">
+                      {t.navCaseStudies}
                     </Link>
                   )}
                   <Link href="/create" onClick={() => setMobileMenuOpen(false)} className="mt-2">

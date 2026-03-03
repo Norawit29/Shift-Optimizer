@@ -28,6 +28,7 @@ export async function registerRoutes(
       { loc: "/", priority: "1.0", changefreq: "weekly" },
       { loc: "/create", priority: "0.8", changefreq: "monthly" },
       { loc: "/articles", priority: "0.8", changefreq: "weekly" },
+      { loc: "/case-studies", priority: "0.8", changefreq: "weekly" },
     ];
 
     let articleUrls: { loc: string; lastmod: string }[] = [];
@@ -41,6 +42,17 @@ export async function registerRoutes(
       }));
     } catch {}
 
+    let caseStudyUrls: { loc: string; lastmod: string }[] = [];
+    try {
+      const caseStudies = await sanityClient.fetch<{ slug: string; publishedAt: string | null }[]>(
+        `*[_type == "caseStudy" && !(_id in path("drafts.**"))] | order(publishedAt desc) { "slug": slug.current, publishedAt }`
+      );
+      caseStudyUrls = (caseStudies || []).map((c) => ({
+        loc: `/case-studies/${c.slug}`,
+        lastmod: c.publishedAt ? c.publishedAt.split("T")[0] : now,
+      }));
+    } catch {}
+
     const urls = staticPages
       .map(
         (p) =>
@@ -50,6 +62,12 @@ export async function registerRoutes(
         articleUrls.map(
           (a) =>
             `<url><loc>${baseUrl}${a.loc}</loc><lastmod>${a.lastmod}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>`
+        )
+      )
+      .concat(
+        caseStudyUrls.map(
+          (c) =>
+            `<url><loc>${baseUrl}${c.loc}</loc><lastmod>${c.lastmod}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>`
         )
       );
 
@@ -426,6 +444,52 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Delete schedule error:", error);
       res.status(500).json({ message: "Failed to delete schedule" });
+    }
+  });
+
+  app.get("/api/case-studies", async (_req, res) => {
+    try {
+      const caseStudies = await sanityClient.fetch(
+        `*[_type == "caseStudy" && !(_id in path("drafts.**"))] | order(publishedAt desc) {
+          _id,
+          title,
+          slug,
+          excerpt,
+          "coverImage": coverImage.asset->url,
+          publishedAt,
+          language
+        }`
+      );
+      res.json(caseStudies);
+    } catch (error) {
+      console.error("Sanity case studies fetch error:", error);
+      res.status(500).json({ message: "Failed to fetch case studies" });
+    }
+  });
+
+  app.get("/api/case-studies/:slug", async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const caseStudy = await sanityClient.fetch(
+        `*[_type == "caseStudy" && !(_id in path("drafts.**")) && slug.current == $slug][0] {
+          _id,
+          title,
+          slug,
+          excerpt,
+          "coverImage": coverImage.asset->url,
+          body,
+          publishedAt,
+          language
+        }`,
+        { slug }
+      );
+      if (!caseStudy) {
+        return res.status(404).json({ message: "Case study not found" });
+      }
+      res.json(caseStudy);
+    } catch (error) {
+      console.error("Sanity case study fetch error:", error);
+      res.status(500).json({ message: "Failed to fetch case study" });
     }
   });
 
