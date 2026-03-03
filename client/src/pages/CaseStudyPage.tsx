@@ -1,6 +1,6 @@
 import { Link, useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Calendar } from "lucide-react";
+import { ArrowLeft, Calendar, Building2, AlertTriangle, Lightbulb, BarChart3, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PortableText } from "@portabletext/react";
 import { useLanguage } from "@/context/LanguageContext";
@@ -10,13 +10,17 @@ import { th, enUS } from "date-fns/locale";
 
 interface CaseStudy {
   _id: string;
+  hospitalName?: string;
   title: string;
   slug: { current: string };
-  excerpt?: string;
+  department?: string;
+  problem?: string;
+  solution?: string;
+  results?: any[];
+  kpis?: { url?: string; caption?: string };
   coverImage?: string;
-  body?: any[];
   publishedAt?: string;
-  language?: string;
+  isFeatured?: boolean;
 }
 
 const portableTextComponents = {
@@ -62,6 +66,17 @@ const portableTextComponents = {
     code: ({ children }: any) => <code className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-sm font-mono">{children}</code>,
   },
 };
+
+function SectionHeading({ icon: Icon, children }: { icon: any; children: any }) {
+  return (
+    <div className="flex items-center gap-3 mb-4">
+      <div className="w-9 h-9 rounded-lg bg-primary/10 dark:bg-primary/20 flex items-center justify-center shrink-0">
+        <Icon className="w-5 h-5 text-primary" />
+      </div>
+      <h2 className="text-xl font-bold text-slate-900 dark:text-white">{children}</h2>
+    </div>
+  );
+}
 
 export default function CaseStudyPage() {
   const { t, lang } = useLanguage();
@@ -116,31 +131,90 @@ export default function CaseStudyPage() {
               </p>
             </div>
           ) : (
-            <article data-testid="case-study-content">
-              <h1 className="text-3xl sm:text-4xl font-display font-bold text-slate-900 dark:text-white mb-4" data-testid="text-case-study-title">
-                {caseStudy.title}
-              </h1>
+            <article data-testid="case-study-content" className="space-y-10">
+              <div>
+                <h1 className="text-3xl sm:text-4xl font-display font-bold text-slate-900 dark:text-white mb-4" data-testid="text-case-study-title">
+                  {caseStudy.title}
+                </h1>
 
-              {caseStudy.publishedAt && (
-                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-8">
-                  <Calendar className="w-4 h-4" aria-hidden="true" />
-                  <span>{t.articlesPublishedAt} {formatDate(caseStudy.publishedAt)}</span>
-                </div>
-              )}
+                {caseStudy.publishedAt && (
+                  <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                    <Calendar className="w-4 h-4" aria-hidden="true" />
+                    <span>{t.articlesPublishedAt} {formatDate(caseStudy.publishedAt)}</span>
+                  </div>
+                )}
+              </div>
 
               {caseStudy.coverImage && (
                 <img
                   src={caseStudy.coverImage}
                   alt={caseStudy.title}
-                  className="w-full rounded-2xl mb-10 shadow-lg"
+                  className="w-full rounded-2xl shadow-lg"
                   data-testid="img-case-study-cover"
                 />
               )}
 
-              {caseStudy.body && (
-                <div className="prose-custom" data-testid="case-study-body">
-                  <PortableText value={caseStudy.body} components={portableTextComponents} />
-                </div>
+              {(caseStudy.hospitalName || caseStudy.department) && (
+                <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-6" data-testid="section-hospital-setting">
+                  <SectionHeading icon={Building2}>{t.caseStudyHospitalSetting}</SectionHeading>
+                  <div className="flex flex-wrap gap-x-8 gap-y-2 text-slate-700 dark:text-slate-300">
+                    {caseStudy.hospitalName && (
+                      <div>
+                        <span className="text-sm text-slate-500 dark:text-slate-400">{lang === "th" ? "โรงพยาบาล" : "Hospital"}</span>
+                        <p className="font-medium text-lg">{caseStudy.hospitalName}</p>
+                      </div>
+                    )}
+                    {caseStudy.department && (
+                      <div>
+                        <span className="text-sm text-slate-500 dark:text-slate-400">{lang === "th" ? "แผนก" : "Department"}</span>
+                        <p className="font-medium text-lg">{caseStudy.department}</p>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
+
+              {caseStudy.problem && (
+                <section data-testid="section-problem">
+                  <SectionHeading icon={AlertTriangle}>{t.caseStudyProblem}</SectionHeading>
+                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">{caseStudy.problem}</p>
+                </section>
+              )}
+
+              {caseStudy.solution && (
+                <section data-testid="section-solution">
+                  <SectionHeading icon={Lightbulb}>{t.caseStudySolution}</SectionHeading>
+                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">{caseStudy.solution}</p>
+                </section>
+              )}
+
+              {caseStudy.results && caseStudy.results.length > 0 && (
+                <section data-testid="section-results">
+                  <SectionHeading icon={BarChart3}>{t.caseStudyResults}</SectionHeading>
+                  <div className="prose-custom">
+                    <PortableText value={caseStudy.results} components={portableTextComponents} />
+                  </div>
+                </section>
+              )}
+
+              {caseStudy.kpis?.url && (
+                <section data-testid="section-kpis">
+                  <SectionHeading icon={TrendingUp}>{t.caseStudyKpis}</SectionHeading>
+                  <figure>
+                    <img
+                      src={caseStudy.kpis.url}
+                      alt={caseStudy.kpis.caption || t.caseStudyKpis}
+                      className="w-full rounded-xl shadow-md"
+                      loading="lazy"
+                      data-testid="img-case-study-kpis"
+                    />
+                    {caseStudy.kpis.caption && (
+                      <figcaption className="text-center text-sm text-slate-500 dark:text-slate-400 mt-3">
+                        {caseStudy.kpis.caption}
+                      </figcaption>
+                    )}
+                  </figure>
+                </section>
               )}
             </article>
           )}

@@ -24,6 +24,11 @@ const translations = {
     caseStudiesReadMore: "Read case study",
     caseStudiesBackToList: "All Case Studies",
     caseStudyNotFound: "Case study not found",
+    caseStudyHospitalSetting: "Hospital Setting",
+    caseStudyProblem: "Problem",
+    caseStudySolution: "Solution",
+    caseStudyResults: "Results",
+    caseStudyKpis: "Improved KPIs",
     schedulerWizard: "Scheduler Wizard",
     step: "Step",
 
@@ -435,6 +440,11 @@ const translations = {
     caseStudiesReadMore: "อ่านกรณีศึกษา",
     caseStudiesBackToList: "กรณีศึกษาทั้งหมด",
     caseStudyNotFound: "ไม่พบกรณีศึกษา",
+    caseStudyHospitalSetting: "ข้อมูลโรงพยาบาล",
+    caseStudyProblem: "ปัญหาที่พบ",
+    caseStudySolution: "วิธีแก้ไข",
+    caseStudyResults: "ผลลัพธ์",
+    caseStudyKpis: "ตัวชี้วัดที่ดีขึ้น",
     schedulerWizard: "ตัวช่วยจัดตารางเวร",
     step: "ขั้นตอน",
 

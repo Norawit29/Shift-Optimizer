@@ -473,13 +473,20 @@ export async function registerRoutes(
       const caseStudy = await sanityClient.fetch(
         `*[_type == "caseStudy" && !(_id in path("drafts.**")) && slug.current == $slug][0] {
           _id,
+          hospitalName,
           title,
           slug,
-          excerpt,
+          department,
+          problem,
+          solution,
+          results,
+          kpis {
+            "url": asset->url,
+            caption
+          },
           "coverImage": coverImage.asset->url,
-          body,
           publishedAt,
-          language
+          isFeatured
         }`,
         { slug }
       );
