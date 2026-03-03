@@ -18,6 +18,7 @@ interface CaseStudy {
   solution?: string;
   results?: any[];
   kpis?: { url?: string; caption?: string };
+  comment?: string;
   coverImage?: string;
   publishedAt?: string;
   isFeatured?: boolean;
@@ -214,6 +215,15 @@ export default function CaseStudyPage() {
                       </figcaption>
                     )}
                   </figure>
+                </section>
+              )}
+
+              {caseStudy.comment && (
+                <section data-testid="section-comment">
+                  <blockquote className="relative rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-6 pl-8">
+                    <div className="absolute left-3 top-4 text-4xl leading-none text-primary/30 font-serif select-none">"</div>
+                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line italic">{caseStudy.comment}</p>
+                  </blockquote>
                 </section>
               )}
             </article>

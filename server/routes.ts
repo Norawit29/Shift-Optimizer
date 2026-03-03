@@ -484,6 +484,7 @@ export async function registerRoutes(
             "url": asset->url,
             caption
           },
+          comment,
           "coverImage": coverImage.asset->url,
           publishedAt,
           isFeatured
