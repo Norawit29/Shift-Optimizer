@@ -41,6 +41,7 @@ export class ShiftOptimizer {
   private daysInMonth: number;
   private rangeStartDate: Date | null = null;
   private holidayDays: Set<number>;
+  private blockedSet: Set<string>;
   private coverageThreshold = 0.2;
 
   private getActualDate(dayIndex: number): Date {
@@ -77,6 +78,20 @@ export class ShiftOptimizer {
       if (config.holidays) {
         for (const h of config.holidays) {
           this.holidayDays.add(h);
+        }
+      }
+    }
+
+    this.blockedSet = new Set<string>();
+    const S = config.shiftNames.length;
+    for (let i = 0; i < staff.length; i++) {
+      for (const b of staff[i].blocked) {
+        if (b.shift === -1) {
+          for (let s = 0; s < S; s++) {
+            this.blockedSet.add(`${i}_${b.date - 1}_${s}`);
+          }
+        } else {
+          this.blockedSet.add(`${i}_${b.date - 1}_${b.shift}`);
         }
       }
     }
@@ -138,10 +153,9 @@ export class ShiftOptimizer {
           if (minReq <= 0) continue;
 
           let availableAtLevel = 0;
-          for (const member of this.staff) {
-            if ((member.level ?? 0) !== lvl) continue;
-            const isBlocked = member.blocked.some(b => b.date === day && (b.shift === -1 || b.shift === shiftIdx));
-            if (!isBlocked) availableAtLevel++;
+          for (let mi = 0; mi < this.staff.length; mi++) {
+            if ((this.staff[mi].level ?? 0) !== lvl) continue;
+            if (!this.isBlocked(mi, day - 1, shiftIdx)) availableAtLevel++;
           }
 
           if (availableAtLevel < minReq) {
@@ -174,9 +188,8 @@ export class ShiftOptimizer {
         const required = dayStaffPerShift[shiftIdx];
         if (required <= 0) continue;
         let available = 0;
-        for (const member of this.staff) {
-          const isBlocked = member.blocked.some(b => b.date === day && (b.shift === -1 || b.shift === shiftIdx));
-          if (!isBlocked) available++;
+        for (let mi = 0; mi < this.staff.length; mi++) {
+          if (!this.isBlocked(mi, day - 1, shiftIdx)) available++;
         }
         if (available > 0) hasAnyAvailable = true;
         if (available < required) {
@@ -226,10 +239,9 @@ export class ShiftOptimizer {
             const minReq = this.config.minStaffPerLevel[shiftIdx]?.[lvl] || 0;
             if (minReq <= 0) continue;
             let availableAtLevel = 0;
-            for (const member of this.staff) {
-              if ((member.level ?? 0) !== lvl) continue;
-              const isBlocked = member.blocked.some(b => b.date === day && (b.shift === -1 || b.shift === shiftIdx));
-              if (!isBlocked) availableAtLevel++;
+            for (let mi = 0; mi < this.staff.length; mi++) {
+              if ((this.staff[mi].level ?? 0) !== lvl) continue;
+              if (!this.isBlocked(mi, day - 1, shiftIdx)) availableAtLevel++;
             }
             if (availableAtLevel < minReq) {
               if (levelErrors.length < 10) {
@@ -331,9 +343,7 @@ export class ShiftOptimizer {
   }
 
   private isBlocked(staffIdx: number, dayIdx: number, shiftIdx: number): boolean {
-    const member = this.staff[staffIdx];
-    const date = dayIdx + 1;
-    return member.blocked.some(b => b.date === date && (b.shift === -1 || b.shift === shiftIdx));
+    return this.blockedSet.has(`${staffIdx}_${dayIdx}_${shiftIdx}`);
   }
 
   private computePerShiftAvailability(shiftIdx: number): number[] {
