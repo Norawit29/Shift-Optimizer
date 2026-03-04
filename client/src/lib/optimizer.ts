@@ -886,6 +886,10 @@ export class ShiftOptimizer {
     constraintLines.push(`  c${cIdx.val++}: maxLoad - minLoad <= ${fmt(bestRange)}`);
 
     for (let i = 0; i < N; i++) {
+      constraintLines.push(`  c${cIdx.val++}: tw_${i} - minLoad <= ${fmt(bestRange)}`);
+    }
+
+    for (let i = 0; i < N; i++) {
       for (let s = 0; s < S; s++) {
         const target = staffShiftTargetsInt[s][i];
         if (target === 0) continue;
