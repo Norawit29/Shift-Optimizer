@@ -1,0 +1,109 @@
+You are modifying a TypeScript nurse scheduling optimizer.
+
+Goal
+Improve fairness and solver stability by changing the shift target distribution to an **availability-aware deterministic method**.
+
+Context
+Inside `buildDistributionModel()`, shift targets are distributed equally across staff and the remainder is currently assigned in fixed index order.
+
+Current implementation:
+
+```typescript
+const staffShiftTargetsInt = phase1Targets.perShift.map((total) => {
+  const staffN = this.staff.length;
+  if (staffN === 0) return [];
+
+  const base = Math.floor(total / staffN);
+  const remainder = total - base * staffN;
+
+  const targets = new Array(staffN).fill(base);
+
+  const order = [...Array(staffN).keys()];
+
+  for (let i = 0; i < remainder; i++) {
+    targets[order[i]] += 1;
+  }
+
+  return targets;
+});
+```
+
+Problem
+The remainder is always assigned to the same staff indices.
+If those staff members have limited availability for that shift (blocked days, requests, etc.), the solver struggles and fairness can degrade.
+
+Solution
+Distribute the remainder shifts to staff who have **more availability for that shift**.
+
+Implementation requirements
+
+1. Inside `buildDistributionModel()`, modify the `perShift.map()` block.
+
+2. For each shift index (`shiftIdx`), compute staff availability using the existing function:
+
+```typescript
+this.computePerShiftAvailability(shiftIdx)
+```
+
+3. Use this availability array to build a deterministic ordering of staff:
+
+```typescript
+const availability = this.computePerShiftAvailability(shiftIdx);
+
+const order = [...Array(staffN).keys()].sort(
+  (a, b) => availability[b] - availability[a]
+);
+```
+
+4. Distribute the remainder using this availability-based order:
+
+```typescript
+for (let i = 0; i < remainder; i++) {
+  targets[order[i]] += 1;
+}
+```
+
+5. The final structure should look like:
+
+```typescript
+const staffShiftTargetsInt = phase1Targets.perShift.map((total, shiftIdx) => {
+  const staffN = this.staff.length;
+  if (staffN === 0) return [];
+
+  const base = Math.floor(total / staffN);
+  const remainder = total - base * staffN;
+
+  const targets = new Array(staffN).fill(base);
+
+  const availability = this.computePerShiftAvailability(shiftIdx);
+
+  const order = [...Array(staffN).keys()].sort(
+    (a, b) => availability[b] - availability[a]
+  );
+
+  for (let i = 0; i < remainder; i++) {
+    targets[order[i]] += 1;
+  }
+
+  return targets;
+});
+```
+
+Important constraints
+
+Do NOT change:
+
+* solver objective
+* constraints
+* variable definitions
+* coverage model
+* range model
+
+Only change the remainder distribution logic.
+
+Expected outcome
+
+* Deterministic schedules
+* Fairer shift target allocation
+* Better solver stability
+* Reduced risk of extreme workload ranges

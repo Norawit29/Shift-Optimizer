@@ -841,13 +841,16 @@ export class ShiftOptimizer {
     const SHIFT_W = 20;
     const LEVEL_W = 10000 * N * D;
 
-    const staffShiftTargetsInt = phase1Targets.perShift.map((total) => {
+    const staffShiftTargetsInt = phase1Targets.perShift.map((total, shiftIdx) => {
       const staffN = this.staff.length;
       if (staffN === 0) return [];
       const base = Math.floor(total / staffN);
       const remainder = total - base * staffN;
       const targets = new Array(staffN).fill(base);
-      const order = [...Array(staffN).keys()];
+      const availability = this.computePerShiftAvailability(shiftIdx);
+      const order = [...Array(staffN).keys()].sort(
+        (a, b) => availability[b] - availability[a]
+      );
       for (let i = 0; i < remainder; i++) {
         targets[order[i]] += 1;
       }
