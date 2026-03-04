@@ -817,51 +817,6 @@ export class ShiftOptimizer {
     return lines.join("\n");
   }
 
-  private computeAvailabilityPerShift(shiftIdx: number): number[] {
-    return this.staff.map((_, i) => {
-      let count = 0;
-      for (let d = 0; d < this.daysInMonth; d++) {
-        const req = this.getStaffPerShiftForDay(d + 1)[shiftIdx];
-        if (req > 0 && !this.isBlocked(i, d, shiftIdx)) count++;
-      }
-      return count;
-    });
-  }
-
-  private computeTotalAvailabilityPerStaff(): number[] {
-    const S = this.config.shiftNames.length;
-    return this.staff.map((_, i) => {
-      let count = 0;
-      for (let d = 0; d < this.daysInMonth; d++) {
-        for (let s = 0; s < S; s++) {
-          const req = this.getStaffPerShiftForDay(d + 1)[s];
-          if (req > 0 && !this.isBlocked(i, d, s)) count++;
-        }
-      }
-      return count;
-    });
-  }
-
-  private allocateProportional(total: number, availabilities: number[]): number[] {
-    const totalAvail = availabilities.reduce((a, b) => a + b, 0);
-    if (totalAvail === 0) return new Array(availabilities.length).fill(0);
-
-    const rawTargets = availabilities.map(a => (a / totalAvail) * total);
-    const floors = rawTargets.map(Math.floor);
-    const remainders = rawTargets.map((t, i) => t - floors[i]);
-    const toDistribute = Math.round(total - floors.reduce((a, b) => a + b, 0));
-
-    const indices = remainders
-      .map((r, i) => ({ r, i }))
-      .sort((a, b) => b.r - a.r)
-      .map(x => x.i);
-
-    for (let k = 0; k < toDistribute && k < indices.length; k++) {
-      floors[indices[k]]++;
-    }
-    return floors;
-  }
-
   private buildDistributionModel(
     varMap: Map<string, { staff: number; day: number; shift: number }>,
     binaryVars: string[],
@@ -876,17 +831,17 @@ export class ShiftOptimizer {
     const LEVEL_W = SHIFT_W * N * D;
     const LOAD_W = 1;
 
-    const staffShiftTargetsInt = phase1Targets.perShift.map((total, shiftIdx) => {
-      if (N === 0) return [];
-      const avail = this.computeAvailabilityPerShift(shiftIdx);
-      return this.allocateProportional(total, avail);
+    const staffShiftTargetsInt = phase1Targets.perShift.map((total) => {
+      const staffN = this.staff.length;
+      if (staffN === 0) return [];
+      const base = Math.floor(total / staffN);
+      const remainder = total - base * staffN;
+      const targets = new Array(staffN).fill(base);
+      for (let i = 0; i < remainder; i++) {
+        targets[i] += 1;
+      }
+      return targets;
     });
-
-    const totalAvailPerStaff = this.computeTotalAvailabilityPerStaff();
-    const grandTotalAvail = totalAvailPerStaff.reduce((a, b) => a + b, 0);
-    const expectedLoad = totalAvailPerStaff.map(a =>
-      grandTotalAvail > 0 ? (a / grandTotalAvail) * phase1Targets.totalCoverage : 0
-    );
 
     const levelSlackVars: string[] = [];
     const constraintLines: string[] = [];
@@ -922,9 +877,10 @@ export class ShiftOptimizer {
       }
     }
 
+    const avgLoad = phase1Targets.totalCoverage / N;
     for (let i = 0; i < N; i++) {
-      constraintLines.push(`  c${cIdx.val++}: tw_${i} - dev_${i} <= ${fmt(expectedLoad[i])}`);
-      constraintLines.push(`  c${cIdx.val++}: - tw_${i} - dev_${i} <= ${fmt(-expectedLoad[i])}`);
+      constraintLines.push(`  c${cIdx.val++}: tw_${i} - dev_${i} <= ${fmt(avgLoad)}`);
+      constraintLines.push(`  c${cIdx.val++}: - tw_${i} - dev_${i} <= ${fmt(-avgLoad)}`);
     }
 
     const lines: string[] = [];
@@ -957,8 +913,12 @@ export class ShiftOptimizer {
     lines.push("Bounds");
     lines.push(`  maxLoad >= 0`);
     lines.push(`  minLoad >= 0`);
-    for (let i = 0; i < N; i++) lines.push(`  tw_${i} >= 0`);
-    for (let i = 0; i < N; i++) lines.push(`  dev_${i} >= 0`);
+    for (let i = 0; i < N; i++) {
+      lines.push(`  tw_${i} >= 0`);
+    }
+    for (let i = 0; i < N; i++) {
+      lines.push(`  dev_${i} >= 0`);
+    }
     for (let i = 0; i < N; i++) {
       for (let s = 0; s < S; s++) {
         if (staffShiftTargetsInt[s][i] > 0) {
@@ -967,7 +927,9 @@ export class ShiftOptimizer {
         }
       }
     }
-    for (const lv of levelSlackVars) lines.push(`  ${lv} >= 0`);
+    for (const lv of levelSlackVars) {
+      lines.push(`  ${lv} >= 0`);
+    }
 
     const allBinary = [...binaryVars, ...auxBinaryVars];
     lines.push("Binary");
@@ -994,28 +956,17 @@ export class ShiftOptimizer {
     const LEVEL_W = 10_000 * N * D;
     const LOAD_W = 1;
 
-    const holidayAvailPerStaff = this.staff.map((_, i) => {
-      let count = 0;
-      for (let d = 0; d < D; d++) {
-        if (!this.isHoliday(d + 1)) continue;
-        for (let s = 0; s < S; s++) {
-          const req = this.getStaffPerShiftForDay(d + 1)[s];
-          if (req > 0 && !this.isBlocked(i, d, s)) count++;
-        }
+    const staffHolidayTargets = (() => {
+      if (N === 0) return [];
+      const total = phase1Targets.holidayTotal;
+      const base = Math.floor(total / N);
+      const remainder = total - base * N;
+      const targets = new Array(N).fill(base);
+      for (let i = 0; i < remainder; i++) {
+        targets[i] += 1;
       }
-      return count;
-    });
-
-    const staffHolidayTargets = this.allocateProportional(
-      phase1Targets.holidayTotal,
-      holidayAvailPerStaff
-    );
-
-    const totalAvailPerStaff = this.computeTotalAvailabilityPerStaff();
-    const grandTotalAvail = totalAvailPerStaff.reduce((a, b) => a + b, 0);
-    const expectedLoad = totalAvailPerStaff.map(a =>
-      grandTotalAvail > 0 ? (a / grandTotalAvail) * phase1Targets.totalCoverage : 0
-    );
+      return targets;
+    })();
 
     const constraintLines: string[] = [];
     const cIdx = { val: 0 };
@@ -1041,11 +992,15 @@ export class ShiftOptimizer {
         if (shiftVars.length === 0) continue;
 
         const sumTerms = shiftVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+
+        const lowerTerms = [...sumTerms];
         constraintLines.push(`  c${cIdx.val++}:`);
-        constraintLines.push(writeTerms([...sumTerms], 10));
+        constraintLines.push(writeTerms(lowerTerms, 10));
         constraintLines.push(`  >= ${Math.max(0, locked - 1)}`);
+
+        const upperTerms = [...sumTerms];
         constraintLines.push(`  c${cIdx.val++}:`);
-        constraintLines.push(writeTerms([...sumTerms], 10));
+        constraintLines.push(writeTerms(upperTerms, 10));
         constraintLines.push(`  <= ${locked + 1}`);
       }
     }
@@ -1073,9 +1028,10 @@ export class ShiftOptimizer {
       constraintLines.push(`  c${cIdx.val++}: - th_${i} - dh_${i} <= ${fmt(-hTarget)}`);
     }
 
+    const avgLoad = phase1Targets.totalCoverage / N;
     for (let i = 0; i < N; i++) {
-      constraintLines.push(`  c${cIdx.val++}: tw_${i} - dev_${i} <= ${fmt(expectedLoad[i])}`);
-      constraintLines.push(`  c${cIdx.val++}: - tw_${i} - dev_${i} <= ${fmt(-expectedLoad[i])}`);
+      constraintLines.push(`  c${cIdx.val++}: tw_${i} - dev_${i} <= ${fmt(avgLoad)}`);
+      constraintLines.push(`  c${cIdx.val++}: - tw_${i} - dev_${i} <= ${fmt(-avgLoad)}`);
     }
 
     const lines: string[] = [];
@@ -1106,15 +1062,21 @@ export class ShiftOptimizer {
     lines.push("Bounds");
     lines.push(`  maxLoad >= 0`);
     lines.push(`  minLoad >= 0`);
-    for (let i = 0; i < N; i++) lines.push(`  tw_${i} >= 0`);
-    for (let i = 0; i < N; i++) lines.push(`  dev_${i} >= 0`);
+    for (let i = 0; i < N; i++) {
+      lines.push(`  tw_${i} >= 0`);
+    }
+    for (let i = 0; i < N; i++) {
+      lines.push(`  dev_${i} >= 0`);
+    }
     for (let i = 0; i < N; i++) {
       if (staffHolidayTargets[i] > 0) {
         lines.push(`  th_${i} >= 0`);
         lines.push(`  dh_${i} >= 0`);
       }
     }
-    for (const lv of levelSlackVars) lines.push(`  ${lv} >= 0`);
+    for (const lv of levelSlackVars) {
+      lines.push(`  ${lv} >= 0`);
+    }
 
     const allBinary = [...binaryVars, ...auxBinaryVars];
     lines.push("Binary");
