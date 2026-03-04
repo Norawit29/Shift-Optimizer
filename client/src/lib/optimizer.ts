@@ -829,6 +829,7 @@ export class ShiftOptimizer {
 
     const SHIFT_W = 10_000;
     const LEVEL_W = SHIFT_W * N * D;
+    const LOAD_W = 1;
 
     const staffShiftTargetsInt = phase1Targets.perShift.map((total) => {
       const staffN = this.staff.length;
@@ -876,6 +877,12 @@ export class ShiftOptimizer {
       }
     }
 
+    const avgLoad = phase1Targets.totalCoverage / N;
+    for (let i = 0; i < N; i++) {
+      constraintLines.push(`  c${cIdx.val++}: tw_${i} - dev_${i} <= ${fmt(avgLoad)}`);
+      constraintLines.push(`  c${cIdx.val++}: - tw_${i} - dev_${i} <= ${fmt(-avgLoad)}`);
+    }
+
     const lines: string[] = [];
     lines.push("Minimize");
     lines.push("  obj:");
@@ -893,7 +900,7 @@ export class ShiftOptimizer {
       objParts.push(`+ ${LEVEL_W} ${lv}`);
     }
     for (let i = 0; i < N; i++) {
-      objParts.push(`+ ${fmt(1e-6)} tw_${i}`);
+      objParts.push(`+ ${LOAD_W} dev_${i}`);
     }
     if (objParts.length === 0) {
       objParts.push("0 maxLoad");
@@ -908,6 +915,9 @@ export class ShiftOptimizer {
     lines.push(`  minLoad >= 0`);
     for (let i = 0; i < N; i++) {
       lines.push(`  tw_${i} >= 0`);
+    }
+    for (let i = 0; i < N; i++) {
+      lines.push(`  dev_${i} >= 0`);
     }
     for (let i = 0; i < N; i++) {
       for (let s = 0; s < S; s++) {
@@ -944,6 +954,7 @@ export class ShiftOptimizer {
 
     const HOLIDAY_W = 100;
     const LEVEL_W = 10_000 * N * D;
+    const LOAD_W = 1;
 
     const staffHolidayTargets = (() => {
       if (N === 0) return [];
@@ -1017,6 +1028,12 @@ export class ShiftOptimizer {
       constraintLines.push(`  c${cIdx.val++}: - th_${i} - dh_${i} <= ${fmt(-hTarget)}`);
     }
 
+    const avgLoad = phase1Targets.totalCoverage / N;
+    for (let i = 0; i < N; i++) {
+      constraintLines.push(`  c${cIdx.val++}: tw_${i} - dev_${i} <= ${fmt(avgLoad)}`);
+      constraintLines.push(`  c${cIdx.val++}: - tw_${i} - dev_${i} <= ${fmt(-avgLoad)}`);
+    }
+
     const lines: string[] = [];
     lines.push("Minimize");
     lines.push("  obj:");
@@ -1032,7 +1049,7 @@ export class ShiftOptimizer {
       objParts.push(`+ ${LEVEL_W} ${lv}`);
     }
     for (let i = 0; i < N; i++) {
-      objParts.push(`+ ${fmt(1e-6)} tw_${i}`);
+      objParts.push(`+ ${LOAD_W} dev_${i}`);
     }
     if (objParts.length === 0) {
       objParts.push("0 maxLoad");
@@ -1047,6 +1064,9 @@ export class ShiftOptimizer {
     lines.push(`  minLoad >= 0`);
     for (let i = 0; i < N; i++) {
       lines.push(`  tw_${i} >= 0`);
+    }
+    for (let i = 0; i < N; i++) {
+      lines.push(`  dev_${i} >= 0`);
     }
     for (let i = 0; i < N; i++) {
       if (staffHolidayTargets[i] > 0) {

@@ -1,0 +1,132 @@
+Goal: Improve total workload fairness in the solver without breaking the existing optimization behavior.
+
+Context:
+The solver currently optimizes:
+
+1. Coverage (Phase 1)
+2. Load range min/max (Phase 2A)
+3. Per-shift distribution (Phase 2B)
+4. Holiday balance (Phase 2C)
+
+However it does NOT penalize deviation of total workload from the average.
+This can cause wide distributions like **14–25 shifts** even when a **20–21 distribution exists**.
+
+We will add a **small penalty for total workload deviation** so the solver prefers balanced totals, but without overriding existing priorities.
+
+Important rule:
+Do NOT change solver logic, phases, or existing weights.
+Only add a small additional objective component.
+
+Priority hierarchy must remain:
+
+LEVEL_W  >>  SHIFT_W  >>  LOAD_W
+
+Implementation steps:
+
+---
+
+1. Modify `buildDistributionModel()`
+
+Add a new weight constant near existing weights:
+
+```
+const SHIFT_W = 10_000;
+const LEVEL_W = SHIFT_W * N * D;
+const LOAD_W = 1;
+```
+
+---
+
+2. Add deviation variables
+
+In the **Bounds section** (where tw_i is defined), add:
+
+```
+for (let i = 0; i < N; i++) {
+  lines.push(`  dev_${i} >= 0`);
+}
+```
+
+---
+
+3. Add deviation constraints
+
+Before building the final LP lines, compute:
+
+```
+const avgLoad = phase1Targets.totalCoverage / N;
+```
+
+Then add constraints:
+
+```
+for (let i = 0; i < N; i++) {
+  constraintLines.push(`  c${cIdx.val++}: tw_${i} - dev_${i} <= ${fmt(avgLoad)}`);
+  constraintLines.push(`  c${cIdx.val++}: - tw_${i} - dev_${i} <= ${fmt(-avgLoad)}`);
+}
+```
+
+This models:
+
+|tw_i - avgLoad| <= dev_i
+
+---
+
+4. Update objective
+
+Replace the tiny load term:
+
+```
++ 1e-6 tw_i
+```
+
+with
+
+```
++ LOAD_W dev_i
+```
+
+This gently penalizes deviation from the average workload.
+
+---
+
+5. Apply the SAME modification to `buildHolidayModel()`
+
+Add:
+
+• dev_i bounds
+• deviation constraints
+• LOAD_W dev_i in the objective
+
+Do NOT change any other logic.
+
+---
+
+Expected result:
+
+Previously possible outcome:
+range = 14–25
+
+After change:
+range typically becomes
+19–21 or 20–22
+
+while preserving:
+
+✔ coverage
+✔ shift distribution
+✔ holiday balancing
+✔ solver performance
+
+---
+
+Important:
+Do not modify:
+
+* Phase structure
+* Coverage model
+* Range model
+* Existing constraints
+* Existing weights except adding LOAD_W
+
+This change should be minimal and backward compatible.
