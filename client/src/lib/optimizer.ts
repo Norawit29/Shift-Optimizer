@@ -802,10 +802,24 @@ export class ShiftOptimizer {
     this.writeCoverageConstraints(constraintLines, varMap, cIdx, phase1Targets);
     this.writeLoadTrackingConstraints(constraintLines, varMap, cIdx);
 
+    const avgLoad = phase1Targets.totalCoverage / N;
+    for (let i = 0; i < N; i++) {
+      constraintLines.push(`  c${cIdx.val++}: tw_${i} - dev_${i} <= ${fmt(avgLoad)}`);
+      constraintLines.push(`  c${cIdx.val++}: - tw_${i} - dev_${i} <= ${fmt(-avgLoad)}`);
+    }
+
     const lines: string[] = [];
     lines.push("Minimize");
     lines.push("  obj:");
-    lines.push("  maxLoad - minLoad");
+
+    const objParts: string[] = [];
+    objParts.push("maxLoad - minLoad");
+
+    for (let i = 0; i < N; i++) {
+      objParts.push(`+ 0.01 dev_${i}`);
+    }
+
+    lines.push(writeTerms(objParts, 8));
 
     lines.push("Subject To");
     lines.push(...constraintLines);
@@ -815,6 +829,9 @@ export class ShiftOptimizer {
     lines.push(`  minLoad >= 0`);
     for (let i = 0; i < N; i++) {
       lines.push(`  tw_${i} >= 0`);
+    }
+    for (let i = 0; i < N; i++) {
+      lines.push(`  dev_${i} >= 0`);
     }
 
     const allBinary = [...binaryVars, ...auxBinaryVars];
