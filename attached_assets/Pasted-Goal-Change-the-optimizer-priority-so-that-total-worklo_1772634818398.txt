@@ -1,0 +1,105 @@
+Goal:
+Change the optimizer priority so that **total workload balance across staff is more important than shift-type distribution**, while keeping the existing solver architecture intact.
+
+Important:
+Do NOT change the phase structure or solver logic. Only modify weights and remove bias in shift target assignment.
+
+Current phases must remain:
+
+1. Phase 1 – Coverage
+2. Phase 2A – Minimize load range
+3. Phase 2B – Distribution optimization
+4. Phase 2C – Holiday balancing
+
+---
+
+Step 1 — Change objective weights
+
+In function **buildDistributionModel()**, locate:
+
+const SHIFT_W = 10_000;
+const LEVEL_W = SHIFT_W * N * D;
+const LOAD_W = 1;
+
+Replace with:
+
+const LOAD_W = 100;              // prioritize total workload balance
+const SHIFT_W = 20;              // shift distribution is secondary
+const LEVEL_W = 10000 * N * D;   // level constraints remain highest priority
+
+Resulting priority:
+
+LEVEL constraints
+
+> total workload fairness
+> shift-type distribution
+
+---
+
+Step 2 — Remove deterministic bias in shift target allocation
+
+Locate this block in buildDistributionModel():
+
+for (let i = 0; i < remainder; i++) {
+targets[i] += 1;
+}
+
+Replace with randomized distribution:
+
+const order = [...Array(staffN).keys()].sort(() => Math.random() - 0.5);
+
+for (let i = 0; i < remainder; i++) {
+targets[order[i]] += 1;
+}
+
+This prevents the same staff (low index) from always receiving extra shifts.
+
+---
+
+Step 3 — Apply the SAME weight change in buildHolidayModel()
+
+Find:
+
+const HOLIDAY_W = 100;
+const LEVEL_W = 10_000 * N * D;
+const LOAD_W = 1;
+
+Replace with:
+
+const LOAD_W = 100;
+const HOLIDAY_W = 20;
+const LEVEL_W = 10000 * N * D;
+
+---
+
+Expected outcome:
+
+Previously:
+Workload range could be large (e.g. 13–22 shifts).
+
+After change:
+Workload should converge around the average, typically:
+
+19–21
+or
+20–22
+
+while still respecting:
+
+* coverage
+* level constraints
+* shift rules
+* holiday balancing
+
+---
+
+Do NOT modify:
+
+* Phase logic
+* constraint structure
+* coverage model
+* range model
+* variable names
+* solver settings
+
+Only adjust weights and remove shift target bias.

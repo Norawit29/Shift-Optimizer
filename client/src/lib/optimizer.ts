@@ -827,9 +827,9 @@ export class ShiftOptimizer {
     const D = this.daysInMonth;
     const S = this.config.shiftNames.length;
 
-    const SHIFT_W = 10_000;
-    const LEVEL_W = SHIFT_W * N * D;
-    const LOAD_W = 1;
+    const LOAD_W = 100;
+    const SHIFT_W = 20;
+    const LEVEL_W = 10000 * N * D;
 
     const staffShiftTargetsInt = phase1Targets.perShift.map((total) => {
       const staffN = this.staff.length;
@@ -837,8 +837,9 @@ export class ShiftOptimizer {
       const base = Math.floor(total / staffN);
       const remainder = total - base * staffN;
       const targets = new Array(staffN).fill(base);
+      const order = [...Array(staffN).keys()].sort(() => Math.random() - 0.5);
       for (let i = 0; i < remainder; i++) {
-        targets[i] += 1;
+        targets[order[i]] += 1;
       }
       return targets;
     });
@@ -952,9 +953,9 @@ export class ShiftOptimizer {
     const D = this.daysInMonth;
     const S = this.config.shiftNames.length;
 
-    const HOLIDAY_W = 100;
-    const LEVEL_W = 10_000 * N * D;
-    const LOAD_W = 1;
+    const LOAD_W = 100;
+    const HOLIDAY_W = 20;
+    const LEVEL_W = 10000 * N * D;
 
     const staffHolidayTargets = (() => {
       if (N === 0) return [];
