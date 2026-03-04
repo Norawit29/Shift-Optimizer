@@ -847,7 +847,7 @@ export class ShiftOptimizer {
       const base = Math.floor(total / staffN);
       const remainder = total - base * staffN;
       const targets = new Array(staffN).fill(base);
-      const order = [...Array(staffN).keys()].sort(() => Math.random() - 0.5);
+      const order = [...Array(staffN).keys()];
       for (let i = 0; i < remainder; i++) {
         targets[order[i]] += 1;
       }
