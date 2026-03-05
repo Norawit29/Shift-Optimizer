@@ -668,7 +668,6 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
                   const shiftBg = SHIFT_BG_COLORS[shiftIdx % SHIFT_BG_COLORS.length];
                   const shiftText = SHIFT_TEXT_COLORS[shiftIdx % SHIFT_TEXT_COLORS.length];
                   const st = shiftTotalPerDay[shiftIdx];
-                  const minReq = config.staffPerShift[shiftIdx] || 0;
                   const levelRowsForShift = levelCounts?.filter(lc => lc && lc.shiftIdx === shiftIdx) || [];
 
                   return (
@@ -710,6 +709,13 @@ export function StaffScheduleView({ schedule, config, staff, month, year, onSche
                         </td>
                         {hasLevels && <td className="sticky z-10 bg-slate-50 dark:bg-slate-800/50 border-r" style={{ left: "140px" }} />}
                         {st.perDay.map((count, di) => {
+                          const dayDate = schedule[di]?.date ?? (di + 1);
+                          const d = getDateForIdx(dayDate);
+                          const dow = d.getDay();
+                          const isDayHoliday = dow === 0 || dow === 6 || holidays.has(dayDate);
+                          const minReq = (config.separateHolidayConfig && config.holidayStaffPerShift && isDayHoliday)
+                            ? (config.holidayStaffPerShift[shiftIdx] || 0)
+                            : (config.staffPerShift[shiftIdx] || 0);
                           const met = minReq > 0 ? count >= minReq : true;
                           return (
                             <td
