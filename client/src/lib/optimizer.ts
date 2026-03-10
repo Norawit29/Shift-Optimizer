@@ -510,13 +510,12 @@ export class ShiftOptimizer {
                 );
                 if (allReq) reqDays++;
               }
-              const effectiveMax = Math.max(rule.maxDays, reqDays);
-              if (windowYVars.length > 0 && effectiveMax < windowYVars.length) {
-                const terms = windowYVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
-                lines.push(`  c${cIdx.val++}:`);
-                lines.push(writeTerms(terms, 10));
-                lines.push(`  <= ${effectiveMax}`);
-              }
+              if (windowYVars.length <= rule.maxDays) continue;
+
+              const terms = windowYVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+              lines.push(`  c${cIdx.val++}:`);
+              lines.push(writeTerms(terms, 10));
+              lines.push(`  <= ${rule.maxDays}`);
             }
           } else {
             for (let dStart = 0; dStart <= D - windowSize; dStart++) {

@@ -1,0 +1,158 @@
+We found a bug in the shift scheduling solver related to `maxConsecutiveRules` when using **combined shifts** (multiple shifts in a rule).
+
+The solver currently supports rules like:
+
+```id="rule_example"
+{
+  shifts: [0,1],
+  maxDays: 1
+}
+```
+
+This rule means:
+
+A staff member may work **shift 0 AND shift 1 on the same day** for at most **1 consecutive day**.
+
+Example:
+
+Allowed
+
+Day 1: shift0 + shift1
+Day 2: shift0
+
+Not allowed
+
+Day 1: shift0 + shift1
+Day 2: shift0 + shift1
+
+So the rule applies to the **pair of shifts on the same day**.
+
+The solver implements this using auxiliary binary variables:
+
+```id="aux_variable"
+y_i_d_rX
+```
+
+Where:
+
+```id="y_definition"
+y_i_d_rX = 1 if staff i works ALL shifts in rule.shifts on day d
+```
+
+This logic is correct.
+
+However, the bug occurs when generating **sliding window constraints**.
+
+In the current code inside `writeCommonConstraints`, we have:
+
+```id="bug_loop"
+for (let dStart = 0; dStart <= D - windowSize; dStart++) {
+  const windowYVars: string[] = [];
+  let reqDays = 0;
+
+  for (let dd = 0; dd < windowSize; dd++) {
+    const yv = auxVars[dStart + dd];
+    if (yv) windowYVars.push(yv);
+  }
+
+  const effectiveMax = Math.max(rule.maxDays, reqDays);
+
+  if (windowYVars.length > 0 && effectiveMax < windowYVars.length) {
+      ...
+  }
+}
+```
+
+The problem:
+
+Auxiliary variables `y_i_d_rX` are **only created when all shifts in rule.shifts exist in varMap**.
+
+If a staff member is **blocked for one of those shifts**, then `y_i_d_rX` is **not created** for that day.
+
+This produces arrays like:
+
+```id="aux_array"
+["", y_1, "", y_3]
+```
+
+When building sliding window constraints, some windows contain **too few variables**.
+
+Example constraint generated:
+
+```id="bad_constraint"
+y_3 <= 0
+```
+
+This unintentionally **forces y variables to zero**, which conflicts with coverage constraints that require assignments.
+
+The result is that the solver model becomes **infeasible**, and HiGHS returns an empty solution.
+That is why the scheduler returns a completely empty schedule after adding this rule.
+
+## Required Fix
+
+When generating sliding window constraints for combined shift rules, we must **skip windows that do not contain enough auxiliary variables to enforce the rule**.
+
+Specifically:
+
+Replace this condition:
+
+```id="old_condition"
+if (windowYVars.length > 0 && effectiveMax < windowYVars.length)
+```
+
+with something safer like:
+
+```id="new_condition"
+if (windowYVars.length <= rule.maxDays) continue;
+```
+
+or:
+
+```id="alternative_condition"
+if (windowYVars.length < windowSize) continue;
+```
+
+Then keep the rest of the constraint generation unchanged.
+
+Example corrected code block:
+
+```id="patched_block"
+for (let dStart = 0; dStart <= D - windowSize; dStart++) {
+  const windowYVars: string[] = [];
+  let reqDays = 0;
+
+  for (let dd = 0; dd < windowSize; dd++) {
+    const yv = auxVars[dStart + dd];
+    if (yv) windowYVars.push(yv);
+  }
+
+  if (windowYVars.length <= rule.maxDays) continue;
+
+  const terms = windowYVars.map((v, idx) => idx === 0 ? v : `+ ${v}`);
+
+  lines.push(`  c${cIdx.val++}:`);
+  lines.push(writeTerms(terms, 10));
+  lines.push(`  <= ${rule.maxDays}`);
+}
+```
+
+Goals of this patch:
+
+• Avoid degenerate constraints
+• Prevent accidentally forcing `y = 0`
+• Keep the model feasible when staff are blocked
+• Ensure combined shift consecutive rules work correctly
+
+After applying this fix, the rule:
+
+```id="rule_example_2"
+{ shifts: [0,1], maxDays: 1 }
+```
+
+should correctly enforce:
+
+"A staff member cannot work (shift0 AND shift1) on more than one consecutive day."
+
+without causing the solver to return an empty schedule.
+
+Please implement this patch directly in the `writeCommonConstraints` function.
