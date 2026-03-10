@@ -1,9 +1,9 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { LanguageProvider } from "@/context/LanguageContext";
+import { LanguageProvider, useLanguage } from "@/context/LanguageContext";
 import { AuthProvider } from "@/context/AuthContext";
 import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/HomePage";
@@ -16,6 +16,38 @@ const LazyCaseStudiesPage = lazy(() => import("@/pages/CaseStudiesPage"));
 const LazyCaseStudyPage = lazy(() => import("@/pages/CaseStudyPage"));
 const LazyHistoryPage = lazy(() => import("@/pages/HistoryPage"));
 const LazyScheduleDetailPage = lazy(() => import("@/pages/ScheduleDetailPage"));
+
+const BASE_URL = "https://shift-optimizer.com";
+
+function HeadManager() {
+  const [location] = useLocation();
+  const { lang } = useLanguage();
+
+  useEffect(() => {
+    const path = location === "/" ? "/" : location;
+    const thUrl = `${BASE_URL}${path}`;
+    const enUrl = `${BASE_URL}${path}?lang=en`;
+    const canonicalUrl = lang === "en" ? enUrl : thUrl;
+
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (canonical) {
+      canonical.href = canonicalUrl;
+    }
+
+    let hreflangTh = document.querySelector('link[hreflang="th"]') as HTMLLinkElement | null;
+    if (hreflangTh) hreflangTh.href = thUrl;
+
+    let hreflangEn = document.querySelector('link[hreflang="en"]') as HTMLLinkElement | null;
+    if (hreflangEn) hreflangEn.href = enUrl;
+
+    let hreflangDefault = document.querySelector('link[hreflang="x-default"]') as HTMLLinkElement | null;
+    if (hreflangDefault) hreflangDefault.href = thUrl;
+
+    document.documentElement.lang = lang === "en" ? "en" : "th";
+  }, [location, lang]);
+
+  return null;
+}
 
 function WizardPageLoader() {
   const [ready, setReady] = useState(false);
@@ -53,6 +85,7 @@ function App() {
         <LanguageProvider>
           <TooltipProvider>
             <Toaster />
+            <HeadManager />
             <Router />
           </TooltipProvider>
         </LanguageProvider>
