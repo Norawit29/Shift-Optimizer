@@ -105,9 +105,7 @@ export default function PricingPage() {
       return res.json();
     },
     onSuccess: (data) => {
-      if (data.url) {
-        window.location.href = data.url;
-      }
+      if (data.url) window.open(data.url, "_blank");
     },
     onError: (error: any) => {
       toast({
@@ -124,7 +122,7 @@ export default function PricingPage() {
       return res.json();
     },
     onSuccess: (data) => {
-      if (data.url) window.location.href = data.url;
+      if (data.url) window.open(data.url, "_blank");
     },
     onError: (error: any) => {
       toast({

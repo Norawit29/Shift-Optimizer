@@ -1,7 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useProStatus } from "@/hooks/useProStatus";
-import { useSubscription } from "@/hooks/useSubscription";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,11 +10,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogIn, Crown, Settings, LogOut, CreditCard, ChevronDown, ExternalLink } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
+import { LogIn, Crown, LogOut, CreditCard, ChevronDown, Sparkles } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 
 declare global {
   interface Window {
@@ -125,9 +124,35 @@ export function GoogleSignInButton({
 export function UserMenu() {
   const { user, logout } = useAuth();
   const { isPro } = useProStatus();
-  const { data: subData } = useSubscription();
   const { lang } = useLanguage();
   const { toast } = useToast();
+  const [, navigate] = useLocation();
+
+  const { data: productsData } = useQuery<{ data: any[] }>({
+    queryKey: ["/api/stripe/products"],
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const monthlyPrice = productsData?.data?.[0]?.prices?.find(
+    (p: any) => p.recurring?.interval === "month"
+  );
+
+  const checkoutMutation = useMutation({
+    mutationFn: async (priceId: string) => {
+      const res = await apiRequest("POST", "/api/stripe/checkout", { priceId });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      if (data.url) window.open(data.url, "_blank");
+    },
+    onError: () => {
+      toast({
+        title: lang === "th" ? "เกิดข้อผิดพลาด" : "Error",
+        description: lang === "th" ? "ไม่สามารถเปิดหน้าชำระเงินได้" : "Could not open checkout",
+        variant: "destructive",
+      });
+    },
+  });
 
   const portalMutation = useMutation({
     mutationFn: async () => {
@@ -135,7 +160,7 @@ export function UserMenu() {
       return res.json();
     },
     onSuccess: (data) => {
-      if (data.url) window.location.href = data.url;
+      if (data.url) window.open(data.url, "_blank");
     },
     onError: () => {
       toast({
@@ -149,15 +174,12 @@ export function UserMenu() {
   if (!user) return null;
 
   const t = {
-    settings: lang === "th" ? "ตั้งค่า" : "Settings",
-    account: lang === "th" ? "บัญชีของฉัน" : "My Account",
-    subscription: lang === "th" ? "สมาชิกภาพ" : "Subscription",
     proMember: lang === "th" ? "สมาชิก Pro" : "Pro Member",
     freePlan: lang === "th" ? "แผนฟรี" : "Free Plan",
-    manageSub: lang === "th" ? "จัดการ / ยกเลิกสมาชิก" : "Manage / Cancel",
+    manageSub: lang === "th" ? "จัดการสมาชิก" : "Manage Subscription",
     upgradePro: lang === "th" ? "อัปเกรดเป็น Pro" : "Upgrade to Pro",
+    trialNote: lang === "th" ? "ทดลองฟรี 14 วัน" : "14-day free trial",
     logout: lang === "th" ? "ออกจากระบบ" : "Logout",
-    pricing: lang === "th" ? "ดูแผนราคา" : "View Pricing",
   };
 
   return (
@@ -165,7 +187,7 @@ export function UserMenu() {
       <DropdownMenuTrigger asChild>
         <button
           className="flex items-center gap-1.5 rounded-lg px-1.5 py-1 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-          aria-label={t.settings}
+          aria-label="User menu"
           data-testid="button-user-menu"
         >
           <div className="relative shrink-0">
@@ -175,7 +197,7 @@ export function UserMenu() {
                 alt={user.name}
                 width="32"
                 height="32"
-                className="w-8 h-8 rounded-full"
+                className="w-8 h-8 rounded-full object-cover"
                 data-testid="img-user-avatar"
               />
             ) : (
@@ -199,57 +221,52 @@ export function UserMenu() {
         </button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-64 p-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-lg" sideOffset={8}>
+      <DropdownMenuContent align="end" className="w-64 p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-xl rounded-2xl" sideOffset={8}>
         {/* Profile header */}
-        <div className="px-3 py-2.5 mb-1">
-          <div className="flex items-center gap-2.5">
-            <div className="relative shrink-0">
-              {user.picture ? (
-                <img
-                  src={`/api/avatar/${user.id}`}
-                  alt={user.name}
-                  width="40"
-                  height="40"
-                  className="w-10 h-10 rounded-full"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-base font-bold text-primary">
-                  {user.name?.[0]?.toUpperCase()}
-                </div>
-              )}
-              {isPro && (
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-amber-400 border-2 border-white dark:border-slate-950 flex items-center justify-center">
-                  <Crown className="w-2 h-2 text-amber-900" />
-                </div>
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{user.name}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
-            </div>
-          </div>
-
-          {/* Pro/Free badge */}
-          <div className="mt-2.5">
-            {isPro ? (
-              <div className="flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-md px-2.5 py-1.5 border border-amber-200 dark:border-amber-800/50">
-                <Crown className="w-3.5 h-3.5" />
-                {t.proMember}
-              </div>
+        <div className="flex items-center gap-3 px-2 py-2 mb-1">
+          <div className="relative shrink-0">
+            {user.picture ? (
+              <img
+                src={`/api/avatar/${user.id}`}
+                alt={user.name}
+                width="44"
+                height="44"
+                className="w-11 h-11 rounded-full object-cover ring-2 ring-slate-100 dark:ring-slate-700"
+              />
             ) : (
-              <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 rounded-md px-2.5 py-1.5 border border-slate-200 dark:border-slate-700">
-                {t.freePlan}
+              <div className="w-11 h-11 rounded-full bg-primary/20 flex items-center justify-center text-base font-bold text-primary">
+                {user.name?.[0]?.toUpperCase()}
+              </div>
+            )}
+            {isPro && (
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-amber-400 border-2 border-white dark:border-slate-900 flex items-center justify-center">
+                <Crown className="w-2.5 h-2.5 text-amber-900" />
               </div>
             )}
           </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{user.name}</p>
+            <p className="text-xs text-slate-400 truncate">{user.email}</p>
+            <div className="mt-1">
+              {isPro ? (
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 rounded-full px-2 py-0.5">
+                  <Crown className="w-2.5 h-2.5" />{t.proMember}
+                </span>
+              ) : (
+                <span className="inline-flex items-center text-[11px] font-medium text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-full px-2 py-0.5">
+                  {t.freePlan}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
 
-        <DropdownMenuSeparator className="my-1" />
+        <DropdownMenuSeparator className="my-1.5 bg-slate-100 dark:bg-slate-800" />
 
-        {/* Subscription section */}
+        {/* Subscription action */}
         {isPro ? (
           <DropdownMenuItem
-            className="flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer rounded-md"
+            className="flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
             onSelect={() => portalMutation.mutate()}
             disabled={portalMutation.isPending}
             data-testid="menu-item-manage-subscription"
@@ -258,23 +275,39 @@ export function UserMenu() {
             <span>{portalMutation.isPending ? (lang === "th" ? "กำลังโหลด..." : "Loading...") : t.manageSub}</span>
           </DropdownMenuItem>
         ) : (
-          <DropdownMenuItem asChild>
-            <Link
-              href="/pricing"
-              className="flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer rounded-md"
+          <div className="px-1 py-0.5">
+            <button
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm font-semibold rounded-xl bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-60"
+              onClick={() => {
+                if (monthlyPrice) {
+                  checkoutMutation.mutate(monthlyPrice.id);
+                } else {
+                  navigate("/pricing");
+                }
+              }}
+              disabled={checkoutMutation.isPending}
               data-testid="menu-item-upgrade-pro"
             >
-              <Crown className="w-4 h-4 text-amber-500 shrink-0" />
-              <span className="text-amber-600 dark:text-amber-400 font-medium">{t.upgradePro}</span>
-            </Link>
-          </DropdownMenuItem>
+              <Sparkles className="w-4 h-4 shrink-0" />
+              <span className="flex-1 text-left">
+                {checkoutMutation.isPending
+                  ? (lang === "th" ? "กำลังโหลด..." : "Loading...")
+                  : t.upgradePro}
+              </span>
+              {!checkoutMutation.isPending && (
+                <span className="text-[10px] font-normal bg-white/20 rounded-full px-1.5 py-0.5 whitespace-nowrap">
+                  {t.trialNote}
+                </span>
+              )}
+            </button>
+          </div>
         )}
 
-        <DropdownMenuSeparator className="my-1" />
+        <DropdownMenuSeparator className="my-1.5 bg-slate-100 dark:bg-slate-800" />
 
         {/* Logout */}
         <DropdownMenuItem
-          className="flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer rounded-md text-slate-600 dark:text-slate-400"
+          className="flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer rounded-xl text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
           onSelect={logout}
           data-testid="button-logout"
         >
