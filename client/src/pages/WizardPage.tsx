@@ -1490,6 +1490,33 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
       customStartDate: useCustomRange ? customStartDate : undefined,
       customEndDate: useCustomRange ? customEndDate : undefined,
     };
+    // Auto-save to DB when exporting (if user is logged in)
+    if (user) {
+      try {
+        const payload = {
+          name: scheduleName,
+          month,
+          year,
+          config: exConfig,
+          staff,
+          result: r.schedule as any,
+          isPartial: r.isPartial || false,
+          unfilledSlots: r.unfilledSlots || [],
+          isPublished: false,
+        };
+        if (editingScheduleId) {
+          await updateMutation.mutateAsync({ id: editingScheduleId, data: payload });
+        } else {
+          const count = savedSchedules?.length || 0;
+          if (count < 10) {
+            const created = await createMutation.mutateAsync(payload);
+            if (created?.id) setEditingScheduleId(created.id);
+          }
+        }
+      } catch {
+        // Silent — export still proceeds even if save fails
+      }
+    }
     await exportToExcel(
       scheduleName, month, year, r.schedule, exConfig, staff,
       { date: t.date, day: t.day, staffName: t.staffName, total: t.total, summary: t.summary, schedule: t.scheduleView, staffSchedule: t.staffSchedule, level: t.level },
