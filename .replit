@@ -47,3 +47,6 @@ waitForPort = 5000
 [userenv.shared]
 SANITY_PROJECT_ID = "uokbuo7g"
 SANITY_DATASET = "production"
+
+[agent]
+integrations = ["stripe:1.0.0"]
