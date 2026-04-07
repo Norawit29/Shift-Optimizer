@@ -313,12 +313,7 @@ export default function PricingPage() {
                     {t.subscribePro} — {formatPrice(monthlyPrice.unit_amount, monthlyPrice.currency)}{t.month}
                   </Button>
                 )}
-                {yearlyPrice && (
-                  <Button variant="outline" className="w-full gap-2 border-primary text-primary hover:bg-primary/5" onClick={() => checkoutMutation.mutate(yearlyPrice.id)} disabled={checkoutMutation.isPending} data-testid="button-subscribe-yearly">
-                    {checkoutMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {t.subscribePro} — {formatPrice(yearlyPrice.unit_amount, yearlyPrice.currency)}{t.year}
-                  </Button>
-                )}
+
                 {!monthlyPrice && !productsLoading && (
                   <Button className="w-full" disabled data-testid="button-pro-unavailable">
                     {lang === "th" ? "เร็วๆ นี้" : "Coming Soon"}
