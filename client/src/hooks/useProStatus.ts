@@ -1,3 +1,9 @@
+import { useSubscription } from "./useSubscription";
+
 export function useProStatus() {
-  return { isPro: false };
+  const { data, isLoading } = useSubscription();
+  return {
+    isPro: data?.isPro ?? false,
+    isLoading,
+  };
 }

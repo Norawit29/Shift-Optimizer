@@ -5,6 +5,7 @@ import { db } from "./db";
 import { users, userPresets, feedbacks, usageLogs, generatedSchedules, schedules, insertScheduleSchema } from "@shared/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { sanityClient, urlFor } from "./sanity";
+import { stripeStorage } from "./stripeStorage";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -548,6 +549,127 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Sanity article fetch error:", error);
       res.status(500).json({ message: "Failed to fetch article" });
+    }
+  });
+
+  // === STRIPE ROUTES ===
+
+  app.get("/api/stripe/subscription", async (req, res) => {
+    if (!req.session.userId) {
+      return res.json({ subscription: null, isPro: false });
+    }
+    try {
+      const subscription = await stripeStorage.getUserActiveSubscription(req.session.userId);
+      res.json({
+        subscription,
+        isPro: !!subscription,
+      });
+    } catch (error) {
+      console.error("Error fetching subscription:", error);
+      res.json({ subscription: null, isPro: false });
+    }
+  });
+
+  app.get("/api/stripe/products", async (_req, res) => {
+    try {
+      const rows = await stripeStorage.listProductsWithPrices();
+      const productsMap = new Map<string, any>();
+      for (const row of rows as any[]) {
+        if (!productsMap.has(row.product_id)) {
+          productsMap.set(row.product_id, {
+            id: row.product_id,
+            name: row.product_name,
+            description: row.product_description,
+            prices: [],
+          });
+        }
+        if (row.price_id) {
+          productsMap.get(row.product_id).prices.push({
+            id: row.price_id,
+            unit_amount: row.unit_amount,
+            currency: row.currency,
+            recurring: row.recurring,
+          });
+        }
+      }
+      res.json({ data: Array.from(productsMap.values()) });
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      res.json({ data: [] });
+    }
+  });
+
+  app.post("/api/stripe/checkout", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    const { priceId } = req.body;
+    if (!priceId) {
+      return res.status(400).json({ message: "priceId is required" });
+    }
+    try {
+      const { getUncachableStripeClient } = await import("./stripeClient");
+      const stripe = await getUncachableStripeClient();
+
+      const [user] = await db.select().from(users).where(eq(users.id, req.session.userId));
+      if (!user) return res.status(404).json({ message: "User not found" });
+
+      let customerId = user.stripeCustomerId;
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: user.email,
+          name: user.name,
+          metadata: { userId: String(user.id) },
+        });
+        await stripeStorage.updateUserStripeInfo(user.id, { stripeCustomerId: customer.id });
+        customerId = customer.id;
+      }
+
+      const protocol = req.protocol === "https" || req.get("x-forwarded-proto") === "https" ? "https" : "http";
+      const host = req.get("host") || "";
+      const baseUrl = `${protocol}://${host}`;
+
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        payment_method_types: ["card"],
+        line_items: [{ price: priceId, quantity: 1 }],
+        mode: "subscription",
+        success_url: `${baseUrl}/pricing?success=true`,
+        cancel_url: `${baseUrl}/pricing?canceled=true`,
+      });
+
+      res.json({ url: session.url });
+    } catch (error: any) {
+      console.error("Error creating checkout session:", error);
+      res.status(500).json({ message: error.message || "Failed to create checkout session" });
+    }
+  });
+
+  app.post("/api/stripe/portal", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    try {
+      const { getUncachableStripeClient } = await import("./stripeClient");
+      const stripe = await getUncachableStripeClient();
+
+      const [user] = await db.select().from(users).where(eq(users.id, req.session.userId));
+      if (!user?.stripeCustomerId) {
+        return res.status(400).json({ message: "No Stripe customer found" });
+      }
+
+      const protocol = req.protocol === "https" || req.get("x-forwarded-proto") === "https" ? "https" : "http";
+      const host = req.get("host") || "";
+
+      const portalSession = await stripe.billingPortal.sessions.create({
+        customer: user.stripeCustomerId,
+        return_url: `${protocol}://${host}/pricing`,
+      });
+
+      res.json({ url: portalSession.url });
+    } catch (error: any) {
+      console.error("Error creating portal session:", error);
+      res.status(500).json({ message: error.message || "Failed to create portal session" });
     }
   });
 

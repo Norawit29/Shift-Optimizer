@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Crown, Zap } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { getTranslations } from "@/lib/i18n";
+import { useLocation } from "wouter";
 
 interface ProGateModalProps {
   open: boolean;
@@ -40,6 +41,7 @@ const featureDetails: Record<string, { en: string; th: string }> = {
 export function ProGateModal({ open, onClose, featureKey }: ProGateModalProps) {
   const { lang } = useLanguage();
   const t = getTranslations(lang);
+  const [, setLocation] = useLocation();
   const feature = featureKey ? featureDetails[featureKey] : null;
   const featureName = feature ? feature[lang] : "";
 
@@ -83,7 +85,7 @@ export function ProGateModal({ open, onClose, featureKey }: ProGateModalProps) {
           </Button>
           <Button
             className="flex-1 bg-amber-500 hover:bg-amber-600 text-white"
-            onClick={onClose}
+            onClick={() => { onClose(); setLocation("/pricing"); }}
           >
             <Crown className="w-4 h-4 mr-1.5" />
             {t.proGateUpgrade}
