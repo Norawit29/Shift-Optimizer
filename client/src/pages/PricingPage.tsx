@@ -5,7 +5,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Loader2, Sparkles, Crown, Building2 } from "lucide-react";
+import { Check, Loader2, Sparkles, Crown, Building2, Gift } from "lucide-react";
 import { Link, useSearch } from "wouter";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -176,7 +176,7 @@ export default function PricingPage() {
     year: lang === "th" ? "/ปี" : "/year",
     currentPlan: lang === "th" ? "แผนปัจจุบัน" : "Current Plan",
     getStarted: lang === "th" ? "เริ่มใช้งานฟรี" : "Get Started Free",
-    subscribePro: lang === "th" ? "สมัคร Pro" : "Subscribe to Pro",
+    subscribePro: lang === "th" ? "เริ่มทดลองใช้ฟรี 14 วัน" : "Start 14-Day Free Trial",
     manageSubscription: lang === "th" ? "จัดการสมาชิก" : "Manage Subscription",
     loginRequired: lang === "th" ? "เข้าสู่ระบบเพื่อสมัคร" : "Sign in to subscribe",
     perYear: lang === "th" ? "ต่อปี" : "per year",
@@ -236,10 +236,14 @@ export default function PricingPage() {
 
           {/* Pro Plan */}
           <div className="rounded-2xl border-2 border-primary bg-white dark:bg-slate-800 p-7 shadow-lg relative overflow-hidden flex flex-col">
-            <div className="absolute top-4 right-4">
+            <div className="absolute top-4 right-4 flex flex-col items-end gap-1">
               <Badge className="bg-primary text-primary-foreground gap-1">
                 <Sparkles className="w-3 h-3" />
                 Pro
+              </Badge>
+              <Badge variant="outline" className="gap-1 text-emerald-600 border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-700 text-[10px] px-1.5 py-0.5 font-medium">
+                <Gift className="w-3 h-3" />
+                {lang === "th" ? "ทดลอง 14 วัน" : "14-day trial"}
               </Badge>
             </div>
 
@@ -321,6 +325,15 @@ export default function PricingPage() {
                   </Button>
                 )}
               </div>
+            )}
+
+            {!isPro && user && (monthlyPrice || yearlyPrice) && (
+              <p className="mt-3 text-center text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1">
+                <Gift className="w-3 h-3 text-emerald-500 shrink-0" />
+                {lang === "th"
+                  ? "ทดลองใช้ฟรี 14 วัน — ต้องใส่บัตรเครดิต ไม่มีการเรียกเก็บเงินจนกว่าการทดลองจะสิ้นสุด"
+                  : "14-day free trial — card required, no charge until trial ends"}
+              </p>
             )}
           </div>
 
