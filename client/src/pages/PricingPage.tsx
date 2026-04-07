@@ -26,18 +26,18 @@ interface Product {
 
 const FREE_FEATURES = {
   th: [
+    "ระบบจัดเวรด้วย AI",
     "บุคลากรสูงสุด 15 คน",
     "ประเภทเวรสูงสุด 5 ประเภท",
     "ระดับบุคลากรสูงสุด 5 ระดับ",
-    "จัดตารางแบบ MIP Optimizer",
     "บันทึกและโหลดตาราง",
     "ดูตารางรายเดือน",
   ],
   en: [
+    "AI-powered scheduling",
     "Up to 15 staff members",
     "Up to 5 shift types",
     "Up to 5 staff levels",
-    "MIP Optimizer scheduling",
     "Save & load schedules",
     "Monthly schedule view",
   ],
