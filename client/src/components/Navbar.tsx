@@ -117,6 +117,9 @@ export function Navbar({ isHomePage }: NavbarProps) {
                   {t.navCaseStudies}
                 </Link>
               )}
+              <Link href="/pricing" className="px-3.5 py-2 text-[15px] font-medium text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors rounded-lg" data-testid="nav-link-pricing">
+                {t.navPricing}
+              </Link>
             </div>
           </div>
 
@@ -179,6 +182,9 @@ export function Navbar({ isHomePage }: NavbarProps) {
                       {t.navCaseStudies}
                     </Link>
                   )}
+                  <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors rounded-lg" data-testid="nav-link-pricing-mobile">
+                    {t.navPricing}
+                  </Link>
                   <Link href="/create" onClick={() => setMobileMenuOpen(false)} className="mt-2">
                     <Button size="sm" className="w-full shadow-sm" data-testid="button-nav-cta-mobile">
                       {t.getStartedFree}

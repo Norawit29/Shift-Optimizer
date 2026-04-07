@@ -66,9 +66,12 @@ The project utilizes a monorepo structure comprising three main parts:
 
 - **PostgreSQL Database**: Primary data persistence layer.
 - **Sanity CMS**: Used for managing article, blog, and case study content, accessible via GROQ API. Content types: `article` and `caseStudy`.
+- **Stripe**: Payment processing for Pro subscriptions via Replit native Stripe integration. Manages products/prices in the `stripe` schema (synced via stripe-replit-sync). Pro Plan: ฿299/month or ฿2,499/year.
 
 ### Key NPM Packages
 
+- **stripe**: Official Stripe SDK for API operations.
+- **stripe-replit-sync**: Manages webhook processing, stripe schema migrations, and data backfill.
 - **drizzle-orm**: PostgreSQL ORM.
 - **express**: Backend web framework.
 - **@tanstack/react-query**: Frontend data fetching.
