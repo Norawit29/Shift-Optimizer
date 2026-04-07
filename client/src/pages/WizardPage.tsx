@@ -1689,10 +1689,10 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                       variant="outline" 
                       size="icon" 
                       onClick={() => {
-                        if (!isPro && config.shiftsPerDay >= 5) { setShowProModal("shifts"); return; }
+                        if (!isPro && config.shiftsPerDay >= 3) { setShowProModal("shifts"); return; }
                         setShiftsPerDay(config.shiftsPerDay + 1);
                       }}
-                      disabled={!isPro && config.shiftsPerDay >= 5}
+                      disabled={config.shiftsPerDay >= 5}
                       data-testid="button-shifts-plus"
                     >
                       <Plus className="h-4 w-4" />
@@ -1879,10 +1879,10 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      if (!isPro && (config.staffLevels?.length || 0) >= 5) { setShowProModal("levels"); return; }
+                      if (!isPro && (config.staffLevels?.length || 0) >= 3) { setShowProModal("levels"); return; }
                       addStaffLevel();
                     }}
-                    disabled={!isPro && (config.staffLevels?.length || 0) >= 5}
+                    disabled={(config.staffLevels?.length || 0) >= 5}
                     data-testid="button-add-level"
                   >
                     <Plus className="w-4 h-4 mr-1" /> {t.addLevel}
