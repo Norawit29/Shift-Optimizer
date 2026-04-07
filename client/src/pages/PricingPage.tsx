@@ -27,16 +27,16 @@ interface Product {
 const FREE_FEATURES = {
   th: [
     "บุคลากรสูงสุด 15 คน",
-    "ประเภทเวรสูงสุด 3 ประเภท",
-    "ระดับบุคลากรสูงสุด 3 ระดับ",
+    "ประเภทเวรสูงสุด 5 ประเภท",
+    "ระดับบุคลากรสูงสุด 5 ระดับ",
     "จัดตารางแบบ MIP Optimizer",
     "บันทึกและโหลดตาราง",
     "ดูตารางรายเดือน",
   ],
   en: [
     "Up to 15 staff members",
-    "Up to 3 shift types",
-    "Up to 3 staff levels",
+    "Up to 5 shift types",
+    "Up to 5 staff levels",
     "MIP Optimizer scheduling",
     "Save & load schedules",
     "Monthly schedule view",
