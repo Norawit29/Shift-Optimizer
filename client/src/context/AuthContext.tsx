@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { queryClient } from "@/lib/queryClient";
 
 interface AuthUser {
   id: number;
@@ -66,6 +67,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     setUser(null);
+    queryClient.invalidateQueries({ queryKey: ["/api/stripe/subscription"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
   }, []);
 
   return (

@@ -5,7 +5,8 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Loader2, Sparkles, Crown, Building2, Gift } from "lucide-react";
+import { Check, Loader2, Crown, Gift } from "lucide-react";
+import { GoogleSignInButton } from "@/components/GoogleSignIn";
 import { Link, useSearch } from "wouter";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -195,7 +196,7 @@ export default function PricingPage() {
           <p className="text-lg text-slate-600 dark:text-slate-400 max-w-xl mx-auto">{t.subtitle}</p>
         </div>
 
-        {isPro && (
+        {isPro && user && (
           <div className="mb-10 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-center text-amber-800 dark:text-amber-300 font-medium flex items-center justify-center gap-2">
             <Crown className="w-5 h-5" />
             {t.currentlyPro}
@@ -236,11 +237,7 @@ export default function PricingPage() {
 
           {/* Pro Plan */}
           <div className="rounded-2xl border-2 border-primary bg-white dark:bg-slate-800 p-7 shadow-lg relative overflow-hidden flex flex-col">
-            <div className="absolute top-4 right-4 flex flex-col items-end gap-1">
-              <Badge className="bg-primary text-primary-foreground gap-1">
-                <Sparkles className="w-3 h-3" />
-                Pro
-              </Badge>
+            <div className="absolute top-4 right-4">
               <Badge variant="outline" className="gap-1 text-emerald-600 border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-700 text-[10px] px-1.5 py-0.5 font-medium">
                 <Gift className="w-3 h-3" />
                 {lang === "th" ? "ทดลอง 14 วัน" : "14-day trial"}
@@ -302,9 +299,12 @@ export default function PricingPage() {
                 {t.manageSubscription}
               </Button>
             ) : !user ? (
-              <Button className="w-full gap-2" disabled data-testid="button-login-to-subscribe">
-                {t.loginRequired}
-              </Button>
+              <GoogleSignInButton
+                className="w-full gap-2"
+                label={lang === "th" ? "เข้าสู่ระบบเพื่อสมัคร" : "Sign in to subscribe"}
+                buttonVariant="default"
+                buttonSize="default"
+              />
             ) : (
               <div className="space-y-2">
                 {monthlyPrice && (
@@ -340,13 +340,12 @@ export default function PricingPage() {
           {/* Enterprise Plan */}
           <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-7 shadow-sm flex flex-col">
             <div className="mb-5">
-              <div className="flex items-center gap-2 mb-1">
-                <Building2 className="w-4 h-4 text-slate-500" />
+              <div className="mb-1">
                 <div className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                   Enterprise
                 </div>
               </div>
-              <div className="text-4xl font-bold text-slate-900 dark:text-slate-50">
+              <div className="text-2xl font-bold text-slate-900 dark:text-slate-50">
                 {lang === "th" ? "ติดต่อเรา" : "Contact Us"}
               </div>
               <div className="text-slate-500 dark:text-slate-400 mt-1 text-sm">

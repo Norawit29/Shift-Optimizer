@@ -52,7 +52,17 @@ function loadGsiScript(): Promise<void> {
   });
 }
 
-export function GoogleSignInButton({ className }: { className?: string }) {
+export function GoogleSignInButton({
+  className,
+  label,
+  buttonVariant = "outline",
+  buttonSize = "sm",
+}: {
+  className?: string;
+  label?: string;
+  buttonVariant?: "outline" | "default";
+  buttonSize?: "sm" | "lg" | "default";
+}) {
   const { login, clientId } = useAuth();
   const buttonRef = useRef<HTMLDivElement>(null);
   const [scriptReady, setScriptReady] = useState(false);
@@ -95,15 +105,15 @@ export function GoogleSignInButton({ className }: { className?: string }) {
 
   return (
     <Button
-      variant="outline"
-      size="sm"
+      variant={buttonVariant}
+      size={buttonSize}
       onClick={handleClick}
       className={className}
       aria-label="Sign in with Google"
       data-testid="button-google-signin"
     >
       <LogIn className="h-4 w-4 mr-1.5" aria-hidden="true" />
-      Sign in
+      {label ?? "Sign in"}
     </Button>
   );
 }
@@ -185,7 +195,7 @@ export function UserMenu() {
         </button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-64 p-1.5" sideOffset={8}>
+      <DropdownMenuContent align="end" className="w-64 p-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-lg" sideOffset={8}>
         {/* Profile header */}
         <div className="px-3 py-2.5 mb-1">
           <div className="flex items-center gap-2.5">
