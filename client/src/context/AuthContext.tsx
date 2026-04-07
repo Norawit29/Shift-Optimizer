@@ -61,6 +61,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (res.ok) {
       const u = await res.json();
       setUser(u);
+      queryClient.invalidateQueries({ queryKey: ["/api/stripe/subscription"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/schedules"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/presets"] });
     }
   }, []);
 
