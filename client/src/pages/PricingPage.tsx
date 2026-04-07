@@ -203,7 +203,7 @@ export default function PricingPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start pt-6 pb-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch pt-6 pb-2">
           {/* Free Plan */}
           <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-7 shadow-sm flex flex-col transition-colors hover:border-primary cursor-default">
             <div className="mb-6">
