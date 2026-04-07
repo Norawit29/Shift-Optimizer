@@ -304,7 +304,6 @@ export default function PricingPage() {
                 label={lang === "th" ? "เข้าสู่ระบบเพื่อสมัคร" : "Sign in to subscribe"}
                 buttonVariant="default"
                 buttonSize="default"
-                hideOtherAccount
               />
             ) : (
               <div className="space-y-2">

@@ -57,13 +57,11 @@ export function GoogleSignInButton({
   label,
   buttonVariant = "outline",
   buttonSize = "sm",
-  hideOtherAccount = false,
 }: {
   className?: string;
   label?: string;
   buttonVariant?: "outline" | "default";
   buttonSize?: "sm" | "lg" | "default";
-  hideOtherAccount?: boolean;
 }) {
   const { login, clientId } = useAuth();
   const buttonRef = useRef<HTMLDivElement>(null);
@@ -101,30 +99,10 @@ export function GoogleSignInButton({
     });
   }, [scriptReady, clientId, handleCredentialResponse]);
 
-  const handleOtherAccount = () => {
-    if (!window.google || !clientId) return;
-    window.google.accounts.id.cancel();
-    window.google.accounts.id.initialize({
-      client_id: clientId,
-      callback: handleCredentialResponse,
-      auto_select: false,
-    });
-    window.google.accounts.id.prompt();
-  };
-
   if (showGoogleBtn) {
     return (
       <div className="flex flex-col items-center gap-2 w-full" data-testid="button-google-signin">
         <div ref={buttonRef} style={{ minHeight: 40 }} className="flex justify-center" />
-        {!hideOtherAccount && (
-          <button
-            type="button"
-            onClick={handleOtherAccount}
-            className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:underline transition-colors"
-          >
-            {label?.includes("สมัคร") ? "ใช้บัญชีอื่น" : "Use a different account"}
-          </button>
-        )}
       </div>
     );
   }
