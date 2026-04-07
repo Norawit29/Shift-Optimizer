@@ -5,7 +5,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Loader2, Sparkles, Crown, ArrowLeft } from "lucide-react";
+import { Check, Loader2, Sparkles, Crown } from "lucide-react";
 import { Link, useSearch } from "wouter";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -158,7 +158,7 @@ export default function PricingPage() {
     loginRequired: lang === "th" ? "เข้าสู่ระบบเพื่อสมัคร" : "Sign in to subscribe",
     perYear: lang === "th" ? "ต่อปี" : "per year",
     saveLabel: lang === "th" ? "ประหยัด" : "Save",
-    back: lang === "th" ? "กลับหน้าหลัก" : "Back to Home",
+
     currentlyPro: lang === "th" ? "คุณเป็นสมาชิก Pro แล้ว" : "You're already a Pro member",
   };
 
@@ -166,14 +166,6 @@ export default function PricingPage() {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
       <Navbar />
       <div className="max-w-5xl mx-auto px-4 py-16">
-        <div className="mb-8">
-          <Link href="/">
-            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
-              <ArrowLeft className="w-4 h-4" />
-              {t.back}
-            </Button>
-          </Link>
-        </div>
 
         <div className="text-center mb-14">
           <h1 className="text-4xl font-bold text-slate-900 dark:text-slate-50 mb-4">{t.title}</h1>
