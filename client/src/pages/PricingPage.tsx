@@ -46,22 +46,22 @@ const FREE_FEATURES = {
 
 const PRO_FEATURES = {
   th: [
+    "รองรับทุกฟีเจอร์ Free",
     "บุคลากรไม่จำกัด",
     "ประเภทเวรไม่จำกัด",
     "ระดับบุคลากรไม่จำกัด",
     "เกลี่ยวันหยุดและวันสำคัญ",
     "ดูตารางรายบุคคล",
     "ส่งออก Excel (.xlsx)",
-    "รองรับทุกฟีเจอร์ Pro",
   ],
   en: [
+    "Includes all Free features",
     "Unlimited staff members",
     "Unlimited shift types",
     "Unlimited staff levels",
     "Holiday & weekend balancing",
     "Per-staff schedule view",
     "Export to Excel (.xlsx)",
-    "Full Pro feature access",
   ],
 };
 
