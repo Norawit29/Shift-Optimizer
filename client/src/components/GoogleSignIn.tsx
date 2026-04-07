@@ -1,7 +1,8 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useProStatus } from "@/hooks/useProStatus";
 import { Button } from "@/components/ui/button";
-import { LogOut, LogIn } from "lucide-react";
+import { LogOut, LogIn, Crown } from "lucide-react";
 
 declare global {
   interface Window {
@@ -96,22 +97,41 @@ export function GoogleSignInButton({ className }: { className?: string }) {
 
 export function UserMenu() {
   const { user, logout } = useAuth();
+  const { isPro } = useProStatus();
   if (!user) return null;
 
   return (
     <div className="flex items-center gap-2">
-      {user.picture && (
-        <img
-          src={`/api/avatar/${user.id}`}
-          alt={user.name}
-          width="32"
-          height="32"
-          className="w-8 h-8 rounded-full"
-          data-testid="img-user-avatar"
-        />
-      )}
+      <div className="relative shrink-0">
+        {user.picture ? (
+          <img
+            src={`/api/avatar/${user.id}`}
+            alt={user.name}
+            width="32"
+            height="32"
+            className="w-8 h-8 rounded-full"
+            data-testid="img-user-avatar"
+          />
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">
+            {user.name?.[0]?.toUpperCase()}
+          </div>
+        )}
+        {isPro && (
+          <div
+            className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-amber-400 border-2 border-white dark:border-slate-950 flex items-center justify-center"
+            title="Pro member"
+            data-testid="badge-pro-avatar"
+          >
+            <Crown className="w-2 h-2 text-amber-900" />
+          </div>
+        )}
+      </div>
       <span className="text-sm font-medium text-slate-700 dark:text-slate-300 hidden sm:inline" data-testid="text-user-name">
         {user.name}
+        {isPro && (
+          <span className="ml-1.5 text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide">Pro</span>
+        )}
       </span>
       <Button
         variant="ghost"

@@ -49,7 +49,8 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { nanoid } from "nanoid";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
+import { queryClient } from "@/lib/queryClient";
 import { getDaysInMonth, format, setDate, parseISO, differenceInCalendarDays, addDays } from "date-fns";
 import { useLanguage } from "@/context/LanguageContext";
 import { LanguageToggle } from "@/components/LanguageToggle";
@@ -586,7 +587,51 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const updateMutation = useUpdateSchedule();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const searchStr = useSearch();
   const { t, dayNames, lang } = useLanguage();
+
+  // Show Pro welcome toast and poll subscription after successful Stripe checkout
+  useEffect(() => {
+    const params = new URLSearchParams(searchStr);
+    if (params.get("subscribed") !== "true") return;
+
+    // Clean URL without reloading
+    window.history.replaceState({}, "", window.location.pathname);
+
+    // Poll subscription status until Pro is confirmed (webhook may take 1-3s)
+    let attempts = 0;
+    const maxAttempts = 8;
+    let toastShown = false;
+
+    const poll = async () => {
+      attempts++;
+      await queryClient.invalidateQueries({ queryKey: ["/api/stripe/subscription"] });
+      const data = queryClient.getQueryData<{ isPro: boolean }>(["/api/stripe/subscription"]);
+      if (data?.isPro && !toastShown) {
+        toastShown = true;
+        toast({
+          title: lang === "th" ? "🎉 ยินดีต้อนรับสู่ Pro!" : "🎉 Welcome to Pro!",
+          description: lang === "th"
+            ? "ฟีเจอร์ทั้งหมดปลดล็อกแล้ว — เพลิดเพลินกับ Shift Optimizer Pro"
+            : "All features are now unlocked — enjoy Shift Optimizer Pro!",
+        });
+        return;
+      }
+      if (attempts < maxAttempts) {
+        setTimeout(poll, 2000);
+      } else if (!toastShown) {
+        // Show optimistic toast anyway after all retries
+        toast({
+          title: lang === "th" ? "🎉 ขอบคุณที่สมัครสมาชิก Pro!" : "🎉 Thank you for subscribing to Pro!",
+          description: lang === "th"
+            ? "สมาชิกภาพของคุณกำลังประมวลผล กรุณารอสักครู่"
+            : "Your membership is being processed, please wait a moment.",
+        });
+      }
+    };
+
+    setTimeout(poll, 1500);
+  }, []);
 
   useEffect(() => {
     if (nameManuallyEdited) return;

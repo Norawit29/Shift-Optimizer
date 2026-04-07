@@ -81,26 +81,16 @@ export default function PricingPage() {
   const { toast } = useToast();
   const searchStr = useSearch();
   const params = new URLSearchParams(searchStr);
-  const isSuccess = params.get("success") === "true";
   const isCanceled = params.get("canceled") === "true";
 
   useEffect(() => {
-    if (isSuccess) {
-      queryClient.invalidateQueries({ queryKey: ["/api/stripe/subscription"] });
-      toast({
-        title: lang === "th" ? "สมัครสมาชิก Pro สำเร็จ!" : "Pro subscription activated!",
-        description: lang === "th"
-          ? "ยินดีต้อนรับสู่ Shift Optimizer Pro"
-          : "Welcome to Shift Optimizer Pro",
-      });
-    }
     if (isCanceled) {
       toast({
         title: lang === "th" ? "ยกเลิกการชำระเงิน" : "Payment canceled",
         variant: "destructive",
       });
     }
-  }, [isSuccess, isCanceled]);
+  }, [isCanceled]);
 
   const { data: productsData, isLoading: productsLoading } = useQuery<{ data: Product[] }>({
     queryKey: ["/api/stripe/products"],

@@ -14,17 +14,6 @@ export class StripeStorage {
     }
   }
 
-  async getCustomer(customerId: string) {
-    try {
-      const result = await db.execute(
-        sql`SELECT * FROM stripe.customers WHERE id = ${customerId}`
-      );
-      return result.rows[0] || null;
-    } catch {
-      return null;
-    }
-  }
-
   async listProductsWithPrices() {
     try {
       const result = await db.execute(
@@ -70,15 +59,36 @@ export class StripeStorage {
     return user;
   }
 
+  // Look up active subscription by customer ID (not relying on stripeSubscriptionId field)
+  // This works as soon as stripe-replit-sync syncs the subscription to the stripe schema
   async getUserActiveSubscription(userId: number) {
     const [user] = await db.select().from(users).where(eq(users.id, userId));
-    if (!user?.stripeSubscriptionId) return null;
+    if (!user) return null;
 
     try {
-      const result = await db.execute(
-        sql`SELECT * FROM stripe.subscriptions WHERE id = ${user.stripeSubscriptionId} AND status IN ('active', 'trialing')`
-      );
-      return result.rows[0] || null;
+      // Primary: query by customer ID (works after stripe-replit-sync backfill)
+      if (user.stripeCustomerId) {
+        const result = await db.execute(
+          sql`SELECT * FROM stripe.subscriptions
+              WHERE customer = ${user.stripeCustomerId}
+              AND status IN ('active', 'trialing')
+              ORDER BY created DESC
+              LIMIT 1`
+        );
+        if (result.rows[0]) return result.rows[0];
+      }
+
+      // Fallback: query by subscription ID if stored
+      if (user.stripeSubscriptionId) {
+        const result = await db.execute(
+          sql`SELECT * FROM stripe.subscriptions
+              WHERE id = ${user.stripeSubscriptionId}
+              AND status IN ('active', 'trialing')`
+        );
+        if (result.rows[0]) return result.rows[0];
+      }
+
+      return null;
     } catch {
       return null;
     }

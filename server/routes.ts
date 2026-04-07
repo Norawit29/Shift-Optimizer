@@ -634,7 +634,7 @@ export async function registerRoutes(
         payment_method_types: ["card"],
         line_items: [{ price: priceId, quantity: 1 }],
         mode: "subscription",
-        success_url: `${baseUrl}/pricing?success=true`,
+        success_url: `${baseUrl}/create?subscribed=true`,
         cancel_url: `${baseUrl}/pricing?canceled=true`,
       });
 
