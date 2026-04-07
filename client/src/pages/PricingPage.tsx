@@ -203,9 +203,9 @@ export default function PricingPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start pt-6 pb-2">
           {/* Free Plan */}
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-7 shadow-sm flex flex-col">
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-7 shadow-sm flex flex-col transition-colors hover:border-primary cursor-default">
             <div className="mb-6">
               <div className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">
                 {t.free}
@@ -236,11 +236,11 @@ export default function PricingPage() {
           </div>
 
           {/* Pro Plan */}
-          <div className="rounded-2xl border-2 border-primary bg-white dark:bg-slate-800 p-7 shadow-lg relative overflow-hidden flex flex-col">
-            <div className="absolute top-4 right-4">
-              <Badge variant="outline" className="gap-1 text-emerald-600 border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-700 text-[10px] px-1.5 py-0.5 font-medium">
+          <div className="rounded-2xl border-2 border-primary bg-white dark:bg-slate-800 px-7 pt-10 pb-8 shadow-xl relative overflow-visible flex flex-col md:-my-4">
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+              <Badge className="gap-1 bg-primary text-white border-0 text-xs px-3 py-1 font-semibold shadow-md whitespace-nowrap">
                 <Gift className="w-3 h-3" />
-                {lang === "th" ? "ทดลอง 14 วัน" : "14-day trial"}
+                {lang === "th" ? "ยอดนิยม · ทดลอง 14 วัน" : "Most Popular · 14-day trial"}
               </Badge>
             </div>
 
@@ -333,10 +333,10 @@ export default function PricingPage() {
           </div>
 
           {/* Enterprise Plan */}
-          <div className="rounded-2xl border-2 border-amber-400 dark:border-amber-500 bg-white dark:bg-slate-800 p-7 shadow-sm flex flex-col">
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-7 shadow-sm flex flex-col transition-colors hover:border-primary cursor-default">
             <div className="mb-5">
               <div className="mb-1">
-                <div className="text-sm font-semibold text-amber-500 dark:text-amber-400 uppercase tracking-wide">
+                <div className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                   Enterprise
                 </div>
               </div>
