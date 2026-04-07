@@ -338,10 +338,10 @@ export default function PricingPage() {
           </div>
 
           {/* Enterprise Plan */}
-          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-7 shadow-sm flex flex-col">
+          <div className="rounded-2xl border-2 border-amber-400 dark:border-amber-500 bg-white dark:bg-slate-800 p-7 shadow-sm flex flex-col">
             <div className="mb-5">
               <div className="mb-1">
-                <div className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                <div className="text-sm font-semibold text-amber-500 dark:text-amber-400 uppercase tracking-wide">
                   Enterprise
                 </div>
               </div>
@@ -389,7 +389,7 @@ export default function PricingPage() {
                       required
                       value={enterpriseForm.orgName}
                       onChange={(e) => setEnterpriseForm(f => ({ ...f, orgName: e.target.value }))}
-                      placeholder={lang === "th" ? "เช่น โรงพยาบาลศิริราช" : "e.g. Siriraj Hospital"}
+                      placeholder={lang === "th" ? "ชื่อองค์กร หรือ โรงพยาบาล" : "e.g. City Hospital"}
                       className="w-full text-sm border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30"
                       data-testid="input-enterprise-org"
                     />
