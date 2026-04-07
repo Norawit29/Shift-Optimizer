@@ -44,7 +44,8 @@ import {
   AlertTriangle,
   Upload,
   Download,
-  GripVertical
+  GripVertical,
+  Crown
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { nanoid } from "nanoid";
@@ -56,6 +57,10 @@ import ExcelJS from "exceljs";
 import { FeedbackWidget } from "@/components/FeedbackWidget";
 import { WalkthroughOverlay, useWalkthrough } from "@/components/WalkthroughOverlay";
 import type { WalkthroughStep } from "@/components/WalkthroughOverlay";
+import { useProStatus } from "@/hooks/useProStatus";
+import { ProBadge } from "@/components/ProBadge";
+import { ProGateModal } from "@/components/ProGateModal";
+import { Lock } from "lucide-react";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June", 
@@ -564,6 +569,8 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const [preCheckConflicts, setPreCheckConflicts] = useState<string[]>([]);
   const [hasExported, setHasExported] = useState(false);
   const { user } = useAuth();
+  const { isPro } = useProStatus();
+  const [showProModal, setShowProModal] = useState<string | null>(null);
   const { data: savedSchedules } = useSchedules();
 
   const handleModeSwitch = (mode: string) => {
@@ -1544,9 +1551,18 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           
           <div className="flex items-center gap-2">
             {step === 4 && (
-              <Button onClick={handleSaveClick} className="bg-green-600 hover:bg-green-700" data-testid="button-export-schedule" data-walkthrough="export-btn">
+              <Button
+                onClick={() => {
+                  if (!isPro) { setShowProModal("exportExcel"); return; }
+                  handleSaveClick();
+                }}
+                className="bg-green-600 hover:bg-green-700"
+                data-testid="button-export-schedule"
+                data-walkthrough="export-btn"
+              >
                 <FileSpreadsheet className="w-4 h-4 mr-2" />
                 {t.exportExcel}
+                <ProBadge className="ml-2" />
               </Button>
             )}
           </div>
@@ -1580,7 +1596,9 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
             <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800">
               <CardContent className="p-6 space-y-6">
                 <div className="space-y-4" data-walkthrough="shifts-per-day">
-                  <Label className="text-base font-semibold">{t.shiftsPerDay}</Label>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-base font-semibold">{t.shiftsPerDay}</Label>
+                  </div>
                   <div className="flex items-center gap-3">
                     <Button 
                       variant="outline" 
@@ -1598,13 +1616,22 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     <Button 
                       variant="outline" 
                       size="icon" 
-                      onClick={() => setShiftsPerDay(config.shiftsPerDay + 1)}
+                      onClick={() => {
+                        if (!isPro && config.shiftsPerDay >= 3) { setShowProModal("shifts"); return; }
+                        setShiftsPerDay(config.shiftsPerDay + 1);
+                      }}
                       disabled={config.shiftsPerDay >= 5}
                       data-testid="button-shifts-plus"
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
+                  {!isPro && (
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <p className="text-xs text-muted-foreground">{t.proShiftsLimitHint}</p>
+                      <ProBadge onClick={() => setShowProModal("shifts")} />
+                    </div>
+                  )}
                 </div>
 
                 <Separator />
@@ -1775,15 +1802,24 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                   </div>
                   <p className="text-xs text-muted-foreground">{t.staffLevelsDesc}</p>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={addStaffLevel}
-                  disabled={(config.staffLevels?.length || 0) >= 5}
-                  data-testid="button-add-level"
-                >
-                  <Plus className="w-4 h-4 mr-1" /> {t.addLevel}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (!isPro && (config.staffLevels?.length || 0) >= 3) { setShowProModal("levels"); return; }
+                      addStaffLevel();
+                    }}
+                    disabled={(config.staffLevels?.length || 0) >= 5}
+                    data-testid="button-add-level"
+                  >
+                    <Plus className="w-4 h-4 mr-1" /> {t.addLevel}
+                  </Button>
+                  {!isPro && <ProBadge onClick={() => setShowProModal("levels")} />}
+                </div>
+                {!isPro && (
+                  <p className="text-xs text-muted-foreground mt-1">{t.proLevelsLimitHint}</p>
+                )}
               </div>
 
               {config.staffLevels && config.staffLevels.length > 0 ? (
@@ -1941,12 +1977,43 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <Label className="text-base font-semibold">{t.staff} ({staff.length})</Label>
+                    <div>
+                      <Label className="text-base font-semibold">{t.staff} ({staff.length})</Label>
+                      {!isPro && (
+                        <div className="mt-1 space-y-1">
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              {t.proStaffLimitHint}
+                              <ProBadge onClick={() => setShowProModal("staffCount")} className="ml-1" />
+                            </span>
+                            <span className="font-medium">{staff.length} / 15 {lang === "th" ? "คน" : ""}</span>
+                          </div>
+                          <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all duration-300 ${staff.length >= 15 ? "bg-red-500" : staff.length >= 12 ? "bg-amber-500" : "bg-primary"}`}
+                              style={{ width: `${Math.min(100, (staff.length / 15) * 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
                     <div className="flex items-center gap-1.5 flex-wrap" data-walkthrough="add-staff-buttons">
-                      <Button onClick={addStaff} variant="outline" size="sm" className="border-dashed" data-testid="button-add-staff">
+                      <Button
+                        onClick={() => {
+                          if (!isPro && staff.length >= 15) { setShowProModal("staffCount"); return; }
+                          addStaff();
+                        }}
+                        variant="outline" size="sm" className="border-dashed" data-testid="button-add-staff"
+                      >
                         <Plus className="w-4 h-4 mr-1" /> {t.add}
                       </Button>
-                      <Button onClick={() => setShowBulkAdd(true)} variant="outline" size="sm" data-testid="button-add-multiple">
+                      <Button
+                        onClick={() => {
+                          if (!isPro && staff.length >= 15) { setShowProModal("staffCount"); return; }
+                          setShowBulkAdd(true);
+                        }}
+                        variant="outline" size="sm" data-testid="button-add-multiple"
+                      >
                         <Users className="w-4 h-4 mr-1" /> {t.addMultiple}
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => document.getElementById('excel-upload-input')?.click()} data-testid="button-upload-excel">
@@ -2630,13 +2697,17 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                       <CalendarDays className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                     </div>
                     <h3 className="font-semibold text-lg">{t.holidayWeekendBalancing}</h3>
+                    {!isPro && <ProBadge onClick={() => setShowProModal("holidays")} />}
                   </div>
 
-                  <div className="flex items-start gap-3">
+                  <div className={`flex items-start gap-3 ${!isPro ? "opacity-60 pointer-events-none" : ""}`}>
                     <Checkbox 
                       id="balance-holidays"
                       checked={config.balanceHolidays || false}
-                      onCheckedChange={(checked) => setConfig({...config, balanceHolidays: checked === true})}
+                      onCheckedChange={(checked) => {
+                        if (!isPro) { setShowProModal("holidays"); return; }
+                        setConfig({...config, balanceHolidays: checked === true});
+                      }}
                       data-testid="checkbox-balance-holidays"
                     />
                     <div>
@@ -2648,6 +2719,14 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                       </p>
                     </div>
                   </div>
+                  {!isPro && (
+                    <button
+                      className="w-full text-left text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/50 rounded-lg px-3 py-2 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/20 transition-colors"
+                      onClick={() => setShowProModal("holidays")}
+                    >
+                      {lang === "th" ? "✦ อัพเกรดเป็น Pro เพื่อใช้งานฟีเจอร์นี้" : "✦ Upgrade to Pro to use this feature"}
+                    </button>
+                  )}
 
                   {config.balanceHolidays && (
                     <div className="space-y-3 pt-2">
@@ -2926,7 +3005,10 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
               <Tabs defaultValue="calendar">
                 <TabsList className="mb-4" data-walkthrough="view-tabs">
                   <TabsTrigger value="calendar" data-testid="tab-calendar"><CalendarIcon className="w-4 h-4 mr-2" />{t.calendarView}</TabsTrigger>
-                  <TabsTrigger value="staff-schedule" data-testid="tab-staff-schedule"><Users className="w-4 h-4 mr-2" />{t.staffSchedule}</TabsTrigger>
+                  <TabsTrigger value="staff-schedule" data-testid="tab-staff-schedule">
+                  <Users className="w-4 h-4 mr-2" />{t.staffSchedule}
+                  {!isPro && <ProBadge className="ml-1.5" />}
+                </TabsTrigger>
                   <TabsTrigger value="summary" data-testid="tab-summary"><Check className="w-4 h-4 mr-2" />{t.summary}</TabsTrigger>
                   <TabsTrigger value="stats" data-testid="tab-stats"><Activity className="w-4 h-4 mr-2" />{t.statistics}</TabsTrigger>
                 </TabsList>
@@ -2948,19 +3030,59 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                 </TabsContent>
 
                 <TabsContent value="staff-schedule" className="mt-0">
-                  <StaffScheduleView
-                    schedule={result.schedule}
-                    config={{
-                      ...config,
-                      useCustomRange,
-                      customStartDate: useCustomRange ? customStartDate : undefined,
-                      customEndDate: useCustomRange ? customEndDate : undefined,
-                    }}
-                    staff={staff}
-                    month={month}
-                    year={year}
-                    onScheduleChange={handleScheduleEdit}
-                  />
+                  {!isPro ? (
+                    <div className="relative rounded-xl overflow-hidden">
+                      <div className="blur-sm pointer-events-none select-none">
+                        <StaffScheduleView
+                          schedule={result.schedule}
+                          config={{
+                            ...config,
+                            useCustomRange,
+                            customStartDate: useCustomRange ? customStartDate : undefined,
+                            customEndDate: useCustomRange ? customEndDate : undefined,
+                          }}
+                          staff={staff}
+                          month={month}
+                          year={year}
+                          onScheduleChange={handleScheduleEdit}
+                        />
+                      </div>
+                      <div className="absolute inset-0 flex items-center justify-center bg-white/70 dark:bg-zinc-900/70 z-10">
+                        <div className="text-center space-y-4 p-8 max-w-sm">
+                          <div className="p-4 rounded-2xl bg-amber-100 dark:bg-amber-900/30 inline-flex mx-auto">
+                            <Lock className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-lg mb-1">{t.staffSchedule}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {lang === "th" ? "ฟีเจอร์นี้สำหรับผู้ใช้ Pro" : "This feature is available for Pro users"}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => setShowProModal("staffSchedule")}
+                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold transition-colors"
+                          >
+                            <Crown className="w-4 h-4" />
+                            {t.proGateUpgrade}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <StaffScheduleView
+                      schedule={result.schedule}
+                      config={{
+                        ...config,
+                        useCustomRange,
+                        customStartDate: useCustomRange ? customStartDate : undefined,
+                        customEndDate: useCustomRange ? customEndDate : undefined,
+                      }}
+                      staff={staff}
+                      month={month}
+                      year={year}
+                      onScheduleChange={handleScheduleEdit}
+                    />
+                  )}
                 </TabsContent>
 
                 <TabsContent value="summary" className="mt-0">
@@ -3248,6 +3370,12 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
         </DialogContent>
       </Dialog>
 
+
+      <ProGateModal
+        open={showProModal !== null}
+        onClose={() => setShowProModal(null)}
+        featureKey={showProModal ?? undefined}
+      />
 
       <Dialog open={showLoginPrompt} onOpenChange={setShowLoginPrompt}>
         <DialogContent className="max-w-sm p-0 overflow-hidden">
