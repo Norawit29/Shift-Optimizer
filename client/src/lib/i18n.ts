@@ -272,8 +272,8 @@ const translations = {
     proGateUpgrade: "Upgrade to Pro",
     proStaffLimitHint: "Free: up to 15 staff · Upgrade for unlimited",
     proStaffProgress: "Staff",
-    proShiftsLimitHint: "Free: up to 3 shifts per day",
-    proLevelsLimitHint: "Free: up to 3 levels",
+    proShiftsLimitHint: "Free: up to 5 shifts per day",
+    proLevelsLimitHint: "Free: up to 5 levels",
 
     // ScheduleDetailsPage
     exportExcel: "Export Excel",
@@ -698,8 +698,8 @@ const translations = {
     proGateUpgrade: "อัพเกรดเป็น Pro",
     proStaffLimitHint: "ฟรี: สูงสุด 15 คน · อัพเกรดเพื่อไม่จำกัด",
     proStaffProgress: "พนักงาน",
-    proShiftsLimitHint: "ฟรี: สูงสุด 3 เวรต่อวัน",
-    proLevelsLimitHint: "ฟรี: สูงสุด 3 ระดับ",
+    proShiftsLimitHint: "ฟรี: สูงสุด 5 เวรต่อวัน",
+    proLevelsLimitHint: "ฟรี: สูงสุด 5 ระดับ",
 
     // ScheduleDetailsPage
     exportExcel: "ส่งออก Excel",

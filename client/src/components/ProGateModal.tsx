@@ -16,12 +16,12 @@ interface ProGateModalProps {
 
 const featureDetails: Record<string, { en: string; th: string }> = {
   shifts: {
-    en: "More than 3 shifts per day",
-    th: "จำนวนเวรต่อวันมากกว่า 3 เวร",
+    en: "More than 5 shifts per day",
+    th: "จำนวนเวรต่อวันมากกว่า 5 เวร",
   },
   levels: {
-    en: "More than 3 staff levels",
-    th: "ระดับขั้นบุคลากรมากกว่า 3 ระดับ",
+    en: "More than 5 staff levels",
+    th: "ระดับขั้นบุคลากรมากกว่า 5 ระดับ",
   },
   staffCount: {
     en: "More than 15 staff members",
@@ -86,16 +86,16 @@ export function ProGateModal({ open, onClose, featureKey }: ProGateModalProps) {
   const freeFeatures = lang === "th"
     ? [
         { label: "บุคลากรสูงสุด 15 คน", included: true },
-        { label: "เวรสูงสุด 3 เวรต่อวัน", included: true },
-        { label: "ระดับขั้นบุคลากรสูงสุด 3 ระดับ", included: true },
+        { label: "เวรต่อวันสูงสุด 5 เวร", included: true },
+        { label: "ระดับขั้นบุคลากรสูงสุด 5 ระดับ", included: true },
         { label: "การเกลี่ยเวรวันหยุด", included: false },
         { label: "ตารางเวรรายบุคคล", included: false },
         { label: "ส่งออก Excel", included: false },
       ]
     : [
         { label: "Up to 15 staff members", included: true },
-        { label: "Up to 3 shifts per day", included: true },
-        { label: "Up to 3 staff levels", included: true },
+        { label: "Up to 5 shifts per day", included: true },
+        { label: "Up to 5 staff levels", included: true },
         { label: "Holiday shift balancing", included: false },
         { label: "Per-staff schedule view", included: false },
         { label: "Export to Excel", included: false },
