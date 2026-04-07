@@ -145,7 +145,7 @@ export default function PricingPage() {
     subtitle: lang === "th"
       ? "เลือกแผนที่เหมาะกับคุณ — เริ่มต้นฟรี อัปเกรดเมื่อพร้อม"
       : "Choose the plan that fits you — start free, upgrade when ready",
-    free: lang === "th" ? "ฟรี" : "Free",
+    free: "Free",
     freeDesc: lang === "th" ? "สำหรับทีมขนาดเล็ก" : "For small teams",
     pro: "Pro",
     proDesc: lang === "th" ? "สำหรับโรงพยาบาลทุกขนาด" : "For hospitals of any size",
