@@ -1802,7 +1802,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                   </div>
                   <p className="text-xs text-muted-foreground">{t.staffLevelsDesc}</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <Button
                     variant="outline"
                     size="sm"
@@ -1815,11 +1815,13 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                   >
                     <Plus className="w-4 h-4 mr-1" /> {t.addLevel}
                   </Button>
-                  {!isPro && <ProBadge onClick={() => setShowProModal("levels")} />}
+                  {!isPro && (
+                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      {t.proLevelsLimitHint}
+                      <ProBadge onClick={() => setShowProModal("levels")} />
+                    </span>
+                  )}
                 </div>
-                {!isPro && (
-                  <p className="text-xs text-muted-foreground mt-1">{t.proLevelsLimitHint}</p>
-                )}
               </div>
 
               {config.staffLevels && config.staffLevels.length > 0 ? (
