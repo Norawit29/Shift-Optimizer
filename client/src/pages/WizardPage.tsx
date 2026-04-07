@@ -1589,12 +1589,12 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
             <div className="flex items-center gap-2">
               <span className="font-bold text-xl font-display text-primary">{t.schedulerWizard}</span>
               <Badge variant="outline" className="ml-2">{t.step} {step}/4</Badge>
-              <LanguageToggle />
-              {user && <UserMenu />}
             </div>
           </div>
           
           <div className="flex items-center gap-2">
+            <LanguageToggle />
+            {user && <UserMenu />}
             {step === 4 && (
               <Button
                 onClick={() => {
