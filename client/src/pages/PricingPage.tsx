@@ -9,6 +9,7 @@ import { Check, Loader2, Sparkles, Crown, ArrowLeft } from "lucide-react";
 import { Link, useSearch } from "wouter";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { Navbar } from "@/components/Navbar";
 
 interface Price {
   id: string;
@@ -163,6 +164,7 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
+      <Navbar />
       <div className="max-w-5xl mx-auto px-4 py-16">
         <div className="mb-8">
           <Link href="/">
