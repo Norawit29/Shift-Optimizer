@@ -343,9 +343,9 @@ export default function PricingPage() {
               <div className="text-2xl font-bold text-slate-900 dark:text-slate-50">
                 {lang === "th" ? "ติดต่อเรา" : "Contact Us"}
               </div>
-              <div className="text-slate-500 dark:text-slate-400 mt-1 text-sm">
+              <div className="text-slate-500 dark:text-slate-400 mt-1 text-sm text-justify">
                 {lang === "th"
-                  ? "ปรับแต่งระบบให้เข้ากับองค์กรของคุณ — ทีมเราพร้อมช่วยออกแบบระบบจัดเวรที่ตอบโจทย์โรงพยาบาลระดับใหญ่และองค์กรสุขภาพโดยเฉพาะ"
+                  ? "ปรับแต่งระบบให้เข้ากับองค์กรของคุณ — ทีมของเราพร้อมช่วยออกแบบระบบจัดเวรที่ตอบโจทย์โรงพยาบาลระดับใหญ่และองค์กรสุขภาพโดยเฉพาะ"
                   : "Tailored to your organization — our team will design a scheduling solution for large hospitals and healthcare enterprises."}
               </div>
             </div>
