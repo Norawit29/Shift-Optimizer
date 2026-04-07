@@ -145,6 +145,24 @@ export const generatedSchedules = pgTable("generated_schedules", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const enterpriseLeads = pgTable("enterprise_leads", {
+  id: serial("id").primaryKey(),
+  orgName: text("org_name").notNull(),
+  contactName: text("contact_name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  staffCount: text("staff_count"),
+  message: text("message"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertEnterpriseLeadSchema = createInsertSchema(enterpriseLeads).omit({
+  id: true,
+  createdAt: true,
+});
+export type EnterpriseLead = typeof enterpriseLeads.$inferSelect;
+export type InsertEnterpriseLead = z.infer<typeof insertEnterpriseLeadSchema>;
+
 // === SCHEMAS ===
 
 export const insertScheduleSchema = createInsertSchema(schedules).omit({ 

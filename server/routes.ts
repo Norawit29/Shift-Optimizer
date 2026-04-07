@@ -673,5 +673,20 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/enterprise-leads", async (req, res) => {
+    try {
+      const { enterpriseLeads, insertEnterpriseLeadSchema } = await import("../shared/schema");
+      const parsed = insertEnterpriseLeadSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid data", errors: parsed.error.errors });
+      }
+      const [lead] = await db.insert(enterpriseLeads).values(parsed.data).returning();
+      res.json({ success: true, id: lead.id });
+    } catch (error: any) {
+      console.error("Error saving enterprise lead:", error);
+      res.status(500).json({ message: "Failed to save inquiry" });
+    }
+  });
+
   return httpServer;
 }
