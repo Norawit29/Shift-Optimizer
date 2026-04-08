@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogIn, Crown, LogOut, CreditCard, ChevronDown, Sparkles } from "lucide-react";
+import { LogIn, Crown, LogOut, CreditCard, ChevronDown, Sparkles, CalendarDays } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -126,7 +126,7 @@ export function UserMenu() {
   const { isPro } = useProStatus();
   const { lang } = useLanguage();
   const { toast } = useToast();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
 
   const { data: productsData } = useQuery<{ data: any[] }>({
     queryKey: ["/api/stripe/products"],
@@ -263,6 +263,24 @@ export function UserMenu() {
 
         <DropdownMenuSeparator className="my-1.5 bg-slate-100 dark:bg-slate-800" />
 
+        {/* My Schedules */}
+        <DropdownMenuItem
+          className="flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+          onSelect={() => {
+            if (location === "/create") {
+              window.dispatchEvent(new CustomEvent("open-schedule-sidebar"));
+            } else {
+              navigate("/history");
+            }
+          }}
+          data-testid="menu-item-my-schedules"
+        >
+          <CalendarDays className="w-4 h-4 text-slate-400 shrink-0" />
+          <span>{lang === "th" ? "ตารางเวรของฉัน" : "My Schedules"}</span>
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator className="my-1.5 bg-slate-100 dark:bg-slate-800" />
+
         {/* Subscription action */}
         {isPro ? (
           <DropdownMenuItem
@@ -277,7 +295,7 @@ export function UserMenu() {
         ) : (
           <div className="px-1 py-0.5">
             <button
-              className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm font-semibold rounded-xl bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-60"
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-60"
               onClick={() => {
                 if (monthlyPrice) {
                   checkoutMutation.mutate(monthlyPrice.id);
@@ -289,13 +307,13 @@ export function UserMenu() {
               data-testid="menu-item-upgrade-pro"
             >
               <Sparkles className="w-4 h-4 shrink-0" />
-              <span className="flex-1 text-left">
+              <span className="whitespace-nowrap">
                 {checkoutMutation.isPending
                   ? (lang === "th" ? "กำลังโหลด..." : "Loading...")
                   : t.upgradePro}
               </span>
               {!checkoutMutation.isPending && (
-                <span className="text-[10px] font-normal bg-white/20 rounded-full px-1.5 py-0.5 whitespace-nowrap">
+                <span className="ml-auto text-[10px] font-normal bg-white/20 rounded-full px-1.5 py-0.5 whitespace-nowrap">
                   {t.trialNote}
                 </span>
               )}
