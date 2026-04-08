@@ -65,7 +65,7 @@ export default function HistoryPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-2 mt-4">
-                    <Link href={`/schedule/${schedule.id}`} className="flex-1">
+                    <Link href={`/create?load=${schedule.id}`} className="flex-1">
                       <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors" data-testid={`button-open-${schedule.id}`}>
                         <Eye className="mr-2 h-4 w-4" />
                         {t.view}

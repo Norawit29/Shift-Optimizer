@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { useCreateSchedule, useUpdateSchedule, useSchedules } from "@/hooks/use-schedules";
+import { useCreateSchedule, useUpdateSchedule, useSchedules, useSchedule } from "@/hooks/use-schedules";
 import { type StaffMember, type SchedulerConfig, type OptimizerResult, type DaySchedule, type Schedule } from "@shared/schema";
 import { useAuth } from "@/context/AuthContext";
 import { GoogleSignInButton, UserMenu } from "@/components/GoogleSignIn";
@@ -588,6 +588,10 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const [, setLocation] = useLocation();
   const searchStr = useSearch();
   const { t, dayNames, lang } = useLanguage();
+  const loadIdParam = new URLSearchParams(searchStr).get("load");
+  const autoLoadId = loadIdParam ? parseInt(loadIdParam, 10) : 0;
+  const { data: autoLoadSchedule } = useSchedule(autoLoadId);
+  const autoLoadedRef = useRef(false);
 
   // Show Pro welcome toast and poll subscription after successful Stripe checkout
   useEffect(() => {
@@ -1487,6 +1491,14 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     }
     toast({ title: t.scheduleLoaded });
   }, [toast, t]);
+
+  useEffect(() => {
+    if (autoLoadSchedule && autoLoadId > 0 && !autoLoadedRef.current) {
+      autoLoadedRef.current = true;
+      handleLoadSchedule(autoLoadSchedule as any);
+      window.history.replaceState({}, "", "/create");
+    }
+  }, [autoLoadSchedule, autoLoadId, handleLoadSchedule]);
 
   const handleNewSchedule = useCallback(() => {
     setConfig(getInitialConfig(lang));
