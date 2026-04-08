@@ -916,14 +916,37 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
         toast({ title: t.uploadExcelEmpty, variant: "destructive" });
         return;
       }
-      const newStaff: StaffMember[] = names.map(name => ({
+      const FREE_LIMIT = 15;
+      let importedNames = names;
+      let truncated = false;
+      if (!isPro) {
+        const remaining = FREE_LIMIT - staff.length;
+        if (remaining <= 0) {
+          setShowProModal("staffCount");
+          return;
+        }
+        if (names.length > remaining) {
+          importedNames = names.slice(0, remaining);
+          truncated = true;
+        }
+      }
+      const newStaff: StaffMember[] = importedNames.map(name => ({
         id: nanoid(),
         name,
         maxShifts: globalMaxShifts,
         blocked: [],
       }));
       setStaff([...staff, ...newStaff]);
-      toast({ title: t.uploadExcelSuccess.replace("{count}", String(names.length)) });
+      if (truncated) {
+        toast({
+          title: t.uploadExcelTruncated
+            .replace("{count}", String(importedNames.length))
+            .replace("{total}", String(names.length)),
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: t.uploadExcelSuccess.replace("{count}", String(importedNames.length)) });
+      }
     } catch {
       toast({ title: t.uploadExcelError, variant: "destructive" });
     }
