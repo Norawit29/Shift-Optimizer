@@ -70,8 +70,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     setUser(null);
-    queryClient.invalidateQueries({ queryKey: ["/api/stripe/subscription"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+    queryClient.clear();
+    window.location.href = "/";
   }, []);
 
   return (
