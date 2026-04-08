@@ -1,8 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useCreateSchedule, useUpdateSchedule, useSchedules } from "@/hooks/use-schedules";
 import { type StaffMember, type SchedulerConfig, type OptimizerResult, type DaySchedule, type Schedule } from "@shared/schema";
-import { ScheduleSidebar } from "@/components/ScheduleSidebar";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from "@/context/AuthContext";
 import { GoogleSignInButton, UserMenu } from "@/components/GoogleSignIn";
 import { runOptimizerInWorker } from "@/lib/workerRunner";
@@ -573,14 +571,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const { user } = useAuth();
   const { isPro } = useProStatus();
   const [showProModal, setShowProModal] = useState<string | null>(null);
-  const [showScheduleSheet, setShowScheduleSheet] = useState(false);
   const { data: savedSchedules } = useSchedules();
-
-  useEffect(() => {
-    const handler = () => setShowScheduleSheet(true);
-    window.addEventListener("open-schedule-sidebar", handler);
-    return () => window.removeEventListener("open-schedule-sidebar", handler);
-  }, []);
 
   const handleModeSwitch = (mode: string) => {
     const newMode = mode === "custom";
@@ -1678,24 +1669,6 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           />
         </div>
       </header>
-
-      {user && (
-        <Sheet open={showScheduleSheet} onOpenChange={setShowScheduleSheet}>
-          <SheetContent side="left" className="w-72 p-0 flex flex-col">
-            <SheetHeader className="px-3 py-3 border-b border-slate-200 dark:border-slate-700 shrink-0">
-              <SheetTitle className="text-sm font-semibold">{lang === "th" ? "ตารางเวรของฉัน" : "My Schedules"}</SheetTitle>
-            </SheetHeader>
-            <div className="flex-1 overflow-hidden">
-              <ScheduleSidebar
-                activeScheduleId={editingScheduleId}
-                onLoadSchedule={(s) => { handleLoadSchedule(s); setTimeout(() => setShowScheduleSheet(false), 80); }}
-                onNewSchedule={() => { handleNewSchedule(); setTimeout(() => setShowScheduleSheet(false), 80); }}
-                hideHeader
-              />
-            </div>
-          </SheetContent>
-        </Sheet>
-      )}
 
       <div className="flex flex-1 overflow-hidden" style={{ height: "calc(100vh - 4.25rem)" }}>
         <main className={cn("flex-1 overflow-y-auto px-4 py-8 min-w-0", step === 4 ? "" : "max-w-5xl mx-auto pb-24")}>

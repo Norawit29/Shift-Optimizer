@@ -126,7 +126,7 @@ export function UserMenu() {
   const { isPro } = useProStatus();
   const { lang } = useLanguage();
   const { toast } = useToast();
-  const [location, navigate] = useLocation();
+  const [, navigate] = useLocation();
 
   const { data: productsData } = useQuery<{ data: any[] }>({
     queryKey: ["/api/stripe/products"],
@@ -266,13 +266,7 @@ export function UserMenu() {
         {/* My Schedules */}
         <DropdownMenuItem
           className="flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-          onSelect={() => {
-            if (location === "/create") {
-              window.dispatchEvent(new CustomEvent("open-schedule-sidebar"));
-            } else {
-              navigate("/history");
-            }
-          }}
+          onSelect={() => navigate("/history")}
           data-testid="menu-item-my-schedules"
         >
           <CalendarDays className="w-4 h-4 text-slate-400 shrink-0" />
