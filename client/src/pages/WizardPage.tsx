@@ -1688,8 +1688,8 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
             <div className="flex-1 overflow-hidden">
               <ScheduleSidebar
                 activeScheduleId={editingScheduleId}
-                onLoadSchedule={(s) => { handleLoadSchedule(s); setShowScheduleSheet(false); }}
-                onNewSchedule={() => { handleNewSchedule(); setShowScheduleSheet(false); }}
+                onLoadSchedule={(s) => { handleLoadSchedule(s); setTimeout(() => setShowScheduleSheet(false), 80); }}
+                onNewSchedule={() => { handleNewSchedule(); setTimeout(() => setShowScheduleSheet(false), 80); }}
                 hideHeader
               />
             </div>

@@ -39,8 +39,9 @@ export function ScheduleSidebar({ activeScheduleId, onLoadSchedule, onNewSchedul
 
   const confirmLoad = () => {
     if (loadTarget) {
-      onLoadSchedule(loadTarget);
+      const schedule = loadTarget;
       setLoadTarget(null);
+      setTimeout(() => onLoadSchedule(schedule), 50);
     }
   };
 
