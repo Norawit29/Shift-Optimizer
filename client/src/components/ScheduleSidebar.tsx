@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { Plus, Trash2, CalendarDays, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, CalendarDays, AlertTriangle, Check, X } from "lucide-react";
 import { format } from "date-fns";
 import { th, enUS } from "date-fns/locale";
 import type { Schedule } from "@shared/schema";
@@ -23,18 +23,16 @@ export function ScheduleSidebar({ activeScheduleId, onLoadSchedule, onNewSchedul
   const deleteMutation = useDeleteSchedule();
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
   const [loadTarget, setLoadTarget] = useState<Schedule | null>(null);
+  const [inlineDeleteId, setInlineDeleteId] = useState<number | null>(null);
 
-  const confirmDelete = () => {
-    if (deleteTarget !== null) {
-      deleteMutation.mutate(deleteTarget, {
-        onSuccess: () => {
-          if (deleteTarget === activeScheduleId) {
-            onNewSchedule();
-          }
-        }
-      });
-      setDeleteTarget(null);
-    }
+  const doDelete = (id: number) => {
+    deleteMutation.mutate(id, {
+      onSuccess: () => {
+        if (id === activeScheduleId) onNewSchedule();
+      }
+    });
+    setDeleteTarget(null);
+    setInlineDeleteId(null);
   };
 
   const confirmLoad = () => {
@@ -95,6 +93,7 @@ export function ScheduleSidebar({ activeScheduleId, onLoadSchedule, onNewSchedul
           ) : (
             schedules.map((schedule: Schedule) => {
               const isActive = activeScheduleId === schedule.id;
+              const isInlineDeleting = inlineDeleteId === schedule.id;
               const dateLabel = schedule.config?.useCustomRange && schedule.config?.customStartDate
                 ? `${schedule.config.customStartDate} — ${schedule.config.customEndDate || ""}`
                 : format(new Date(schedule.year, schedule.month - 1, 1), "MMMM yyyy", { locale: lang === "th" ? th : enUS });
@@ -108,28 +107,68 @@ export function ScheduleSidebar({ activeScheduleId, onLoadSchedule, onNewSchedul
                     "group rounded-md px-2.5 py-2 cursor-pointer transition-colors text-left w-full",
                     isActive
                       ? "bg-primary/10 dark:bg-primary/15 ring-1 ring-primary/30"
+                      : isInlineDeleting
+                      ? "bg-red-50 dark:bg-red-900/20 ring-1 ring-red-300 dark:ring-red-700"
                       : "hover:bg-slate-100 dark:hover:bg-slate-800/50"
                   )}
-                  onClick={() => setLoadTarget(schedule)}
+                  onClick={() => {
+                    if (isInlineDeleting) return;
+                    hideHeader ? onLoadSchedule(schedule) : setLoadTarget(schedule);
+                  }}
                   data-testid={`sidebar-schedule-${schedule.id}`}
                 >
                   <div className="flex items-start justify-between gap-1">
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium truncate">{schedule.name}</p>
                       <p className="text-[11px] text-muted-foreground truncate">{dateLabel}</p>
-                      {savedDate && (
+                      {savedDate && !isInlineDeleting && (
                         <p className="text-[10px] text-muted-foreground/70 mt-0.5">
                           {t.savedAt} {savedDate}
                         </p>
                       )}
+                      {isInlineDeleting && (
+                        <p className="text-[11px] text-red-600 dark:text-red-400 mt-0.5">
+                          {lang === "th" ? "ลบตารางนี้?" : "Delete this?"}
+                        </p>
+                      )}
                     </div>
-                    <button
-                      className="opacity-0 group-hover:opacity-60 hover:!opacity-100 h-6 w-6 inline-flex items-center justify-center text-muted-foreground hover:text-red-500 rounded-sm shrink-0 transition-opacity mt-0.5"
-                      onClick={(e) => { e.stopPropagation(); setDeleteTarget(schedule.id); }}
-                      data-testid={`button-delete-schedule-${schedule.id}`}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+
+                    {hideHeader ? (
+                      isInlineDeleting ? (
+                        <div className="flex items-center gap-1 shrink-0 mt-0.5" onClick={e => e.stopPropagation()}>
+                          <button
+                            className="h-6 w-6 inline-flex items-center justify-center text-red-500 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-sm transition-colors"
+                            onClick={() => doDelete(schedule.id)}
+                            data-testid={`button-confirm-delete-${schedule.id}`}
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            className="h-6 w-6 inline-flex items-center justify-center text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-sm transition-colors"
+                            onClick={() => setInlineDeleteId(null)}
+                            data-testid={`button-cancel-delete-${schedule.id}`}
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          className="opacity-0 group-hover:opacity-60 hover:!opacity-100 h-6 w-6 inline-flex items-center justify-center text-muted-foreground hover:text-red-500 rounded-sm shrink-0 transition-opacity mt-0.5"
+                          onClick={(e) => { e.stopPropagation(); setInlineDeleteId(schedule.id); }}
+                          data-testid={`button-delete-schedule-${schedule.id}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )
+                    ) : (
+                      <button
+                        className="opacity-0 group-hover:opacity-60 hover:!opacity-100 h-6 w-6 inline-flex items-center justify-center text-muted-foreground hover:text-red-500 rounded-sm shrink-0 transition-opacity mt-0.5"
+                        onClick={(e) => { e.stopPropagation(); setDeleteTarget(schedule.id); }}
+                        data-testid={`button-delete-schedule-${schedule.id}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -138,7 +177,7 @@ export function ScheduleSidebar({ activeScheduleId, onLoadSchedule, onNewSchedul
         </div>
       </ScrollArea>
 
-      {deleteTarget !== null && (
+      {!hideHeader && deleteTarget !== null && (
         <Dialog open={true} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
           <DialogContent className="max-w-sm">
             <DialogHeader>
@@ -154,7 +193,7 @@ export function ScheduleSidebar({ activeScheduleId, onLoadSchedule, onNewSchedul
               <Button variant="outline" onClick={() => setDeleteTarget(null)} data-testid="button-cancel-delete">
                 {lang === "th" ? "ยกเลิก" : "Cancel"}
               </Button>
-              <Button variant="destructive" onClick={confirmDelete} data-testid="button-confirm-delete">
+              <Button variant="destructive" onClick={() => doDelete(deleteTarget)} data-testid="button-confirm-delete">
                 {lang === "th" ? "ลบ" : "Delete"}
               </Button>
             </DialogFooter>
@@ -162,7 +201,7 @@ export function ScheduleSidebar({ activeScheduleId, onLoadSchedule, onNewSchedul
         </Dialog>
       )}
 
-      {loadTarget !== null && (
+      {!hideHeader && loadTarget !== null && (
         <Dialog open={true} onOpenChange={(open) => { if (!open) setLoadTarget(null); }}>
           <DialogContent className="max-w-sm">
             <DialogHeader>
