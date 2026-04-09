@@ -56,9 +56,9 @@ function CountUp({ target, suffix = "" }: { target: number; suffix?: string }) {
   }, [target]);
 
   return (
-    <span ref={ref} className="tabular-nums inline-flex items-start">
+    <span ref={ref} className="tabular-nums inline-flex items-center">
       {count.toLocaleString()}
-      {suffix && <span className="text-4xl sm:text-5xl font-bold mt-1 ml-0.5">{suffix}</span>}
+      {suffix && <span className="text-4xl sm:text-5xl font-bold ml-0.5">{suffix}</span>}
     </span>
   );
 }
@@ -324,7 +324,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="py-16 sm:py-20 px-4 sm:px-6 bg-gradient-to-br from-primary/90 to-accent/80">
+        <section className="py-16 sm:py-20 px-4 sm:px-6 bg-slate-100 dark:bg-slate-800/60 border-y border-slate-200 dark:border-slate-700/40">
           <div className="max-w-5xl mx-auto">
             <m.div
               initial="hidden"
@@ -333,10 +333,10 @@ export default function HomePage() {
               variants={staggerContainer}
             >
               <m.div variants={fadeUp} custom={0} className="text-center mb-10 sm:mb-14">
-                <p className="text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase text-white/70 mb-2" data-testid="text-stats-label">
+                <p className="text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase text-slate-400 dark:text-slate-500 mb-2" data-testid="text-stats-label">
                   {t.statsSectionLabel}
                 </p>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-white" data-testid="text-stats-title">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-stats-title">
                   {t.statsSectionTitle}
                 </h2>
               </m.div>
@@ -347,10 +347,10 @@ export default function HomePage() {
                   { target: parseInt(t.stat3Value), label: t.stat3Label, testId: "stat-mandays" },
                 ].map((stat, i) => (
                   <m.div key={i} variants={fadeUp} custom={i + 1} className="flex flex-col items-center gap-3" data-testid={stat.testId}>
-                    <span className="text-6xl sm:text-7xl md:text-8xl font-display font-extrabold text-white leading-none tracking-tight">
+                    <span className="text-6xl sm:text-7xl md:text-8xl font-display font-extrabold text-primary leading-none tracking-tight">
                       <CountUp target={stat.target} suffix="+" />
                     </span>
-                    <span className="text-sm sm:text-base font-medium text-white/80 max-w-[180px] leading-snug text-center">
+                    <span className="text-sm sm:text-base font-medium text-slate-600 dark:text-slate-300 max-w-[180px] leading-snug text-center">
                       {stat.label.split("\n").map((line: string, j: number) => (
                         <span key={j}>{line}{j < stat.label.split("\n").length - 1 && <br />}</span>
                       ))}
