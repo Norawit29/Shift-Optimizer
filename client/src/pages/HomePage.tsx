@@ -17,12 +17,50 @@ import {
 } from "lucide-react";
 import { SiFacebook } from "react-icons/si";
 import { LazyMotion, domAnimation, m, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { th, enUS } from "date-fns/locale";
 import { Navbar } from "@/components/Navbar";
+
+function CountUp({ target, suffix = "" }: { target: number; suffix?: string }) {
+  const [count, setCount] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  const started = useRef(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !started.current) {
+          started.current = true;
+          const duration = 1600;
+          const start = performance.now();
+          const tick = (now: number) => {
+            const elapsed = now - start;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            setCount(Math.round(eased * target));
+            if (progress < 1) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [target]);
+
+  return (
+    <span ref={ref} className="tabular-nums">
+      {count.toLocaleString()}{suffix}
+    </span>
+  );
+}
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -301,17 +339,17 @@ export default function HomePage() {
                   {t.statsSectionTitle}
                 </h2>
               </m.div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-6 text-center">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-6 text-center">
                 {[
-                  { value: t.stat1Value, label: t.stat1Label, testId: "stat-departments" },
-                  { value: t.stat2Value, label: t.stat2Label, testId: "stat-schedules" },
-                  { value: t.stat3Value, label: t.stat3Label, testId: "stat-mandays" },
+                  { target: parseInt(t.stat1Value), label: t.stat1Label, testId: "stat-departments" },
+                  { target: parseInt(t.stat2Value), label: t.stat2Label, testId: "stat-schedules" },
+                  { target: parseInt(t.stat3Value), label: t.stat3Label, testId: "stat-mandays" },
                 ].map((stat, i) => (
-                  <m.div key={i} variants={fadeUp} custom={i + 1} className="flex flex-col items-center gap-2" data-testid={stat.testId}>
-                    <span className="text-5xl sm:text-6xl md:text-7xl font-display font-extrabold text-white leading-none tracking-tight">
-                      {stat.value}
+                  <m.div key={i} variants={fadeUp} custom={i + 1} className="flex flex-col items-center gap-3" data-testid={stat.testId}>
+                    <span className="text-6xl sm:text-7xl md:text-8xl font-display font-extrabold text-white leading-none tracking-tight">
+                      <CountUp target={stat.target} suffix="+" />
                     </span>
-                    <span className="text-base sm:text-lg font-medium text-white/80">{stat.label}</span>
+                    <span className="text-sm sm:text-base font-medium text-white/80 max-w-[180px] leading-snug">{stat.label}</span>
                   </m.div>
                 ))}
               </div>
