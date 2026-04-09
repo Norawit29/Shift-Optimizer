@@ -285,6 +285,40 @@ export default function HomePage() {
           </div>
         </section>
 
+        <section className="py-16 sm:py-20 px-4 sm:px-6 bg-gradient-to-br from-primary/90 to-accent/80">
+          <div className="max-w-5xl mx-auto">
+            <m.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-80px" }}
+              variants={staggerContainer}
+            >
+              <m.div variants={fadeUp} custom={0} className="text-center mb-10 sm:mb-14">
+                <p className="text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase text-white/70 mb-2" data-testid="text-stats-label">
+                  {t.statsSectionLabel}
+                </p>
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-white" data-testid="text-stats-title">
+                  {t.statsSectionTitle}
+                </h2>
+              </m.div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-6 text-center">
+                {[
+                  { value: t.stat1Value, label: t.stat1Label, testId: "stat-departments" },
+                  { value: t.stat2Value, label: t.stat2Label, testId: "stat-schedules" },
+                  { value: t.stat3Value, label: t.stat3Label, testId: "stat-mandays" },
+                ].map((stat, i) => (
+                  <m.div key={i} variants={fadeUp} custom={i + 1} className="flex flex-col items-center gap-2" data-testid={stat.testId}>
+                    <span className="text-5xl sm:text-6xl md:text-7xl font-display font-extrabold text-white leading-none tracking-tight">
+                      {stat.value}
+                    </span>
+                    <span className="text-base sm:text-lg font-medium text-white/80">{stat.label}</span>
+                  </m.div>
+                ))}
+              </div>
+            </m.div>
+          </div>
+        </section>
+
         <section id="about" className="scroll-mt-24 min-h-screen flex flex-col justify-center py-20 sm:py-28 px-4 sm:px-6">
           <div className="max-w-4xl mx-auto">
             <m.div
