@@ -56,8 +56,9 @@ function CountUp({ target, suffix = "" }: { target: number; suffix?: string }) {
   }, [target]);
 
   return (
-    <span ref={ref} className="tabular-nums">
-      {count.toLocaleString()}{suffix}
+    <span ref={ref} className="tabular-nums inline-flex items-start">
+      {count.toLocaleString()}
+      {suffix && <span className="text-3xl sm:text-4xl font-bold mt-1 ml-0.5">{suffix}</span>}
     </span>
   );
 }
@@ -349,7 +350,11 @@ export default function HomePage() {
                     <span className="text-6xl sm:text-7xl md:text-8xl font-display font-extrabold text-white leading-none tracking-tight">
                       <CountUp target={stat.target} suffix="+" />
                     </span>
-                    <span className="text-sm sm:text-base font-medium text-white/80 max-w-[180px] leading-snug">{stat.label}</span>
+                    <span className="text-sm sm:text-base font-medium text-white/80 max-w-[180px] leading-snug text-center">
+                      {stat.label.split("\n").map((line: string, j: number) => (
+                        <span key={j}>{line}{j < stat.label.split("\n").length - 1 && <br />}</span>
+                      ))}
+                    </span>
                   </m.div>
                 ))}
               </div>
