@@ -58,7 +58,7 @@ function CountUp({ target, suffix = "" }: { target: number; suffix?: string }) {
   return (
     <span ref={ref} className="tabular-nums inline-flex items-start">
       {count.toLocaleString()}
-      {suffix && <span className="text-3xl sm:text-4xl font-bold mt-1 ml-0.5">{suffix}</span>}
+      {suffix && <span className="text-4xl sm:text-5xl font-bold mt-1 ml-0.5">{suffix}</span>}
     </span>
   );
 }
