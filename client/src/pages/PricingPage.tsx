@@ -5,7 +5,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Loader2, Crown, Gift } from "lucide-react";
+import { Check, Loader2, Crown, Gift, FlaskConical, Clock } from "lucide-react";
 import { GoogleSignInButton } from "@/components/GoogleSignIn";
 import { Link, useSearch } from "wouter";
 import { useEffect, useState } from "react";
@@ -123,7 +123,32 @@ export default function PricingPage() {
     },
   });
 
+  const trialMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/trial/start", {});
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/stripe/subscription"] });
+      toast({
+        title: lang === "th" ? "เริ่มทดลองใช้ฟรีแล้ว!" : "Free trial started!",
+        description: lang === "th" ? "คุณมีสิทธิ์ใช้ฟีเจอร์ Pro ฟรี 14 วัน ไม่ต้องใส่บัตรเครดิต" : "You have 14 days of free Pro access — no credit card needed.",
+      });
+    },
+    onError: (err: any) => {
+      toast({
+        title: lang === "th" ? "เกิดข้อผิดพลาด" : "Error",
+        description: err.message || (lang === "th" ? "ไม่สามารถเริ่มทดลองได้" : "Could not start trial"),
+        variant: "destructive",
+      });
+    },
+  });
+
   const isPro = subData?.isPro ?? false;
+  const isTrialing = subData?.isTrialing ?? false;
+  const trialDaysLeft = subData?.trialDaysLeft ?? null;
+  const trialUsed = subData?.trialUsed ?? false;
+  const hasActivePaidSub = isPro && !isTrialing;
 
   const [slotIndex, setSlotIndex] = useState(0);
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
@@ -166,7 +191,8 @@ export default function PricingPage() {
     year: lang === "th" ? "/ปี" : "/year",
     currentPlan: lang === "th" ? "แผนปัจจุบัน" : "Current Plan",
     getStarted: lang === "th" ? "เริ่มใช้งานฟรี" : "Get Started Free",
-    subscribePro: lang === "th" ? "เริ่มทดลองใช้ฟรี 14 วัน" : "Start 14-Day Free Trial",
+    subscribePro: lang === "th" ? "สมัคร Pro" : "Subscribe to Pro",
+    startTrial: lang === "th" ? "ทดลองใช้ฟรี 14 วัน — ไม่ต้องใส่บัตรเครดิต" : "Start 14-Day Free Trial — No Card Required",
     manageSubscription: lang === "th" ? "จัดการสมาชิก" : "Manage Subscription",
     loginRequired: lang === "th" ? "เข้าสู่ระบบเพื่อสมัคร" : "Sign in to subscribe",
     perYear: lang === "th" ? "ต่อปี" : "per year",
@@ -313,11 +339,28 @@ export default function PricingPage() {
               ))}
             </ul>
 
-            {isPro ? (
+            {hasActivePaidSub ? (
               <Button className="w-full gap-2" variant="outline" onClick={() => portalMutation.mutate()} disabled={portalMutation.isPending} data-testid="button-manage-subscription">
                 {portalMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                 {t.manageSubscription}
               </Button>
+            ) : isTrialing ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-sm font-medium">
+                  <Clock className="w-4 h-4 shrink-0" />
+                  {lang === "th" ? `ทดลองใช้อยู่ — เหลืออีก ${trialDaysLeft} วัน` : `Trial active — ${trialDaysLeft} days left`}
+                </div>
+                <Button
+                  className="w-full gap-2 bg-amber-500 hover:bg-amber-600"
+                  onClick={() => checkoutMutation.mutate({ slotCount: selectedTier.slots, billingCycle })}
+                  disabled={checkoutMutation.isPending}
+                  data-testid="button-subscribe-pro"
+                >
+                  {checkoutMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <Crown className="w-4 h-4" />
+                  {lang === "th" ? "สมัคร Pro เพื่อต่ออายุ" : "Subscribe to continue"}
+                </Button>
+              </div>
             ) : !user ? (
               <GoogleSignInButton
                 className="w-full gap-2"
@@ -325,10 +368,20 @@ export default function PricingPage() {
                 buttonVariant="default"
                 buttonSize="default"
               />
-            ) : (
+            ) : !trialUsed ? (
               <div className="space-y-2">
                 <Button
-                  className="w-full gap-2"
+                  className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700"
+                  onClick={() => trialMutation.mutate()}
+                  disabled={trialMutation.isPending}
+                  data-testid="button-start-trial"
+                >
+                  {trialMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <FlaskConical className="w-4 h-4" />}
+                  {trialMutation.isPending ? (lang === "th" ? "กำลังเริ่ม..." : "Starting...") : t.startTrial}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full gap-2 text-sm"
                   onClick={() => checkoutMutation.mutate({ slotCount: selectedTier.slots, billingCycle })}
                   disabled={checkoutMutation.isPending}
                   data-testid="button-subscribe-pro"
@@ -337,14 +390,23 @@ export default function PricingPage() {
                   {t.subscribePro}
                 </Button>
               </div>
+            ) : (
+              <Button
+                className="w-full gap-2"
+                onClick={() => checkoutMutation.mutate({ slotCount: selectedTier.slots, billingCycle })}
+                disabled={checkoutMutation.isPending}
+                data-testid="button-subscribe-pro"
+              >
+                {checkoutMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                {t.subscribePro}
+              </Button>
             )}
 
-            {!isPro && user && (
-              <p className="mt-3 text-center text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1">
-                <Gift className="w-3 h-3 text-emerald-500 shrink-0" />
+            {!isPro && user && !trialUsed && (
+              <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">
                 {lang === "th"
-                  ? "ทดลองใช้ฟรี 14 วัน — ต้องใส่บัตรเครดิต ไม่มีการเรียกเก็บเงินจนกว่าการทดลองจะสิ้นสุด"
-                  : "14-day free trial — card required, no charge until trial ends"}
+                  ? "ทดลองได้ 1 ครั้งต่อ 1 บัญชี — ใช้ฟีเจอร์ Pro ครบทุกอย่างฟรี 14 วัน"
+                  : "One trial per account — full Pro access for 14 days"}
               </p>
             )}
           </div>

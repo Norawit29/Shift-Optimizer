@@ -556,19 +556,59 @@ export async function registerRoutes(
 
   app.get("/api/stripe/subscription", async (req, res) => {
     if (!req.session.userId) {
-      return res.json({ subscription: null, isPro: false, proSlots: null });
+      return res.json({ subscription: null, isPro: false, proSlots: null, isTrialing: false, trialDaysLeft: null, trialUsed: false });
     }
     try {
       const subscription = await stripeStorage.getUserActiveSubscription(req.session.userId);
       const [user] = await db.select().from(users).where(eq(users.id, req.session.userId));
+
+      const TRIAL_DAYS = 14;
+      let isTrialing = false;
+      let trialDaysLeft: number | null = null;
+      if (!subscription && user?.trialUsed && user?.trialStartedAt) {
+        const msSince = Date.now() - new Date(user.trialStartedAt).getTime();
+        const daysSince = msSince / (1000 * 60 * 60 * 24);
+        if (daysSince < TRIAL_DAYS) {
+          isTrialing = true;
+          trialDaysLeft = Math.ceil(TRIAL_DAYS - daysSince);
+        }
+      }
+
       res.json({
         subscription,
-        isPro: !!subscription,
-        proSlots: subscription ? (user?.proSlots ?? null) : null,
+        isPro: !!subscription || isTrialing,
+        proSlots: (subscription || isTrialing) ? (user?.proSlots ?? null) : null,
+        isTrialing,
+        trialDaysLeft,
+        trialUsed: user?.trialUsed ?? false,
       });
     } catch (error) {
       console.error("Error fetching subscription:", error);
-      res.json({ subscription: null, isPro: false, proSlots: null });
+      res.json({ subscription: null, isPro: false, proSlots: null, isTrialing: false, trialDaysLeft: null, trialUsed: false });
+    }
+  });
+
+  app.post("/api/trial/start", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, req.session.userId));
+      if (!user) return res.status(404).json({ message: "User not found" });
+      if (user.trialUsed) {
+        return res.status(400).json({ message: "Trial already used" });
+      }
+      if (user.stripeSubscriptionId) {
+        return res.status(400).json({ message: "Already subscribed" });
+      }
+      await db.update(users).set({
+        trialStartedAt: new Date(),
+        trialUsed: true,
+      }).where(eq(users.id, req.session.userId));
+      return res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error starting trial:", error);
+      return res.status(500).json({ message: error.message || "Failed to start trial" });
     }
   });
 
@@ -669,7 +709,6 @@ export async function registerRoutes(
         }],
         mode: "subscription",
         subscription_data: {
-          trial_period_days: 14,
           metadata: { slotCount: String(slotNum) },
         },
         success_url: `${baseUrl}/create?subscribed=true`,

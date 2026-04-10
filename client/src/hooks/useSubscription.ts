@@ -4,6 +4,9 @@ export interface SubscriptionData {
   subscription: any | null;
   isPro: boolean;
   proSlots: number | null;
+  isTrialing: boolean;
+  trialDaysLeft: number | null;
+  trialUsed: boolean;
 }
 
 export function useSubscription() {

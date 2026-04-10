@@ -78,6 +78,8 @@ export const users = pgTable("users", {
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),
   proSlots: integer("pro_slots"),
+  trialStartedAt: timestamp("trial_started_at"),
+  trialUsed: boolean("trial_used").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

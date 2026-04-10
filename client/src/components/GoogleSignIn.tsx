@@ -10,9 +10,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogIn, Crown, LogOut, CreditCard, ChevronDown, Sparkles, CalendarDays } from "lucide-react";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { LogIn, Crown, LogOut, CreditCard, ChevronDown, Sparkles, CalendarDays, Clock, FlaskConical } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 
@@ -123,32 +123,27 @@ export function GoogleSignInButton({
 
 export function UserMenu() {
   const { user, logout } = useAuth();
-  const { isPro } = useProStatus();
+  const { isPro, isTrialing, trialDaysLeft, trialUsed } = useProStatus();
   const { lang } = useLanguage();
   const { toast } = useToast();
   const [, navigate] = useLocation();
 
-  const { data: productsData } = useQuery<{ data: any[] }>({
-    queryKey: ["/api/stripe/products"],
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const monthlyPrice = productsData?.data?.[0]?.prices?.find(
-    (p: any) => p.recurring?.interval === "month"
-  );
-
-  const checkoutMutation = useMutation({
-    mutationFn: async (priceId: string) => {
-      const res = await apiRequest("POST", "/api/stripe/checkout", { priceId });
+  const trialMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/trial/start", {});
       return res.json();
     },
-    onSuccess: (data) => {
-      if (data.url) window.open(data.url, "_blank");
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/stripe/subscription"] });
+      toast({
+        title: lang === "th" ? "เริ่มทดลองใช้ฟรีแล้ว!" : "Free trial started!",
+        description: lang === "th" ? "คุณมีสิทธิ์ใช้ฟีเจอร์ Pro ฟรี 14 วัน" : "You have 14 days of free Pro access.",
+      });
     },
-    onError: () => {
+    onError: (err: any) => {
       toast({
         title: lang === "th" ? "เกิดข้อผิดพลาด" : "Error",
-        description: lang === "th" ? "ไม่สามารถเปิดหน้าชำระเงินได้" : "Could not open checkout",
+        description: err.message || (lang === "th" ? "ไม่สามารถเริ่มทดลองได้" : "Could not start trial"),
         variant: "destructive",
       });
     },
@@ -173,12 +168,16 @@ export function UserMenu() {
 
   if (!user) return null;
 
+  const hasActivePaidSub = isPro && !isTrialing;
+
   const t = {
     proMember: lang === "th" ? "สมาชิก Pro" : "Pro Member",
     freePlan: lang === "th" ? "แผนฟรี" : "Free Plan",
+    trialPlan: lang === "th" ? "ทดลองใช้ฟรี" : "Free Trial",
     manageSub: lang === "th" ? "จัดการสมาชิก" : "Manage Subscription",
-    upgradePro: lang === "th" ? "อัปเกรดเป็น Pro" : "Upgrade to Pro",
-    trialNote: lang === "th" ? "ทดลองฟรี 14 วัน" : "14-day free trial",
+    upgradePro: lang === "th" ? "สมัคร Pro" : "Subscribe to Pro",
+    startTrial: lang === "th" ? "ทดลองใช้ฟรี 14 วัน" : "Start 14-Day Free Trial",
+    noCard: lang === "th" ? "ไม่ต้องใส่บัตรเครดิต" : "No credit card required",
     logout: lang === "th" ? "ออกจากระบบ" : "Logout",
   };
 
@@ -240,17 +239,22 @@ export function UserMenu() {
             )}
             {isPro && (
               <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-amber-400 border-2 border-white dark:border-slate-900 flex items-center justify-center">
-                <Crown className="w-2.5 h-2.5 text-amber-900" />
+                {isTrialing ? <FlaskConical className="w-2.5 h-2.5 text-amber-900" /> : <Crown className="w-2.5 h-2.5 text-amber-900" />}
               </div>
             )}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{user.name}</p>
             <p className="text-xs text-slate-400 truncate">{user.email}</p>
-            <div className="mt-1">
-              {isPro ? (
+            <div className="mt-1 flex flex-col gap-0.5">
+              {hasActivePaidSub ? (
                 <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 rounded-full px-2 py-0.5">
                   <Crown className="w-2.5 h-2.5" />{t.proMember}
+                </span>
+              ) : isTrialing ? (
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 rounded-full px-2 py-0.5">
+                  <Clock className="w-2.5 h-2.5" />
+                  {lang === "th" ? `ทดลองใช้ — เหลืออีก ${trialDaysLeft} วัน` : `Trial — ${trialDaysLeft} days left`}
                 </span>
               ) : (
                 <span className="inline-flex items-center text-[11px] font-medium text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-full px-2 py-0.5">
@@ -276,7 +280,7 @@ export function UserMenu() {
         <DropdownMenuSeparator className="my-1.5 bg-slate-100 dark:bg-slate-800" />
 
         {/* Subscription action */}
-        {isPro ? (
+        {hasActivePaidSub ? (
           <DropdownMenuItem
             className="flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
             onSelect={() => portalMutation.mutate()}
@@ -286,31 +290,47 @@ export function UserMenu() {
             <CreditCard className="w-4 h-4 text-slate-400 shrink-0" />
             <span>{portalMutation.isPending ? (lang === "th" ? "กำลังโหลด..." : "Loading...") : t.manageSub}</span>
           </DropdownMenuItem>
+        ) : isTrialing ? (
+          <div className="px-1 py-0.5 space-y-1">
+            <div className="flex items-center gap-2 px-3 py-1.5 text-[11px] text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
+              <Clock className="w-3.5 h-3.5 shrink-0" />
+              <span>{lang === "th" ? `ทดลองใช้ฟรี — เหลืออีก ${trialDaysLeft} วัน` : `Free trial — ${trialDaysLeft} days left`}</span>
+            </div>
+            <button
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl bg-amber-500 text-white hover:bg-amber-600 transition-colors"
+              onClick={() => navigate("/pricing")}
+              data-testid="menu-item-upgrade-pro"
+            >
+              <Crown className="w-4 h-4 shrink-0" />
+              <span>{lang === "th" ? "สมัคร Pro เพื่อต่ออายุ" : "Subscribe to continue"}</span>
+            </button>
+          </div>
+        ) : !trialUsed ? (
+          <div className="px-1 py-0.5">
+            <button
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-60"
+              onClick={() => trialMutation.mutate()}
+              disabled={trialMutation.isPending}
+              data-testid="menu-item-start-trial"
+            >
+              <FlaskConical className="w-4 h-4 shrink-0" />
+              <span className="whitespace-nowrap">
+                {trialMutation.isPending ? (lang === "th" ? "กำลังเริ่ม..." : "Starting...") : t.startTrial}
+              </span>
+              {!trialMutation.isPending && (
+                <span className="ml-auto text-[10px] font-normal bg-white/20 rounded-full px-1.5 py-0.5 whitespace-nowrap">{t.noCard}</span>
+              )}
+            </button>
+          </div>
         ) : (
           <div className="px-1 py-0.5">
             <button
-              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-60"
-              onClick={() => {
-                if (monthlyPrice) {
-                  checkoutMutation.mutate(monthlyPrice.id);
-                } else {
-                  navigate("/pricing");
-                }
-              }}
-              disabled={checkoutMutation.isPending}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl bg-primary text-white hover:bg-primary/90 transition-colors"
+              onClick={() => navigate("/pricing")}
               data-testid="menu-item-upgrade-pro"
             >
               <Sparkles className="w-4 h-4 shrink-0" />
-              <span className="whitespace-nowrap">
-                {checkoutMutation.isPending
-                  ? (lang === "th" ? "กำลังโหลด..." : "Loading...")
-                  : t.upgradePro}
-              </span>
-              {!checkoutMutation.isPending && (
-                <span className="ml-auto text-[10px] font-normal bg-white/20 rounded-full px-1.5 py-0.5 whitespace-nowrap">
-                  {t.trialNote}
-                </span>
-              )}
+              <span>{t.upgradePro}</span>
             </button>
           </div>
         )}
