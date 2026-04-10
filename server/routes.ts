@@ -688,7 +688,7 @@ export async function registerRoutes(
       const host = req.get("host") || "";
       const baseUrl = `${protocol}://${host}`;
 
-      const tierLabel = slotNum === 15 ? "11–15" : String(slotNum);
+      const tierLabel = String(slotNum);
       const productName = `Shift Optimizer Pro (${tierLabel} บุคลากร)`;
       const productDesc = `บุคลากรสูงสุด ${slotNum} คน · เวรสูงสุด 5 ประเภท · ระดับบุคลากรสูงสุด 5 ระดับ · เกลี่ยวันหยุด · ตารางรายบุคคล · ส่งออก Excel`;
 

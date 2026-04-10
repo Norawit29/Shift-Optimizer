@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Navbar } from "@/components/Navbar";
 
 const PRICING_TIERS = [
-  { label: "11–15", slots: 15, monthly: 259, yearly: 2639 },
+  { label: "15", slots: 15, monthly: 259, yearly: 2639 },
   { label: "20",    slots: 20, monthly: 335, yearly: 3415 },
   { label: "25",    slots: 25, monthly: 409, yearly: 4169 },
   { label: "30",    slots: 30, monthly: 485, yearly: 4945 },
@@ -304,7 +304,7 @@ export default function PricingPage() {
             {/* Slot slider */}
             <div className="mb-5">
               <div className="flex justify-between text-[11px] text-slate-400 mb-1 px-0.5">
-                <span>11–15</span>
+                <span>{PRICING_TIERS[0].label}</span>
                 <span>50 {lang === "th" ? "คน" : "staff"}</span>
               </div>
               <input
