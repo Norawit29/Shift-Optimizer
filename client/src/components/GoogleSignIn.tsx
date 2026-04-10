@@ -239,7 +239,7 @@ export function UserMenu() {
             )}
             {isPro && (
               <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-amber-400 border-2 border-white dark:border-slate-900 flex items-center justify-center">
-                {isTrialing ? <FlaskConical className="w-2.5 h-2.5 text-amber-900" /> : <Crown className="w-2.5 h-2.5 text-amber-900" />}
+                <Crown className="w-2.5 h-2.5 text-amber-900" />
               </div>
             )}
           </div>
