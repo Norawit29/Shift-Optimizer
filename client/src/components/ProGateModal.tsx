@@ -103,7 +103,7 @@ export function ProGateModal({ open, onClose, featureKey }: ProGateModalProps) {
 
   const proFeatures = lang === "th"
     ? [
-        "บุคลากรไม่จำกัด",
+        "เพิ่มจำนวนบุคลากร สูงสุด 50 คน",
         "เวรสูงสุด 5 เวรต่อวัน",
         "ระดับขั้นบุคลากรสูงสุด 5 ระดับ",
         "การเกลี่ยเวรวันหยุด",
@@ -111,7 +111,7 @@ export function ProGateModal({ open, onClose, featureKey }: ProGateModalProps) {
         "ส่งออก Excel",
       ]
     : [
-        "Unlimited staff members",
+        "Up to 50 staff members",
         "Up to 5 shifts per day",
         "Up to 5 staff levels",
         "Holiday shift balancing",
