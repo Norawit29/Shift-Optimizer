@@ -253,8 +253,8 @@ export default function PricingPage() {
           {/* Pro Plan */}
           <div className="rounded-2xl border-2 border-primary bg-white dark:bg-slate-800 px-7 pt-10 pb-8 shadow-xl relative overflow-visible flex flex-col md:-my-4">
             <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-              <Badge className="gap-1 bg-primary text-white border-0 text-xs px-3 py-1 font-semibold shadow-md whitespace-nowrap">
-                <Gift className="w-3 h-3" />
+              <Badge className="gap-1.5 bg-primary text-white border-0 text-sm px-4 py-1.5 font-semibold shadow-md whitespace-nowrap">
+                <Gift className="w-3.5 h-3.5" />
                 {lang === "th" ? "ยอดนิยม · ทดลอง 14 วัน" : "Most Popular · 14-day trial"}
               </Badge>
             </div>
@@ -371,12 +371,12 @@ export default function PricingPage() {
             ) : !trialUsed ? (
               <div className="space-y-2">
                 <Button
-                  className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700"
+                  className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 h-auto py-3 whitespace-normal text-center leading-snug"
                   onClick={() => trialMutation.mutate()}
                   disabled={trialMutation.isPending}
                   data-testid="button-start-trial"
                 >
-                  {trialMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <FlaskConical className="w-4 h-4" />}
+                  {trialMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin shrink-0" /> : <FlaskConical className="w-4 h-4 shrink-0" />}
                   {trialMutation.isPending ? (lang === "th" ? "กำลังเริ่ม..." : "Starting...") : t.startTrial}
                 </Button>
                 <Button
