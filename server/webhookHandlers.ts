@@ -30,8 +30,11 @@ export class WebhookHandlers {
             const user = await stripeStorage.getUserByStripeCustomerId(customerId);
             if (user) {
               const isActive = ['active', 'trialing'].includes(sub.status);
+              const rawSlots = sub.metadata?.slotCount;
+              const proSlots = rawSlots ? parseInt(rawSlots) : null;
               await stripeStorage.updateUserStripeInfo(user.id, {
                 stripeSubscriptionId: isActive ? sub.id : null,
+                proSlots: isActive ? proSlots : null,
               });
             }
           }

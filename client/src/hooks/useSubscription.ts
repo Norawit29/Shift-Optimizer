@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 export interface SubscriptionData {
   subscription: any | null;
   isPro: boolean;
+  proSlots: number | null;
 }
 
 export function useSubscription() {

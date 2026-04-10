@@ -556,17 +556,19 @@ export async function registerRoutes(
 
   app.get("/api/stripe/subscription", async (req, res) => {
     if (!req.session.userId) {
-      return res.json({ subscription: null, isPro: false });
+      return res.json({ subscription: null, isPro: false, proSlots: null });
     }
     try {
       const subscription = await stripeStorage.getUserActiveSubscription(req.session.userId);
+      const [user] = await db.select().from(users).where(eq(users.id, req.session.userId));
       res.json({
         subscription,
         isPro: !!subscription,
+        proSlots: subscription ? (user?.proSlots ?? null) : null,
       });
     } catch (error) {
       console.error("Error fetching subscription:", error);
-      res.json({ subscription: null, isPro: false });
+      res.json({ subscription: null, isPro: false, proSlots: null });
     }
   });
 
@@ -603,10 +605,27 @@ export async function registerRoutes(
     if (!req.session.userId) {
       return res.status(401).json({ message: "Authentication required" });
     }
-    const { priceId } = req.body;
-    if (!priceId) {
-      return res.status(400).json({ message: "priceId is required" });
+
+    const SLOT_TIERS: Record<number, { monthly: number; yearly: number }> = {
+      15: { monthly: 25900, yearly: 263900 },
+      20: { monthly: 33500, yearly: 341500 },
+      25: { monthly: 40900, yearly: 416900 },
+      30: { monthly: 48500, yearly: 494500 },
+      35: { monthly: 55900, yearly: 569900 },
+      40: { monthly: 63500, yearly: 647500 },
+      45: { monthly: 70900, yearly: 722900 },
+      50: { monthly: 78500, yearly: 800500 },
+    };
+
+    const { slotCount, billingCycle } = req.body;
+    const slotNum = parseInt(slotCount);
+    const tier = SLOT_TIERS[slotNum];
+    if (!tier) {
+      return res.status(400).json({ message: "Invalid slot count" });
     }
+    const interval: "month" | "year" = billingCycle === "yearly" ? "year" : "month";
+    const unitAmount = interval === "year" ? tier.yearly : tier.monthly;
+
     try {
       const { getUncachableStripeClient } = await import("./stripeClient");
       const stripe = await getUncachableStripeClient();
@@ -625,6 +644,13 @@ export async function registerRoutes(
         customerId = customer.id;
       }
 
+      // Fetch the Stripe product ID from the synced stripe schema
+      const productRows = await stripeStorage.listProductsWithPrices();
+      const productId = (productRows[0] as any)?.product_id;
+      if (!productId) {
+        return res.status(500).json({ message: "Stripe product not configured" });
+      }
+
       const protocol = req.protocol === "https" || req.get("x-forwarded-proto") === "https" ? "https" : "http";
       const host = req.get("host") || "";
       const baseUrl = `${protocol}://${host}`;
@@ -632,10 +658,19 @@ export async function registerRoutes(
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
         payment_method_types: ["card"],
-        line_items: [{ price: priceId, quantity: 1 }],
+        line_items: [{
+          price_data: {
+            currency: "thb",
+            product: productId,
+            unit_amount: unitAmount,
+            recurring: { interval },
+          },
+          quantity: 1,
+        }],
         mode: "subscription",
         subscription_data: {
           trial_period_days: 14,
+          metadata: { slotCount: String(slotNum) },
         },
         success_url: `${baseUrl}/create?subscribed=true`,
         cancel_url: `${baseUrl}/pricing?canceled=true`,

@@ -569,7 +569,8 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const [preCheckConflicts, setPreCheckConflicts] = useState<string[]>([]);
   const [hasExported, setHasExported] = useState(false);
   const { user } = useAuth();
-  const { isPro } = useProStatus();
+  const { isPro, proSlots } = useProStatus();
+  const maxStaff = isPro ? (proSlots ?? 50) : 15;
   const [showProModal, setShowProModal] = useState<string | null>(null);
   const { data: savedSchedules } = useSchedules();
 
@@ -919,11 +920,10 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
         toast({ title: t.uploadExcelEmpty, variant: "destructive" });
         return;
       }
-      const FREE_LIMIT = 15;
       let importedNames = names;
       let truncated = false;
-      if (!isPro) {
-        const remaining = FREE_LIMIT - staff.length;
+      {
+        const remaining = maxStaff - staff.length;
         if (remaining <= 0) {
           setShowProModal("staffCount");
           return;
@@ -2080,28 +2080,32 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div>
                       <Label className="text-base font-semibold">{t.staff} ({staff.length})</Label>
-                      {!isPro && (
-                        <div className="mt-1 space-y-1">
-                          <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              {t.proStaffLimitHint}
-                              <ProBadge onClick={() => setShowProModal("staffCount")} className="ml-1" />
-                            </span>
-                            <span className="font-medium">{staff.length} / 15 {lang === "th" ? "คน" : ""}</span>
-                          </div>
-                          <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
-                            <div
-                              className={`h-full rounded-full transition-all duration-300 ${staff.length >= 15 ? "bg-red-500" : staff.length >= 12 ? "bg-amber-500" : "bg-primary"}`}
-                              style={{ width: `${Math.min(100, (staff.length / 15) * 100)}%` }}
-                            />
-                          </div>
+                      <div className="mt-1 space-y-1">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            {!isPro ? (
+                              <>
+                                {t.proStaffLimitHint}
+                                <ProBadge onClick={() => setShowProModal("staffCount")} className="ml-1" />
+                              </>
+                            ) : (
+                              <span>{lang === "th" ? `แพ็กเกจ Pro (สูงสุด ${maxStaff} คน)` : `Pro plan (up to ${maxStaff} staff)`}</span>
+                            )}
+                          </span>
+                          <span className="font-medium">{staff.length} / {maxStaff} {lang === "th" ? "คน" : ""}</span>
                         </div>
-                      )}
+                        <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-300 ${staff.length >= maxStaff ? "bg-red-500" : staff.length >= Math.round(maxStaff * 0.8) ? "bg-amber-500" : "bg-primary"}`}
+                            style={{ width: `${Math.min(100, (staff.length / maxStaff) * 100)}%` }}
+                          />
+                        </div>
+                      </div>
                     </div>
                     <div className="flex items-center gap-1.5 flex-wrap" data-walkthrough="add-staff-buttons">
                       <Button
                         onClick={() => {
-                          if (!isPro && staff.length >= 15) { setShowProModal("staffCount"); return; }
+                          if (staff.length >= maxStaff) { setShowProModal("staffCount"); return; }
                           addStaff();
                         }}
                         variant="outline" size="sm" className="border-dashed" data-testid="button-add-staff"
@@ -2110,7 +2114,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                       </Button>
                       <Button
                         onClick={() => {
-                          if (!isPro && staff.length >= 15) { setShowProModal("staffCount"); return; }
+                          if (staff.length >= maxStaff) { setShowProModal("staffCount"); return; }
                           setShowBulkAdd(true);
                         }}
                         variant="outline" size="sm" data-testid="button-add-multiple"

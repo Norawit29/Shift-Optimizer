@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -11,20 +11,6 @@ import { Link, useSearch } from "wouter";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Navbar } from "@/components/Navbar";
-
-interface Price {
-  id: string;
-  unit_amount: number;
-  currency: string;
-  recurring: { interval: string } | null;
-}
-
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  prices: Price[];
-}
 
 const PRICING_TIERS = [
   { label: "11–15", slots: 15, monthly: 259, yearly: 2639 },
@@ -103,14 +89,9 @@ export default function PricingPage() {
     }
   }, [isCanceled]);
 
-  const { data: productsData, isLoading: productsLoading } = useQuery<{ data: Product[] }>({
-    queryKey: ["/api/stripe/products"],
-    staleTime: 1000 * 60 * 10,
-  });
-
   const checkoutMutation = useMutation({
-    mutationFn: async (priceId: string) => {
-      const res = await apiRequest("POST", "/api/stripe/checkout", { priceId });
+    mutationFn: async ({ slotCount, billingCycle }: { slotCount: number; billingCycle: string }) => {
+      const res = await apiRequest("POST", "/api/stripe/checkout", { slotCount, billingCycle });
       return res.json();
     },
     onSuccess: (data) => {
@@ -171,9 +152,6 @@ export default function PricingPage() {
     },
   });
 
-  const proProduct = productsData?.data?.[0];
-  const monthlyPrice = proProduct?.prices?.find((p) => p.recurring?.interval === "month");
-  const yearlyPrice = proProduct?.prices?.find((p) => p.recurring?.interval === "year");
 
   const t = {
     title: lang === "th" ? "ราคาและแผนบริการ" : "Pricing Plans",
@@ -349,26 +327,19 @@ export default function PricingPage() {
               />
             ) : (
               <div className="space-y-2">
-                {monthlyPrice && (
-                  <Button
-                    className="w-full gap-2"
-                    onClick={() => checkoutMutation.mutate(billingCycle === "monthly" ? monthlyPrice.id : (yearlyPrice?.id ?? monthlyPrice.id))}
-                    disabled={checkoutMutation.isPending}
-                    data-testid="button-subscribe-monthly"
-                  >
-                    {checkoutMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {t.subscribePro}
-                  </Button>
-                )}
-                {!monthlyPrice && !productsLoading && (
-                  <Button className="w-full" disabled data-testid="button-pro-unavailable">
-                    {lang === "th" ? "เร็วๆ นี้" : "Coming Soon"}
-                  </Button>
-                )}
+                <Button
+                  className="w-full gap-2"
+                  onClick={() => checkoutMutation.mutate({ slotCount: selectedTier.slots, billingCycle })}
+                  disabled={checkoutMutation.isPending}
+                  data-testid="button-subscribe-pro"
+                >
+                  {checkoutMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {t.subscribePro}
+                </Button>
               </div>
             )}
 
-            {!isPro && user && (monthlyPrice || yearlyPrice) && (
+            {!isPro && user && (
               <p className="mt-3 text-center text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1">
                 <Gift className="w-3 h-3 text-emerald-500 shrink-0" />
                 {lang === "th"

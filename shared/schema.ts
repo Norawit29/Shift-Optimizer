@@ -77,6 +77,7 @@ export const users = pgTable("users", {
   picture: text("picture"),
   stripeCustomerId: text("stripe_customer_id"),
   stripeSubscriptionId: text("stripe_subscription_id"),
+  proSlots: integer("pro_slots"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
