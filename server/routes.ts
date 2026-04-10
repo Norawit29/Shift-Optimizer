@@ -684,16 +684,13 @@ export async function registerRoutes(
         customerId = customer.id;
       }
 
-      // Fetch the Stripe product ID from the synced stripe schema
-      const productRows = await stripeStorage.listProductsWithPrices();
-      const productId = (productRows[0] as any)?.product_id;
-      if (!productId) {
-        return res.status(500).json({ message: "Stripe product not configured" });
-      }
-
       const protocol = req.protocol === "https" || req.get("x-forwarded-proto") === "https" ? "https" : "http";
       const host = req.get("host") || "";
       const baseUrl = `${protocol}://${host}`;
+
+      const tierLabel = slotNum === 15 ? "11–15" : String(slotNum);
+      const productName = `Shift Optimizer Pro (${tierLabel} บุคลากร)`;
+      const productDesc = `บุคลากรสูงสุด ${slotNum} คน · เวรสูงสุด 5 ประเภท · ระดับบุคลากรสูงสุด 5 ระดับ · เกลี่ยวันหยุด · ตารางรายบุคคล · ส่งออก Excel`;
 
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
@@ -701,7 +698,10 @@ export async function registerRoutes(
         line_items: [{
           price_data: {
             currency: "thb",
-            product: productId,
+            product_data: {
+              name: productName,
+              description: productDesc,
+            },
             unit_amount: unitAmount,
             recurring: { interval },
           },
