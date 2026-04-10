@@ -43,7 +43,7 @@ const FREE_FEATURES = {
     "บุคลากรสูงสุด 15 คน",
     "ประเภทเวรสูงสุด 3 ประเภท",
     "ระดับบุคลากรสูงสุด 3 ระดับ",
-    "บันทึกและโหลดตาราง",
+    "บันทึกตาราง",
     "ดูตารางรายเดือน",
   ],
   en: [
@@ -51,7 +51,7 @@ const FREE_FEATURES = {
     "Up to 15 staff members",
     "Up to 3 shift types",
     "Up to 3 staff levels",
-    "Save & load schedules",
+    "Save schedules",
     "Monthly schedule view",
   ],
 };
