@@ -40,7 +40,7 @@ const PRICING_TIERS = [
 const FREE_FEATURES = {
   th: [
     "ระบบจัดเวรด้วย AI",
-    "บุคลากรสูงสุด 10 คน",
+    "บุคลากรสูงสุด 15 คน",
     "ประเภทเวรสูงสุด 3 ประเภท",
     "ระดับบุคลากรสูงสุด 3 ระดับ",
     "บันทึกและโหลดตาราง",
@@ -48,7 +48,7 @@ const FREE_FEATURES = {
   ],
   en: [
     "AI-powered scheduling",
-    "Up to 10 staff members",
+    "Up to 15 staff members",
     "Up to 3 shift types",
     "Up to 3 staff levels",
     "Save & load schedules",
