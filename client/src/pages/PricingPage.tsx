@@ -26,10 +26,21 @@ interface Product {
   prices: Price[];
 }
 
+const PRICING_TIERS = [
+  { label: "11–15", slots: 15, monthly: 259, yearly: 2639 },
+  { label: "20",    slots: 20, monthly: 335, yearly: 3415 },
+  { label: "25",    slots: 25, monthly: 409, yearly: 4169 },
+  { label: "30",    slots: 30, monthly: 485, yearly: 4945 },
+  { label: "35",    slots: 35, monthly: 559, yearly: 5699 },
+  { label: "40",    slots: 40, monthly: 635, yearly: 6475 },
+  { label: "45",    slots: 45, monthly: 709, yearly: 7229 },
+  { label: "50",    slots: 50, monthly: 785, yearly: 8005 },
+];
+
 const FREE_FEATURES = {
   th: [
     "ระบบจัดเวรด้วย AI",
-    "บุคลากรสูงสุด 15 คน",
+    "บุคลากรสูงสุด 10 คน",
     "ประเภทเวรสูงสุด 3 ประเภท",
     "ระดับบุคลากรสูงสุด 3 ระดับ",
     "บันทึกและโหลดตาราง",
@@ -37,7 +48,7 @@ const FREE_FEATURES = {
   ],
   en: [
     "AI-powered scheduling",
-    "Up to 15 staff members",
+    "Up to 10 staff members",
     "Up to 3 shift types",
     "Up to 3 staff levels",
     "Save & load schedules",
@@ -48,7 +59,6 @@ const FREE_FEATURES = {
 const PRO_FEATURES = {
   th: [
     "รองรับทุกฟีเจอร์ Free",
-    "บุคลากรไม่จำกัด",
     "ประเภทเวรสูงสุด 5 ประเภท",
     "ระดับบุคลากรสูงสุด 5 ระดับ",
     "เกลี่ยวันหยุดและวันสำคัญ",
@@ -57,7 +67,6 @@ const PRO_FEATURES = {
   ],
   en: [
     "Includes all Free features",
-    "Unlimited staff members",
     "Up to 5 shift types",
     "Up to 5 staff levels",
     "Holiday & weekend balancing",
@@ -134,6 +143,10 @@ export default function PricingPage() {
   });
 
   const isPro = subData?.isPro ?? false;
+
+  const [slotIndex, setSlotIndex] = useState(0);
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
+  const selectedTier = PRICING_TIERS[slotIndex];
 
   const [enterpriseForm, setEnterpriseForm] = useState({
     orgName: "", contactName: "", email: "", phone: "", staffCount: "", message: "",
@@ -242,47 +255,78 @@ export default function PricingPage() {
               </Badge>
             </div>
 
-            <div className="mb-6">
-              <div className="text-sm font-semibold text-primary uppercase tracking-wide mb-1">
+            <div className="mb-4">
+              <div className="text-sm font-semibold text-primary uppercase tracking-wide mb-2">
                 {t.pro}
               </div>
 
-              {productsLoading ? (
-                <div className="flex items-center gap-2 mt-2">
-                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                  <span className="text-muted-foreground text-sm">
-                    {lang === "th" ? "กำลังโหลดราคา..." : "Loading prices..."}
-                  </span>
-                </div>
-              ) : monthlyPrice ? (
-                <div>
-                  <div className="text-4xl font-bold text-slate-900 dark:text-slate-50">
-                    {formatPrice(monthlyPrice.unit_amount, monthlyPrice.currency)}
-                    <span className="text-lg font-normal text-slate-500">{t.month}</span>
-                  </div>
-                  {yearlyPrice && (
-                    <div className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                      {lang === "th" ? "หรือ " : "or "}
-                      <span className="font-semibold text-primary">
-                        {formatPrice(yearlyPrice.unit_amount, yearlyPrice.currency)}
-                      </span>
-                      {" " + t.year}{" "}
-                      <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                        ({t.saveLabel}{" "}
-                        {Math.round(100 - (yearlyPrice.unit_amount / (monthlyPrice.unit_amount * 12)) * 100)}%!)
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ) : (
+              {/* Billing cycle toggle */}
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/60 rounded-lg p-1 mb-4 w-fit">
+                <button
+                  onClick={() => setBillingCycle("monthly")}
+                  className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors ${billingCycle === "monthly" ? "bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm" : "text-slate-500 dark:text-slate-400"}`}
+                  data-testid="button-billing-monthly"
+                >
+                  {lang === "th" ? "รายเดือน" : "Monthly"}
+                </button>
+                <button
+                  onClick={() => setBillingCycle("yearly")}
+                  className={`text-xs font-medium px-3 py-1.5 rounded-md transition-colors flex items-center gap-1.5 ${billingCycle === "yearly" ? "bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm" : "text-slate-500 dark:text-slate-400"}`}
+                  data-testid="button-billing-yearly"
+                >
+                  {lang === "th" ? "รายปี" : "Yearly"}
+                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">-15%</span>
+                </button>
+              </div>
+
+              {/* Dynamic price */}
+              <div className="flex items-end gap-1">
                 <div className="text-4xl font-bold text-slate-900 dark:text-slate-50">
-                  ฿299<span className="text-lg font-normal text-slate-500">{t.month}</span>
+                  ฿{billingCycle === "monthly" ? selectedTier.monthly.toLocaleString() : selectedTier.yearly.toLocaleString()}
                 </div>
-              )}
-              <div className="text-slate-500 dark:text-slate-400 mt-1 text-sm">{t.proDesc}</div>
+                <div className="text-base font-normal text-slate-500 mb-1">
+                  {billingCycle === "monthly" ? t.month : t.year}
+                </div>
+              </div>
+
+              {/* Slot label */}
+              <div className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                {lang === "th"
+                  ? `บุคลากรสูงสุด ${selectedTier.label} คน`
+                  : `Up to ${selectedTier.label} staff members`}
+              </div>
             </div>
 
-            <ul className="space-y-3 mb-8 flex-1">
+            {/* Slot slider */}
+            <div className="mb-5">
+              <div className="flex justify-between text-[11px] text-slate-400 mb-1 px-0.5">
+                <span>11–15</span>
+                <span>50 {lang === "th" ? "คน" : "staff"}</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={PRICING_TIERS.length - 1}
+                step={1}
+                value={slotIndex}
+                onChange={(e) => setSlotIndex(Number(e.target.value))}
+                className="w-full accent-primary cursor-pointer"
+                data-testid="slider-slot-count"
+              />
+              <div className="flex justify-between mt-1 px-0.5">
+                {PRICING_TIERS.map((tier, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSlotIndex(i)}
+                    className={`text-[10px] font-medium transition-colors leading-none ${i === slotIndex ? "text-primary" : "text-slate-300 dark:text-slate-600"}`}
+                  >
+                    {tier.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <ul className="space-y-3 mb-6 flex-1">
               {PRO_FEATURES[lang as "th" | "en"].map((feature, i) => (
                 <li key={i} className="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-300">
                   <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
@@ -306,12 +350,16 @@ export default function PricingPage() {
             ) : (
               <div className="space-y-2">
                 {monthlyPrice && (
-                  <Button className="w-full gap-2" onClick={() => checkoutMutation.mutate(monthlyPrice.id)} disabled={checkoutMutation.isPending} data-testid="button-subscribe-monthly">
+                  <Button
+                    className="w-full gap-2"
+                    onClick={() => checkoutMutation.mutate(billingCycle === "monthly" ? monthlyPrice.id : (yearlyPrice?.id ?? monthlyPrice.id))}
+                    disabled={checkoutMutation.isPending}
+                    data-testid="button-subscribe-monthly"
+                  >
                     {checkoutMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {t.subscribePro} — {formatPrice(monthlyPrice.unit_amount, monthlyPrice.currency)}{t.month}
+                    {t.subscribePro}
                   </Button>
                 )}
-
                 {!monthlyPrice && !productsLoading && (
                   <Button className="w-full" disabled data-testid="button-pro-unavailable">
                     {lang === "th" ? "เร็วๆ นี้" : "Coming Soon"}
