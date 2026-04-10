@@ -89,6 +89,10 @@ const INITIAL_STAFF: StaffMember[] = [
   { id: "6", name: "Nurse Somsri", maxShifts: 25, blocked: [] },
   { id: "7", name: "Dr. Somchai", maxShifts: 25, blocked: [] },
   { id: "8", name: "Nurse Nightingale", maxShifts: 25, blocked: [] },
+  { id: "9", name: "Dr. Strange", maxShifts: 25, blocked: [] },
+  { id: "10", name: "Nurse Ratched", maxShifts: 25, blocked: [] },
+  { id: "11", name: "Dr. Watson", maxShifts: 25, blocked: [] },
+  { id: "12", name: "Staff Member 12", maxShifts: 25, blocked: [] },
 ];
 
 const SHIFT_COLORS = [
@@ -915,7 +919,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
         toast({ title: t.uploadExcelEmpty, variant: "destructive" });
         return;
       }
-      const FREE_LIMIT = 10;
+      const FREE_LIMIT = 15;
       let importedNames = names;
       let truncated = false;
       if (!isPro) {
@@ -2083,12 +2087,12 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                               {t.proStaffLimitHint}
                               <ProBadge onClick={() => setShowProModal("staffCount")} className="ml-1" />
                             </span>
-                            <span className="font-medium">{staff.length} / 10 {lang === "th" ? "คน" : ""}</span>
+                            <span className="font-medium">{staff.length} / 15 {lang === "th" ? "คน" : ""}</span>
                           </div>
                           <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
                             <div
-                              className={`h-full rounded-full transition-all duration-300 ${staff.length >= 10 ? "bg-red-500" : staff.length >= 8 ? "bg-amber-500" : "bg-primary"}`}
-                              style={{ width: `${Math.min(100, (staff.length / 10) * 100)}%` }}
+                              className={`h-full rounded-full transition-all duration-300 ${staff.length >= 15 ? "bg-red-500" : staff.length >= 12 ? "bg-amber-500" : "bg-primary"}`}
+                              style={{ width: `${Math.min(100, (staff.length / 15) * 100)}%` }}
                             />
                           </div>
                         </div>
@@ -2097,7 +2101,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     <div className="flex items-center gap-1.5 flex-wrap" data-walkthrough="add-staff-buttons">
                       <Button
                         onClick={() => {
-                          if (!isPro && staff.length >= 10) { setShowProModal("staffCount"); return; }
+                          if (!isPro && staff.length >= 15) { setShowProModal("staffCount"); return; }
                           addStaff();
                         }}
                         variant="outline" size="sm" className="border-dashed" data-testid="button-add-staff"
@@ -2106,7 +2110,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                       </Button>
                       <Button
                         onClick={() => {
-                          if (!isPro && staff.length >= 10) { setShowProModal("staffCount"); return; }
+                          if (!isPro && staff.length >= 15) { setShowProModal("staffCount"); return; }
                           setShowBulkAdd(true);
                         }}
                         variant="outline" size="sm" data-testid="button-add-multiple"
