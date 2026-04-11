@@ -299,6 +299,11 @@ export default function PricingPage() {
                   ? `บุคลากรสูงสุด ${selectedTier.label} คน`
                   : `Up to ${selectedTier.label} staff members`}
               </div>
+              <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                {lang === "th"
+                  ? `เริ่มต้นเพียง ~${Math.round((billingCycle === "yearly" ? selectedTier.yearly / 12 : selectedTier.monthly) / selectedTier.slots)} บาท/คน/เดือน`
+                  : `From ~฿${Math.round((billingCycle === "yearly" ? selectedTier.yearly / 12 : selectedTier.monthly) / selectedTier.slots)}/person/mo`}
+              </div>
             </div>
 
             {/* Slot slider */}
