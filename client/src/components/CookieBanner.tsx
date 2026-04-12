@@ -191,40 +191,40 @@ export function CookieBanner() {
         </div>
       )}
 
-      {/* Main banner */}
+      {/* Main banner — full-width bottom bar */}
       {!showSettings && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-md bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 p-5">
-          <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
-            เราให้ความสำคัญกับความเป็นส่วนตัวของคุณ
-          </h3>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
-            เราใช้คุกกี้เพื่อปรับปรุงประสบการณ์การใช้งาน นำเสนอเนื้อหาที่เหมาะสม และวิเคราะห์การใช้งานเว็บไซต์ การกด "ยอมรับทั้งหมด" ถือว่าคุณยินยอมให้ใช้คุกกี้ทั้งหมด{" "}
-            <Link href="/privacy-policy" className="text-primary underline hover:opacity-80">
-              นโยบายความเป็นส่วนตัว
-            </Link>
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setShowSettings(true)}
-              data-testid="button-cookie-customise"
-              className="flex-1 border border-primary text-primary text-sm font-semibold py-2 rounded-lg hover:bg-primary/5 transition-colors"
-            >
-              ปรับแต่ง
-            </button>
-            <button
-              onClick={rejectAll}
-              data-testid="button-cookie-reject"
-              className="flex-1 border border-primary text-primary text-sm font-semibold py-2 rounded-lg hover:bg-primary/5 transition-colors"
-            >
-              ปฏิเสธทั้งหมด
-            </button>
-            <button
-              onClick={acceptAll}
-              data-testid="button-cookie-accept"
-              className="flex-1 bg-primary text-white text-sm font-semibold py-2 rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              ยอมรับทั้งหมด
-            </button>
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-slate-800 text-white px-4 py-3 shadow-lg">
+          <div className="max-w-6xl mx-auto flex items-center gap-4">
+            <p className="text-sm text-slate-200 flex-1 leading-relaxed">
+              เราใช้คุกกี้เพื่อพัฒนาประสิทธิภาพ และประสบการณ์ที่ดีในการใช้เว็บไซต์ของคุณ คุณสามารถศึกษารายละเอียดได้ที่{" "}
+              <Link href="/privacy-policy" className="underline text-blue-300 hover:text-blue-200 transition-colors">
+                นโยบายความเป็นส่วนตัว
+              </Link>{" "}
+              และสามารถจัดการความเป็นส่วนตัวของคุณได้โดยคลิกที่{" "}
+              <button
+                onClick={() => setShowSettings(true)}
+                className="underline text-blue-300 hover:text-blue-200 transition-colors"
+              >
+                ตั้งค่า
+              </button>
+            </p>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={acceptAll}
+                data-testid="button-cookie-accept"
+                className="bg-white text-slate-800 text-sm font-semibold px-4 py-1.5 rounded hover:bg-slate-100 transition-colors"
+              >
+                Allow
+              </button>
+              <button
+                onClick={rejectAll}
+                data-testid="button-cookie-dismiss"
+                aria-label="ปิด"
+                className="text-slate-400 hover:text-white transition-colors p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       )}
