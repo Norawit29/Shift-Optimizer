@@ -220,26 +220,26 @@ export default function PricingPage() {
         )}
 
         {/* Plan change notice banner */}
-        <div className="mb-8 rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 overflow-hidden">
-          <div className="px-5 py-3 bg-amber-100 dark:bg-amber-900/40 flex items-center gap-2 border-b border-amber-200 dark:border-amber-800">
-            <span className="text-xs font-bold bg-emerald-700 text-white px-2.5 py-0.5 rounded-full">ข้อมูลสำคัญ</span>
-            <span className="text-sm font-semibold text-amber-900 dark:text-amber-200">แจ้งเปลี่ยนแปลงแผนบริการ</span>
+        <div className="mb-8 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 overflow-hidden">
+          <div className="px-5 py-3 bg-slate-100 dark:bg-slate-700/60 flex items-center gap-2 border-b border-slate-200 dark:border-slate-700">
+            <span className="text-xs font-bold bg-emerald-600 text-white px-2.5 py-0.5 rounded-full">ข้อมูลสำคัญ</span>
+            <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">แจ้งเปลี่ยนแปลงแผนบริการ</span>
           </div>
-          <div className="px-5 py-3 border-b border-amber-200 dark:border-amber-800">
-            <p className="text-sm text-amber-900 dark:text-amber-200">
+          <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-700">
+            <p className="text-sm text-slate-600 dark:text-slate-300">
               {isEnforced
                 ? "ตั้งแต่วันที่ 1 ก.ค. 2569 ฟีเจอร์บางส่วนย้ายมาอยู่ในแผน Pro แล้ว หากเกินลิมิต Free ข้อมูลจะอยู่ในโหมด read-only"
                 : "ตั้งแต่วันที่ 1 ก.ค. 2569 ฟีเจอร์บางส่วนที่ท่านใช้งานอยู่จะย้ายไปอยู่ในแผน Pro ท่านยังคงใช้งานได้ตามปกติจนถึงวันดังกล่าว"}
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-amber-200 dark:divide-amber-800">
+          <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 dark:divide-slate-700">
             <div className="px-5 py-4">
-              <p className="text-sm font-semibold text-amber-900 dark:text-amber-200 mb-1">ข้อมูลเวรเดิมหายไหม?</p>
-              <p className="text-sm text-amber-800 dark:text-amber-300">ไม่หาย ข้อมูลทั้งหมดยังอยู่ครบ ถ้าเกินลิมิต Free จะเป็น read-only</p>
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">ข้อมูลเวรเดิมหายไหม?</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">ไม่หาย ข้อมูลทั้งหมดยังอยู่ครบ ถ้าเกินลิมิต Free จะเป็น read-only</p>
             </div>
             <div className="px-5 py-4">
-              <p className="text-sm font-semibold text-amber-900 dark:text-amber-200 mb-1">ใช้เกิน 15 คนอยู่ ต้องทำยังไง?</p>
-              <p className="text-sm text-amber-800 dark:text-amber-300">อัปเกรดเป็น Pro หรือลดจำนวนบุคลากรลงเหลือ 15 คน</p>
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">ใช้เกิน 15 คนอยู่ ต้องทำยังไง?</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">อัปเกรดเป็น Pro หรือลดจำนวนบุคลากรลงเหลือ 15 คน</p>
             </div>
           </div>
         </div>
@@ -264,16 +264,18 @@ export default function PricingPage() {
               ))}
             </ul>
 
-            <Link href="/create">
-              <Button
-                variant="outline"
-                className="w-full"
-                data-testid="button-free-plan"
-                disabled={!isPro && !!user}
-              >
-                {!user ? t.getStarted : isPro ? t.getStarted : t.currentPlan}
-              </Button>
-            </Link>
+            {user && (
+              <Link href="/create">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  data-testid="button-free-plan"
+                  disabled={!isPro && !!user}
+                >
+                  {isPro ? t.getStarted : t.currentPlan}
+                </Button>
+              </Link>
+            )}
           </div>
 
           {/* Pro Plan */}
@@ -281,7 +283,7 @@ export default function PricingPage() {
             <div className="absolute -top-4 left-1/2 -translate-x-1/2">
               <Badge className="gap-1.5 bg-primary text-white border-0 text-sm px-4 py-1.5 font-semibold shadow-md whitespace-nowrap">
                 <Gift className="w-3.5 h-3.5" />
-                {lang === "th" ? "ยอดนิยม · ทดลอง 14 วัน" : "Most Popular · 14-day trial"}
+                {lang === "th" ? "แนะนำสำหรับผู้ใช้ปัจจุบัน" : "Recommended for current users"}
               </Badge>
             </div>
 
@@ -392,14 +394,7 @@ export default function PricingPage() {
                   {lang === "th" ? "สมัคร Pro เพื่อต่ออายุ" : "Subscribe to continue"}
                 </Button>
               </div>
-            ) : !user ? (
-              <GoogleSignInButton
-                className="w-full gap-2"
-                label={lang === "th" ? "เข้าสู่ระบบเพื่อสมัคร" : "Sign in to subscribe"}
-                buttonVariant="default"
-                buttonSize="default"
-              />
-            ) : !trialUsed ? (
+            ) : !user ? null : !trialUsed ? (
               <div className="space-y-2">
                 <Button
                   className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 h-auto py-3 whitespace-normal text-center leading-snug"
