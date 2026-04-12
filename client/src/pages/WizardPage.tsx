@@ -881,8 +881,10 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
 
   const addBulkStaff = () => {
     const prefix = bulkPrefix.trim() || (lang === "th" ? "บุคลากร" : "Staff");
+    const remaining = maxStaff - staff.length;
+    const actualCount = Math.min(bulkCount, Math.max(0, remaining));
     const newStaff: StaffMember[] = [];
-    for (let i = 0; i < bulkCount; i++) {
+    for (let i = 0; i < actualCount; i++) {
       const member: StaffMember = {
         id: nanoid(),
         name: `${prefix} ${bulkStartNum + i}`,
@@ -896,7 +898,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
     }
     setStaff([...staff, ...newStaff]);
     setShowBulkAdd(false);
-    setBulkStartNum(bulkStartNum + bulkCount);
+    setBulkStartNum(bulkStartNum + actualCount);
   };
 
   const handleExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2014,9 +2016,9 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                   <Input
                     type="number"
                     min={1}
-                    max={200}
+                    max={Math.max(1, maxStaff - staff.length)}
                     value={bulkCount}
-                    onChange={e => setBulkCount(Math.min(200, Math.max(1, parseInt(e.target.value) || 1)))}
+                    onChange={e => setBulkCount(Math.min(Math.max(1, maxStaff - staff.length), Math.max(1, parseInt(e.target.value) || 1)))}
                     data-testid="input-bulk-count"
                   />
                 </div>
@@ -2064,12 +2066,17 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     </Select>
                   </div>
                 )}
-                <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 text-sm text-muted-foreground">
-                  {bulkPrefix.trim() || (lang === "th" ? "บุคลากร" : "Staff")} {bulkStartNum} — {bulkPrefix.trim() || (lang === "th" ? "บุคลากร" : "Staff")} {bulkStartNum + bulkCount - 1}
+                <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 text-sm text-muted-foreground space-y-1">
+                  <div>{bulkPrefix.trim() || (lang === "th" ? "บุคลากร" : "Staff")} {bulkStartNum} — {bulkPrefix.trim() || (lang === "th" ? "บุคลากร" : "Staff")} {bulkStartNum + Math.min(bulkCount, Math.max(0, maxStaff - staff.length)) - 1}</div>
+                  {staff.length + bulkCount > maxStaff && (
+                    <div className="text-amber-600 dark:text-amber-400 text-xs">
+                      {lang === "th" ? `เพิ่มได้อีกสูงสุด ${maxStaff - staff.length} คน (จำกัด ${maxStaff} คน)` : `Max ${maxStaff - staff.length} more allowed (limit: ${maxStaff})`}
+                    </div>
+                  )}
                 </div>
                 <Button onClick={addBulkStaff} className="w-full" data-testid="button-bulk-add-confirm">
                   <Users className="w-4 h-4 mr-2" />
-                  {t.addStaffBtn} ({bulkCount})
+                  {t.addStaffBtn} ({Math.min(bulkCount, Math.max(0, maxStaff - staff.length))})
                 </Button>
               </div>
             </DialogContent>
@@ -2807,7 +2814,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     {!isPro && <ProBadge onClick={() => setShowProModal("holidays")} />}
                   </div>
 
-                  <div className={`flex items-start gap-3 ${!isPro ? "opacity-60 pointer-events-none" : ""}`}>
+                  <div className={`flex items-start gap-3 ${!isPro && PRO_GATING_ENABLED ? "opacity-60 pointer-events-none" : ""}`}>
                     <Checkbox 
                       id="balance-holidays"
                       checked={config.balanceHolidays || false}
