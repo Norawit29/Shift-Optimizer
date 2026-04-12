@@ -2,7 +2,7 @@ export type Lang = "en" | "th";
 
 const translations = {
   en: {
-    appName: "Shift-Optimizer",
+    appName: "Shift Optimizer",
     appTagline: "Hospital Shift Scheduling System",
     navHowItWorks: "How It Works",
     navFeatures: "Key Features",
@@ -437,7 +437,7 @@ const translations = {
     language: "Language",
   },
   th: {
-    appName: "Shift-Optimizer",
+    appName: "Shift Optimizer",
     appTagline: "ระบบจัดตารางเวรโรงพยาบาล",
     navHowItWorks: "ขั้นตอนการใช้งาน",
     navFeatures: "ฟีเจอร์หลัก",
