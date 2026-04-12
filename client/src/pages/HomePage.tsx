@@ -539,7 +539,7 @@ export default function HomePage() {
                 <Mail className="w-6 h-6 text-primary" />
               </div>
               <div className="text-center">
-                <p className="font-semibold text-slate-900 dark:text-white mb-1">อีเมล</p>
+                <p className="font-semibold text-slate-900 dark:text-white mb-1">Email</p>
                 <p className="text-sm text-slate-500 dark:text-slate-400">contact@shift-optimizer.com</p>
               </div>
             </a>
@@ -577,9 +577,6 @@ export default function HomePage() {
             </button>
           </div>
 
-          <div className="text-center text-sm text-slate-400 dark:text-slate-500">
-            <p>108/26 ซ.รามคำแหง 118 แยก 59 กรุงเทพมหานคร 10240</p>
-          </div>
         </div>
       </section>
 
