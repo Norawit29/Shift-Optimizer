@@ -138,8 +138,12 @@ export default function HomePage() {
     const hash = window.location.hash;
     if (hash) {
       setTimeout(() => {
-        document.querySelector(hash)?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
+        const el = document.querySelector(hash);
+        if (el) {
+          const top = el.getBoundingClientRect().top + window.scrollY - 96;
+          window.scrollTo({ top, behavior: "smooth" });
+        }
+      }, 600);
     }
   }, []);
 
