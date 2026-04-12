@@ -570,7 +570,9 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const [hasExported, setHasExported] = useState(false);
   const { user } = useAuth();
   const { isPro, proSlots } = useProStatus();
-  const maxStaff = isPro ? (proSlots ?? 50) : 15;
+  // PRO_GATING_ENABLED: set to true when ready to enforce Pro restrictions
+  const PRO_GATING_ENABLED = false;
+  const maxStaff = PRO_GATING_ENABLED ? (isPro ? (proSlots ?? 50) : 15) : 50;
   const [showProModal, setShowProModal] = useState<string | null>(null);
   const { data: savedSchedules } = useSchedules();
 
@@ -924,7 +926,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
       let truncated = false;
       {
         const remaining = maxStaff - staff.length;
-        if (remaining <= 0) {
+        if (remaining <= 0 && PRO_GATING_ENABLED) {
           setShowProModal("staffCount");
           return;
         }
@@ -1659,7 +1661,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
             {step === 4 && (
               <Button
                 onClick={() => {
-                  if (!isPro) { setShowProModal("exportExcel"); return; }
+                  if (!isPro && PRO_GATING_ENABLED) { setShowProModal("exportExcel"); return; }
                   handleSaveClick();
                 }}
                 className="bg-green-600 hover:bg-green-700"
@@ -1716,7 +1718,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                       variant="outline" 
                       size="icon" 
                       onClick={() => {
-                        if (!isPro && config.shiftsPerDay >= 3) { setShowProModal("shifts"); return; }
+                        if (!isPro && PRO_GATING_ENABLED && config.shiftsPerDay >= 3) { setShowProModal("shifts"); return; }
                         setShiftsPerDay(config.shiftsPerDay + 1);
                       }}
                       disabled={config.shiftsPerDay >= 5}
@@ -1906,7 +1908,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      if (!isPro && (config.staffLevels?.length || 0) >= 3) { setShowProModal("levels"); return; }
+                      if (!isPro && PRO_GATING_ENABLED && (config.staffLevels?.length || 0) >= 3) { setShowProModal("levels"); return; }
                       addStaffLevel();
                     }}
                     disabled={(config.staffLevels?.length || 0) >= 5}
@@ -2105,7 +2107,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     <div className="flex items-center gap-1.5 flex-wrap" data-walkthrough="add-staff-buttons">
                       <Button
                         onClick={() => {
-                          if (staff.length >= maxStaff) { setShowProModal("staffCount"); return; }
+                          if (staff.length >= maxStaff && PRO_GATING_ENABLED) { setShowProModal("staffCount"); return; }
                           addStaff();
                         }}
                         variant="outline" size="sm" className="border-dashed" data-testid="button-add-staff"
@@ -2114,7 +2116,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                       </Button>
                       <Button
                         onClick={() => {
-                          if (staff.length >= maxStaff) { setShowProModal("staffCount"); return; }
+                          if (staff.length >= maxStaff && PRO_GATING_ENABLED) { setShowProModal("staffCount"); return; }
                           setShowBulkAdd(true);
                         }}
                         variant="outline" size="sm" data-testid="button-add-multiple"
@@ -2810,7 +2812,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                       id="balance-holidays"
                       checked={config.balanceHolidays || false}
                       onCheckedChange={(checked) => {
-                        if (!isPro) { setShowProModal("holidays"); return; }
+                        if (!isPro && PRO_GATING_ENABLED) { setShowProModal("holidays"); return; }
                         setConfig({...config, balanceHolidays: checked === true});
                       }}
                       data-testid="checkbox-balance-holidays"
@@ -2824,7 +2826,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                       </p>
                     </div>
                   </div>
-                  {!isPro && (
+                  {!isPro && PRO_GATING_ENABLED && (
                     <button
                       className="w-full text-left text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/50 rounded-lg px-3 py-2 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/20 transition-colors"
                       onClick={() => setShowProModal("holidays")}
@@ -3135,7 +3137,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                 </TabsContent>
 
                 <TabsContent value="staff-schedule" className="mt-0">
-                  {!isPro ? (
+                  {!isPro && PRO_GATING_ENABLED ? (
                     <div className="relative rounded-xl overflow-hidden">
                       <div className="blur-sm pointer-events-none select-none">
                         <StaffScheduleView
@@ -3477,7 +3479,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
 
 
       <ProGateModal
-        open={showProModal !== null}
+        open={showProModal !== null && PRO_GATING_ENABLED}
         onClose={() => setShowProModal(null)}
         featureKey={showProModal ?? undefined}
       />
