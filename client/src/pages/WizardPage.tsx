@@ -926,8 +926,8 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
       let truncated = false;
       {
         const remaining = maxStaff - staff.length;
-        if (remaining <= 0 && PRO_GATING_ENABLED) {
-          setShowProModal("staffCount");
+        if (remaining <= 0) {
+          if (PRO_GATING_ENABLED) setShowProModal("staffCount");
           return;
         }
         if (names.length > remaining) {
@@ -2107,7 +2107,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                     <div className="flex items-center gap-1.5 flex-wrap" data-walkthrough="add-staff-buttons">
                       <Button
                         onClick={() => {
-                          if (staff.length >= maxStaff && PRO_GATING_ENABLED) { setShowProModal("staffCount"); return; }
+                          if (staff.length >= maxStaff) { if (PRO_GATING_ENABLED) setShowProModal("staffCount"); return; }
                           addStaff();
                         }}
                         variant="outline" size="sm" className="border-dashed" data-testid="button-add-staff"
@@ -2116,7 +2116,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                       </Button>
                       <Button
                         onClick={() => {
-                          if (staff.length >= maxStaff && PRO_GATING_ENABLED) { setShowProModal("staffCount"); return; }
+                          if (staff.length >= maxStaff) { if (PRO_GATING_ENABLED) setShowProModal("staffCount"); return; }
                           setShowBulkAdd(true);
                         }}
                         variant="outline" size="sm" data-testid="button-add-multiple"
