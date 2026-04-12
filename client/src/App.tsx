@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { LanguageProvider, useLanguage } from "@/context/LanguageContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { CookieBanner } from "@/components/CookieBanner";
+import { FloatingLineButton } from "@/components/FloatingLineButton";
 import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/HomePage";
 import { lazy, Suspense, startTransition, useEffect, useState } from "react";
@@ -83,6 +84,12 @@ function Router() {
   );
 }
 
+function FloatingHelper() {
+  const [location] = useLocation();
+  if (!location.startsWith("/create")) return null;
+  return <FloatingLineButton />;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -92,6 +99,7 @@ function App() {
             <Toaster />
             <HeadManager />
             <Router />
+            <FloatingHelper />
             <CookieBanner />
           </TooltipProvider>
         </LanguageProvider>
