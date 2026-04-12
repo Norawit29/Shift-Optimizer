@@ -15,7 +15,7 @@ import {
   FileText,
   Mail,
 } from "lucide-react";
-import { SiFacebook } from "react-icons/si";
+import { SiFacebook, SiLine } from "react-icons/si";
 import { LazyMotion, domAnimation, m, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 import { useLanguage } from "@/context/LanguageContext";
@@ -118,6 +118,7 @@ interface Article {
 
 export default function HomePage() {
   const { t, lang } = useLanguage();
+  const [showLineQR, setShowLineQR] = useState(false);
 
   const { data: articles } = useQuery<Article[]>({
     queryKey: ["/api/articles"],
@@ -543,7 +544,48 @@ export default function HomePage() {
                 <SiFacebook className="w-5 h-5" />
                 <span>Facebook</span>
               </a>
+              <button
+                onClick={() => setShowLineQR(true)}
+                className="flex items-center gap-1.5 hover:text-green-500 dark:hover:text-green-400 transition-colors"
+                data-testid="button-footer-line"
+              >
+                <SiLine className="w-5 h-5" />
+                <span>@shift-optimizer</span>
+              </button>
             </div>
+
+            {/* LINE QR popup */}
+            {showLineQR && (
+              <div
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+                onClick={() => setShowLineQR(false)}
+              >
+                <div
+                  className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-2xl max-w-xs w-full mx-4 flex flex-col items-center gap-4"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-2 mb-1">
+                      <SiLine className="w-6 h-6 text-green-500" />
+                      <span className="font-bold text-slate-900 dark:text-white text-lg">LINE Official</span>
+                    </div>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">@shift-optimizer</p>
+                  </div>
+                  <img
+                    src="/line-qr.png"
+                    alt="LINE QR Code @shift-optimizer"
+                    className="w-52 h-52 rounded-lg"
+                  />
+                  <p className="text-xs text-slate-400 text-center">สแกน QR Code เพื่อเพิ่มเพื่อนใน LINE</p>
+                  <button
+                    onClick={() => setShowLineQR(false)}
+                    className="text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 underline"
+                  >
+                    ปิด
+                  </button>
+                </div>
+              </div>
+            )}
             <span className="text-sm" data-testid="text-footer-copyright">Copyright &copy; 2026 Shift Optimizer All rights reserved.</span>
           </div>
         </div>
