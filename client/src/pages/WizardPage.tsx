@@ -2084,30 +2084,29 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
             <Card className="shadow-md border-0 ring-1 ring-slate-200 dark:ring-slate-800 lg:col-span-2">
               <CardContent className="p-6">
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <div>
-                      <Label className="text-base font-semibold">{t.staff} ({staff.length})</Label>
-                      <div className="mt-1 space-y-1">
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            {!isPro ? (
-                              <>
-                                {t.proStaffLimitHint}
-                                <ProBadge onClick={() => setShowProModal("staffCount")} className="ml-1" />
-                              </>
-                            ) : (
-                              <span>{lang === "th" ? `แพ็กเกจ Pro (สูงสุด ${maxStaff} คน)` : `Pro plan (up to ${maxStaff} staff)`}</span>
-                            )}
-                          </span>
-                          <span className="font-medium">{staff.length} / {maxStaff} {lang === "th" ? "คน" : ""}</span>
-                        </div>
-                        <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all duration-300 ${staff.length >= maxStaff ? "bg-red-500" : staff.length >= Math.round(maxStaff * 0.8) ? "bg-amber-500" : "bg-primary"}`}
-                            style={{ width: `${Math.min(100, (staff.length / maxStaff) * 100)}%` }}
-                          />
-                        </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Label className="text-base font-semibold shrink-0">{t.staff} ({staff.length})</Label>
+                        {!isPro && PRO_GATING_ENABLED && <ProBadge onClick={() => setShowProModal("staffCount")} />}
                       </div>
+                      <span className="text-sm font-medium text-slate-600 dark:text-slate-300 shrink-0">
+                        {staff.length} / {maxStaff} {lang === "th" ? "คน" : ""}
+                      </span>
+                    </div>
+                    {!PRO_GATING_ENABLED && (
+                      <p className="text-xs text-muted-foreground">
+                        {lang === "th" ? `เพิ่มได้สูงสุด ${maxStaff} คน` : `Up to ${maxStaff} staff`}
+                      </p>
+                    )}
+                    {PRO_GATING_ENABLED && !isPro && (
+                      <p className="text-xs text-muted-foreground">{t.proStaffLimitHint}</p>
+                    )}
+                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${staff.length >= maxStaff ? "bg-red-500" : staff.length >= Math.round(maxStaff * 0.8) ? "bg-amber-500" : "bg-primary"}`}
+                        style={{ width: `${Math.min(100, (staff.length / maxStaff) * 100)}%` }}
+                      />
                     </div>
                     <div className="flex items-center gap-1.5 flex-wrap" data-walkthrough="add-staff-buttons">
                       <Button
