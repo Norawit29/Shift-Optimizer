@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LanguageProvider, useLanguage } from "@/context/LanguageContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { CookieBanner } from "@/components/CookieBanner";
 import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/HomePage";
 import { lazy, Suspense, startTransition, useEffect, useState } from "react";
@@ -89,6 +90,7 @@ function App() {
             <Toaster />
             <HeadManager />
             <Router />
+            <CookieBanner />
           </TooltipProvider>
         </LanguageProvider>
       </AuthProvider>
