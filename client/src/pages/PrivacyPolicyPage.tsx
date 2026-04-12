@@ -4,7 +4,7 @@ export default function PrivacyPolicyPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950">
       <Navbar />
-      <div className="max-w-3xl mx-auto px-4 py-12">
+      <div className="max-w-3xl mx-auto px-4 pt-28 pb-12">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
           นโยบายคุ้มครองข้อมูลส่วนบุคคล
         </h1>
