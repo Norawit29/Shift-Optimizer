@@ -235,7 +235,7 @@ export default function PricingPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 dark:divide-slate-700">
             <div className="px-5 py-4">
               <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">ข้อมูลเวรเดิมหายไหม?</p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">ข้อมูลยังอยู่ครบทุกอย่าง ไม่มีอะไรหาย แต่ถ้ามีบุคลากรเกิน 15 คน จะดูได้อย่างเดียว ไม่สามารถแก้ไขได้</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">ข้อมูลทั้งหมดยังคงอยู่ครบถ้วน ไม่มีการสูญหาย อย่างไรก็ตาม หากจำนวนบุคลากรเกิน 15 คน ระบบจะปรับเป็นโหมดอ่านอย่างเดียว และไม่สามารถแก้ไขได้</p>
             </div>
             <div className="px-5 py-4">
               <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">ใช้เกิน 15 คนอยู่ ต้องทำยังไง?</p>
