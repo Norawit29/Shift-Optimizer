@@ -1,4 +1,5 @@
 import { Crown } from "lucide-react";
+import { PRO_GATING_ENABLED } from "@/lib/config";
 
 interface ProBadgeProps {
   onClick?: () => void;
@@ -6,6 +7,7 @@ interface ProBadgeProps {
 }
 
 export function ProBadge({ onClick, className = "" }: ProBadgeProps) {
+  if (!PRO_GATING_ENABLED) return null;
   return (
     <span
       onClick={onClick}

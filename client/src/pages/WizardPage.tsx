@@ -57,6 +57,7 @@ import { FeedbackWidget } from "@/components/FeedbackWidget";
 import { WalkthroughOverlay, useWalkthrough } from "@/components/WalkthroughOverlay";
 import type { WalkthroughStep } from "@/components/WalkthroughOverlay";
 import { useProStatus } from "@/hooks/useProStatus";
+import { PRO_GATING_ENABLED } from "@/lib/config";
 import { ProBadge } from "@/components/ProBadge";
 import { ProGateModal } from "@/components/ProGateModal";
 import { Lock } from "lucide-react";
@@ -569,8 +570,6 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const [hasExported, setHasExported] = useState(false);
   const { user } = useAuth();
   const { isPro, proSlots } = useProStatus();
-  // PRO_GATING_ENABLED: set to true when ready to enforce Pro restrictions
-  const PRO_GATING_ENABLED = false;
   const maxStaff = PRO_GATING_ENABLED ? (isPro ? (proSlots ?? 50) : 15) : 50;
   const [showProModal, setShowProModal] = useState<string | null>(null);
   const { data: savedSchedules } = useSchedules();
