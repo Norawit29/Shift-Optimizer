@@ -7,6 +7,8 @@ export interface SubscriptionData {
   isTrialing: boolean;
   trialDaysLeft: number | null;
   trialUsed: boolean;
+  enforcementDate: string;
+  isEnforced: boolean;
 }
 
 export function useSubscription() {

@@ -554,9 +554,15 @@ export async function registerRoutes(
 
   // === STRIPE ROUTES ===
 
+  const ENFORCEMENT_DATE = new Date("2026-07-01T00:00:00+07:00");
+
   app.get("/api/stripe/subscription", async (req, res) => {
+    const now = new Date();
+    const enforcementDate = ENFORCEMENT_DATE.toISOString();
+    const isEnforced = now >= ENFORCEMENT_DATE;
+
     if (!req.session.userId) {
-      return res.json({ subscription: null, isPro: false, proSlots: null, isTrialing: false, trialDaysLeft: null, trialUsed: false });
+      return res.json({ subscription: null, isPro: false, proSlots: null, isTrialing: false, trialDaysLeft: null, trialUsed: false, enforcementDate, isEnforced });
     }
     try {
       const subscription = await stripeStorage.getUserActiveSubscription(req.session.userId);
@@ -581,10 +587,12 @@ export async function registerRoutes(
         isTrialing,
         trialDaysLeft,
         trialUsed: user?.trialUsed ?? false,
+        enforcementDate,
+        isEnforced,
       });
     } catch (error) {
       console.error("Error fetching subscription:", error);
-      res.json({ subscription: null, isPro: false, proSlots: null, isTrialing: false, trialDaysLeft: null, trialUsed: false });
+      res.json({ subscription: null, isPro: false, proSlots: null, isTrialing: false, trialDaysLeft: null, trialUsed: false, enforcementDate, isEnforced: false });
     }
   });
 

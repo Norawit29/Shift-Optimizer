@@ -149,6 +149,7 @@ export default function PricingPage() {
   const trialDaysLeft = subData?.trialDaysLeft ?? null;
   const trialUsed = subData?.trialUsed ?? false;
   const hasActivePaidSub = isPro && !isTrialing;
+  const isEnforced = subData?.isEnforced ?? false;
 
   const [slotIndex, setSlotIndex] = useState(0);
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
@@ -217,6 +218,31 @@ export default function PricingPage() {
             {t.currentlyPro}
           </div>
         )}
+
+        {/* Plan change notice banner */}
+        <div className="mb-8 rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 overflow-hidden">
+          <div className="px-5 py-3 bg-amber-100 dark:bg-amber-900/40 flex items-center gap-2 border-b border-amber-200 dark:border-amber-800">
+            <span className="text-xs font-bold bg-emerald-700 text-white px-2.5 py-0.5 rounded-full">ข้อมูลสำคัญ</span>
+            <span className="text-sm font-semibold text-amber-900 dark:text-amber-200">แจ้งเปลี่ยนแปลงแผนบริการ</span>
+          </div>
+          <div className="px-5 py-3 border-b border-amber-200 dark:border-amber-800">
+            <p className="text-sm text-amber-900 dark:text-amber-200">
+              {isEnforced
+                ? "ตั้งแต่วันที่ 1 ก.ค. 2569 ฟีเจอร์บางส่วนย้ายมาอยู่ในแผน Pro แล้ว หากเกินลิมิต Free ข้อมูลจะอยู่ในโหมด read-only"
+                : "ตั้งแต่วันที่ 1 ก.ค. 2569 ฟีเจอร์บางส่วนที่ท่านใช้งานอยู่จะย้ายไปอยู่ในแผน Pro ท่านยังคงใช้งานได้ตามปกติจนถึงวันดังกล่าว"}
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-amber-200 dark:divide-amber-800">
+            <div className="px-5 py-4">
+              <p className="text-sm font-semibold text-amber-900 dark:text-amber-200 mb-1">ข้อมูลเวรเดิมหายไหม?</p>
+              <p className="text-sm text-amber-800 dark:text-amber-300">ไม่หาย ข้อมูลทั้งหมดยังอยู่ครบ ถ้าเกินลิมิต Free จะเป็น read-only</p>
+            </div>
+            <div className="px-5 py-4">
+              <p className="text-sm font-semibold text-amber-900 dark:text-amber-200 mb-1">ใช้เกิน 15 คนอยู่ ต้องทำยังไง?</p>
+              <p className="text-sm text-amber-800 dark:text-amber-300">อัปเกรดเป็น Pro หรือลดจำนวนบุคลากรลงเหลือ 15 คน</p>
+            </div>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch pt-6 pb-2">
           {/* Free Plan */}
