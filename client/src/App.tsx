@@ -18,6 +18,7 @@ const LazyCaseStudyPage = lazy(() => import("@/pages/CaseStudyPage"));
 const LazyHistoryPage = lazy(() => import("@/pages/HistoryPage"));
 const LazyScheduleDetailPage = lazy(() => import("@/pages/ScheduleDetailPage"));
 const LazyPricingPage = lazy(() => import("@/pages/PricingPage"));
+const LazyPrivacyPolicyPage = lazy(() => import("@/pages/PrivacyPolicyPage"));
 
 const BASE_URL = "https://shift-optimizer.com";
 
@@ -76,6 +77,7 @@ function Router() {
       <Route path="/history">{() => <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><LazyHistoryPage /></Suspense>}</Route>
       <Route path="/schedule/:id">{() => <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><LazyScheduleDetailPage /></Suspense>}</Route>
       <Route path="/pricing">{() => <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><LazyPricingPage /></Suspense>}</Route>
+      <Route path="/privacy-policy">{() => <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><LazyPrivacyPolicyPage /></Suspense>}</Route>
       <Route component={NotFound} />
     </Switch>
   );
