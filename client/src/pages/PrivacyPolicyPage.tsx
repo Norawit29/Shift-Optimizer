@@ -197,7 +197,7 @@ export default function PrivacyPolicyPage() {
           </Section>
 
           <div className="border-t border-slate-200 dark:border-slate-700 pt-6 mt-8 text-slate-500 dark:text-slate-400 text-xs">
-            <p>ประกาศ ณ วันที่ 12 เมษายน พ.ศ. 2568</p>
+            <p>ประกาศ ณ วันที่ 12 เมษายน พ.ศ. 2569</p>
             <p>นโยบายฉบับนี้มีผลบังคับใช้ตั้งแต่วันที่ประกาศเป็นต้นไป</p>
           </div>
         </div>
