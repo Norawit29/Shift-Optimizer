@@ -3,7 +3,6 @@ import { useState } from "react";
 import { Menu, X, ArrowRight } from "lucide-react";
 import { LazyMotion, domAnimation, AnimatePresence, m } from "framer-motion";
 import { useLanguage } from "@/context/LanguageContext";
-import { LanguageToggle } from "@/components/LanguageToggle";
 import { useAuth } from "@/context/AuthContext";
 import { GoogleSignInButton, UserMenu } from "@/components/GoogleSignIn";
 import { Button } from "@/components/ui/button";
@@ -26,6 +25,7 @@ export function Navbar({ isHomePage }: NavbarProps) {
     { label: t.navFeatures, href: "#features", id: "features" },
     { label: t.navAbout, href: "#about", id: "about" },
     { label: t.navFaq, href: "#faq", id: "faq" },
+    { label: "ติดต่อเรา", href: "#contact", id: "contact" },
   ];
 
   const scrollToSection = (sectionId: string) => {
@@ -133,7 +133,6 @@ export function Navbar({ isHomePage }: NavbarProps) {
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
-            <LanguageToggle />
             {!loading && (user ? <UserMenu /> : <GoogleSignInButton />)}
             <Link href="/create" className="hidden sm:block shrink-0">
               <Button size="lg" className="shadow-lg shadow-primary/25 text-base px-5 whitespace-nowrap" data-testid="button-nav-cta">
