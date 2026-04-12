@@ -52,7 +52,6 @@ import { Link, useLocation, useSearch } from "wouter";
 import { queryClient } from "@/lib/queryClient";
 import { getDaysInMonth, format, setDate, parseISO, differenceInCalendarDays, addDays } from "date-fns";
 import { useLanguage } from "@/context/LanguageContext";
-import { LanguageToggle } from "@/components/LanguageToggle";
 import ExcelJS from "exceljs";
 import { FeedbackWidget } from "@/components/FeedbackWidget";
 import { WalkthroughOverlay, useWalkthrough } from "@/components/WalkthroughOverlay";
@@ -1658,7 +1657,6 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           </div>
           
           <div className="flex items-center gap-2">
-            <LanguageToggle />
             {user && <UserMenu />}
             {step === 4 && (
               <Button
