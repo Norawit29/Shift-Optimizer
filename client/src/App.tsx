@@ -28,26 +28,26 @@ function HeadManager() {
   const { lang } = useLanguage();
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("lang")) {
+      params.delete("lang");
+      const newSearch = params.toString();
+      const cleanUrl = window.location.pathname + (newSearch ? `?${newSearch}` : "") + window.location.hash;
+      window.history.replaceState(null, "", cleanUrl);
+    }
+  }, [location]);
+
+  useEffect(() => {
     const path = location === "/" ? "/" : location;
     const thUrl = `${BASE_URL}${path}`;
-    const enUrl = `${BASE_URL}${path}?lang=en`;
-    const canonicalUrl = lang === "en" ? enUrl : thUrl;
 
     let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
-    if (canonical) {
-      canonical.href = canonicalUrl;
-    }
+    if (canonical) canonical.href = thUrl;
 
     let hreflangTh = document.querySelector('link[hreflang="th"]') as HTMLLinkElement | null;
     if (hreflangTh) hreflangTh.href = thUrl;
 
-    let hreflangEn = document.querySelector('link[hreflang="en"]') as HTMLLinkElement | null;
-    if (hreflangEn) hreflangEn.href = enUrl;
-
-    let hreflangDefault = document.querySelector('link[hreflang="x-default"]') as HTMLLinkElement | null;
-    if (hreflangDefault) hreflangDefault.href = thUrl;
-
-    document.documentElement.lang = lang === "en" ? "en" : "th";
+    document.documentElement.lang = "th";
   }, [location, lang]);
 
   return null;
