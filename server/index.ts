@@ -54,6 +54,16 @@ app.use(
 app.use(express.urlencoded({ extended: false }));
 
 app.use((req, res, next) => {
+  if (req.query.lang !== undefined) {
+    const url = new URL(req.url, `https://${req.headers.host}`);
+    url.searchParams.delete("lang");
+    const clean = url.pathname + (url.search || "") + (url.hash || "");
+    return res.redirect(301, clean);
+  }
+  next();
+});
+
+app.use((req, res, next) => {
   res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
   res.setHeader("X-Frame-Options", "SAMEORIGIN");
   res.setHeader("X-Content-Type-Options", "nosniff");
