@@ -21,58 +21,101 @@ export async function registerRoutes(
     );
   });
 
-  app.get("/sitemap.xml", async (_req, res) => {
-    const baseUrl = "https://shift-optimizer.com";
+  // ── Sitemap helpers ───────────────────────────────────────────────────────
+  function sanitizeSlug(raw: string | null | undefined): string {
+    if (!raw) return "";
+    return raw.trim().replace(/\s+/g, "-").replace(/-{2,}/g, "-");
+  }
+
+  function cleanUrl(baseUrl: string, path: string): string {
+    const cleanPath = path
+      .trim()
+      .replace(/\s+/g, "")
+      .replace(/\/+/g, "/")
+      .replace(/^(?!\/)/, "/");
+    const full = `${baseUrl.replace(/\/$/, "")}${cleanPath}`;
+    return full;
+  }
+
+  function urlEntry(loc: string, lastmod: string, changefreq: string, priority: string): string {
+    return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>\n  </url>`;
+  }
+
+  function wrapUrlset(entries: string[]): string {
+    return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.join("\n")}\n</urlset>`;
+  }
+
+  const BASE_URL = "https://shift-optimizer.com";
+
+  // ── sitemap-pages.xml ────────────────────────────────────────────────────
+  app.get("/sitemap-pages.xml", (_req, res) => {
     const now = new Date().toISOString().split("T")[0];
-
-    const staticPages = [
-      { loc: "/", priority: "1.0", changefreq: "weekly" },
-      { loc: "/create", priority: "0.8", changefreq: "monthly" },
-      { loc: "/articles", priority: "0.8", changefreq: "weekly" },
-      { loc: "/case-studies", priority: "0.8", changefreq: "weekly" },
+    const pages = [
+      { path: "/", priority: "1.0", changefreq: "weekly" },
+      { path: "/create", priority: "0.8", changefreq: "monthly" },
+      { path: "/articles", priority: "0.8", changefreq: "weekly" },
+      { path: "/case-studies", priority: "0.8", changefreq: "weekly" },
     ];
+    const entries = pages.map((p) =>
+      urlEntry(cleanUrl(BASE_URL, p.path), now, p.changefreq, p.priority)
+    );
+    res.type("application/xml; charset=utf-8").send(wrapUrlset(entries));
+  });
 
-    let articleUrls: { loc: string; lastmod: string }[] = [];
+  // ── sitemap-articles.xml ─────────────────────────────────────────────────
+  app.get("/sitemap-articles.xml", async (_req, res) => {
+    const now = new Date().toISOString().split("T")[0];
+    let entries: string[] = [];
     try {
       const articles = await sanityClient.fetch<{ slug: string; publishedAt: string | null }[]>(
         `*[_type == "article" && !(_id in path("drafts.**"))] | order(publishedAt desc) { "slug": slug.current, publishedAt }`
       );
-      articleUrls = (articles || []).map((a) => ({
-        loc: `/articles/${a.slug}`,
-        lastmod: a.publishedAt ? a.publishedAt.split("T")[0] : now,
-      }));
+      entries = (articles || [])
+        .map((a) => {
+          const slug = sanitizeSlug(a.slug);
+          if (!slug) return null;
+          const loc = cleanUrl(BASE_URL, `/articles/${slug}`);
+          const lastmod = a.publishedAt ? a.publishedAt.split("T")[0] : now;
+          return urlEntry(loc, lastmod, "monthly", "0.7");
+        })
+        .filter((e): e is string => e !== null);
     } catch {}
+    res.type("application/xml; charset=utf-8").send(wrapUrlset(entries));
+  });
 
-    let caseStudyUrls: { loc: string; lastmod: string }[] = [];
+  // ── sitemap-case-studies.xml ─────────────────────────────────────────────
+  app.get("/sitemap-case-studies.xml", async (_req, res) => {
+    const now = new Date().toISOString().split("T")[0];
+    let entries: string[] = [];
     try {
       const caseStudies = await sanityClient.fetch<{ slug: string; publishedAt: string | null }[]>(
         `*[_type == "caseStudy" && !(_id in path("drafts.**"))] | order(publishedAt desc) { "slug": slug.current, publishedAt }`
       );
-      caseStudyUrls = (caseStudies || []).map((c) => ({
-        loc: `/case-studies/${c.slug}`,
-        lastmod: c.publishedAt ? c.publishedAt.split("T")[0] : now,
-      }));
+      entries = (caseStudies || [])
+        .map((c) => {
+          const slug = sanitizeSlug(c.slug);
+          if (!slug) return null;
+          const loc = cleanUrl(BASE_URL, `/case-studies/${slug}`);
+          const lastmod = c.publishedAt ? c.publishedAt.split("T")[0] : now;
+          return urlEntry(loc, lastmod, "monthly", "0.6");
+        })
+        .filter((e): e is string => e !== null);
     } catch {}
+    res.type("application/xml; charset=utf-8").send(wrapUrlset(entries));
+  });
 
-    const urls = staticPages
-      .map(
-        (p) =>
-          `<url><loc>${baseUrl}${p.loc}</loc><lastmod>${now}</lastmod><changefreq>${p.changefreq}</changefreq><priority>${p.priority}</priority></url>`
-      )
-      .concat(
-        articleUrls.map(
-          (a) =>
-            `<url><loc>${baseUrl}${a.loc}</loc><lastmod>${a.lastmod}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>`
-        )
-      )
-      .concat(
-        caseStudyUrls.map(
-          (c) =>
-            `<url><loc>${baseUrl}${c.loc}</loc><lastmod>${c.lastmod}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>`
-        )
-      );
-
-    const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join("\n")}\n</urlset>`;
+  // ── sitemap.xml (index) ──────────────────────────────────────────────────
+  app.get("/sitemap.xml", (_req, res) => {
+    const now = new Date().toISOString().split("T")[0];
+    const sitemaps = [
+      `${BASE_URL}/sitemap-pages.xml`,
+      `${BASE_URL}/sitemap-articles.xml`,
+      `${BASE_URL}/sitemap-case-studies.xml`,
+    ];
+    const entries = sitemaps.map(
+      (loc) => `  <sitemap>\n    <loc>${loc}</loc>\n    <lastmod>${now}</lastmod>\n  </sitemap>`
+    );
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.join("\n")}\n</sitemapindex>`;
     res.type("application/xml; charset=utf-8").send(xml);
   });
 
