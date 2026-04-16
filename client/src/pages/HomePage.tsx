@@ -18,7 +18,6 @@ import {
   RefreshCw,
   ClipboardX,
   Briefcase,
-  MessageSquareWarning,
   CheckCircle2,
 } from "lucide-react";
 import { SiFacebook, SiLine } from "react-icons/si";
@@ -369,10 +368,10 @@ export default function HomePage() {
             >
               <m.div variants={fadeUp} custom={0} className="text-center mb-14 sm:mb-16">
                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-features-title">
-                  ผลลัพธ์ที่ทีมของคุณจะได้รับ
+                  เปลี่ยนงานจัดเวรที่ยุ่งยาก ให้เป็นเรื่องง่าย
                 </h2>
-                <p className="mt-3 text-slate-600 dark:text-slate-300 text-base sm:text-lg max-w-xl mx-auto">
-                  ออกแบบมาสำหรับโรงพยาบาลและสถานพยาบาลโดยเฉพาะ
+                <p className="mt-3 text-slate-600 dark:text-slate-300 text-base sm:text-lg max-w-2xl mx-auto">
+                  ระบบที่ออกแบบมาสำหรับโรงพยาบาลโดยเฉพาะ ช่วยลดเวลา ลดความผิดพลาด และลดข้อร้องเรียนในทีม
                 </p>
               </m.div>
 
@@ -717,14 +716,6 @@ export default function HomePage() {
               </button>
             </m.div>
 
-            <m.div variants={fadeUp} custom={2} className="text-center">
-              <a href="mailto:contact@shift-optimizer.com?subject=ขอนัดเดโมระบบ Shift Optimizer">
-                <Button size="lg" className="shadow-lg shadow-primary/25 text-base px-8 py-6 font-semibold" data-testid="button-request-demo">
-                  <MessageSquareWarning className="mr-2 h-5 w-5" />
-                  นัดเดโมระบบ
-                </Button>
-              </a>
-            </m.div>
           </m.div>
         </div>
       </section>
