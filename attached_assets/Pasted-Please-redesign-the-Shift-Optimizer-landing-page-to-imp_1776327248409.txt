@@ -1,0 +1,217 @@
+Please redesign the Shift Optimizer landing page to improve conversion rate, trust, and buyer psychology while keeping the site modern, clean, fast, and professional.
+
+Goal: make the page feel like a serious B2B SaaS product for hospitals / healthcare teams.
+
+Keep current branding and color palette.
+
+OVERALL PAGE ORDER (IMPORTANT)
+
+Use this new landing page sequence:
+
+Hero
+Social Proof / Results
+Pain Section (new)
+Benefits / Features
+Excel vs AI Comparison
+How It Works (3 steps)
+FAQ
+Final CTA
+Contact Us (improved)
+1. HERO SECTION (rewrite copy)
+
+Headline:
+
+โปรแกรมจัดตารางเวรพยาบาลอัตโนมัติ ลดเวลาจัดเวร 90%
+
+Subheadline:
+
+แทน Excel ได้ทันที ลด OT ลดเวรไม่แฟร์
+เหมาะสำหรับโรงพยาบาล คลินิก และทีมบุคลากรทางการแพทย์
+
+Primary CTA button:
+
+ทดลองใช้ฟรี
+
+Secondary CTA:
+
+ดูวิธีใช้งาน
+
+Under CTA add micro trust text:
+
+ใช้งานแล้วใน 40+ แผนก
+
+Design:
+
+modern SaaS hero
+clean spacing
+strong CTA contrast
+professional healthcare feel
+2. SOCIAL PROOF SECTION
+
+Three stat cards with icons:
+
+Card 1:
+
+40+
+แผนกในโรงพยาบาลที่ใช้งานจริง
+
+Card 2:
+
+600+
+ตารางเวรที่สร้างแล้ว
+
+Card 3:
+
+300+
+วันทำงานที่คืนให้ทีมจากการจัดเวร
+
+Design:
+
+horizontal cards desktop
+stacked mobile
+subtle shadows
+animated count-up if possible
+3. NEW PAIN SECTION (VERY IMPORTANT)
+
+Create emotional pain-point section for hospital managers.
+
+Section Title:
+
+ยังใช้ Excel จัดตารางเวรอยู่หรือไม่?
+
+Subtitle:
+
+เมื่อทีมโตขึ้น การจัดเวรด้วยมือจะเริ่มเสียเวลา และเกิดปัญหาซ้ำเดิมทุกเดือน
+
+Create 6 pain cards with icons:
+
+ใช้เวลาหลายชั่วโมงทุกเดือนในการจัดเวร
+เวรชน คนไม่พอ ต้องแก้ซ้ำหลายรอบ
+ทีมรู้สึกเวรไม่แฟร์ เกิดข้อร้องเรียน
+เปลี่ยนเวรฉุกเฉินแล้วกระทบทั้งตาราง
+ตรวจสอบกฎการทำงานด้วยมือ เสี่ยงผิดพลาด
+หัวหน้าทีมเสียเวลากับงานเอกสาร แทนงานสำคัญกว่า
+
+Below cards add transition statement:
+
+Shift Optimizer ช่วยเปลี่ยนงานจัดเวรที่วุ่นวาย ให้เป็นระบบอัตโนมัติภายในไม่กี่นาที
+
+Design:
+
+premium SaaS style
+2 rows x 3 cards desktop
+cards with warning/problem icons
+soft red/orange accent
+hover effect
+visually emotional but clean
+4. BENEFITS SECTION
+
+Rename from features to outcomes.
+
+Section Title:
+
+ผลลัพธ์ที่ทีมของคุณจะได้รับ
+
+4 cards:
+
+ลดเวลาจัดเวรจากหลายชั่วโมงเหลือไม่กี่นาที
+กระจายเวรยุติธรรม ลดข้อร้องเรียน
+รองรับกฎและเงื่อนไขซับซ้อน
+ส่งออก Excel พร้อมใช้งานทันที
+5. EXCEL VS AI COMPARISON
+
+Keep comparison table.
+
+Title:
+
+Excel / Google Sheets vs AI Scheduling
+
+Use clean modern comparison cards/table.
+
+Highlight AI column with stronger color.
+
+6. HOW IT WORKS
+
+3 step timeline/cards:
+
+ตั้งค่าโครงสร้างเวร
+เพิ่มบุคลากรและเงื่อนไข
+กดสร้างตารางเวรทันที
+7. FAQ
+
+Keep current FAQ but redesign accordion modern.
+
+8. FINAL CTA SECTION
+
+Headline:
+
+เริ่มจัดตารางเวรอย่างมืออาชีพวันนี้
+
+Subheadline:
+
+ลดเวลา ลดความวุ่นวาย เพิ่มความยุติธรรมให้ทีมของคุณ
+
+Buttons:
+
+ทดลองใช้ฟรี
+ติดต่อเรา
+
+9. CONTACT US SECTION (IMPORTANT)
+
+Create premium trust section.
+
+Title:
+
+ติดต่อเรา
+
+Subtitle:
+
+มีคำถาม ต้องการเดโม หรือสนใจใช้งานในองค์กร ทีมงานพร้อมช่วยเหลือ
+
+Three contact cards:
+
+Email
+contact@shift-optimizer.com
+
+Facebook
+Shift Optimizer
+
+LINE Official
+@shift-optimizer
+
+Add CTA button:
+
+นัดเดโมระบบ
+
+Design:
+
+professional
+clean cards
+trust focused
+icon based
+responsive
+DESIGN SYSTEM
+
+Use:
+
+rounded 2xl cards
+soft shadows
+lots of whitespace
+modern Thai SaaS style
+mobile responsive
+subtle animations
+professional healthcare trust
+
+Avoid clutter.
+
+IMPORTANT UX NOTES
+prioritize conversion
+make CTA visible throughout page
+sticky navbar CTA on desktop
+smooth scroll
+fast loading
+FINAL GOAL
+
+Make visitor immediately feel:
+
+“This solves a painful hospital problem and looks trustworthy enough to try.”

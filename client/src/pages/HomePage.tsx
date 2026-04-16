@@ -9,11 +9,17 @@ import {
   Download,
   Clock,
   Puzzle,
-  Globe,
   ChevronDown,
   Calendar,
   FileText,
   Mail,
+  AlertTriangle,
+  Zap,
+  RefreshCw,
+  ClipboardX,
+  Briefcase,
+  MessageSquareWarning,
+  CheckCircle2,
 } from "lucide-react";
 import { SiFacebook, SiLine } from "react-icons/si";
 import { LazyMotion, domAnimation, m, AnimatePresence } from "framer-motion";
@@ -82,7 +88,7 @@ function FAQItem({ q, a, testId }: { q: string; a: string; testId: string }) {
   return (
     <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden" data-testid={testId}>
       <button
-        className="w-full flex items-center justify-between gap-4 p-5 sm:p-6 text-left"
+        className="w-full flex items-center justify-between gap-4 p-5 sm:p-6 text-left bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
         data-testid={`${testId}-toggle`}
@@ -99,7 +105,7 @@ function FAQItem({ q, a, testId }: { q: string; a: string; testId: string }) {
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <p className="px-5 sm:px-6 pb-5 sm:pb-6 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{a}</p>
+            <p className="px-5 sm:px-6 pb-5 sm:pb-6 text-sm text-slate-600 dark:text-slate-300 leading-relaxed bg-white dark:bg-slate-900">{a}</p>
           </m.div>
         )}
       </AnimatePresence>
@@ -147,12 +153,44 @@ export default function HomePage() {
     }
   }, []);
 
-  const features = [
-    { icon: Clock, title: t.benefit1Title, desc: t.benefit1Desc, bg: "bg-amber-50 dark:bg-amber-950/40", iconColor: "text-amber-600 dark:text-amber-400" },
-    { icon: Scale, title: t.benefit2Title, desc: t.benefit2Desc, bg: "bg-blue-50 dark:bg-blue-950/40", iconColor: "text-blue-600 dark:text-blue-400" },
-    { icon: Puzzle, title: t.benefit3Title, desc: t.benefit3Desc, bg: "bg-violet-50 dark:bg-violet-950/40", iconColor: "text-violet-600 dark:text-violet-400" },
-    { icon: FileSpreadsheet, title: t.featureExportTitle, desc: t.featureExportDesc, bg: "bg-emerald-50 dark:bg-emerald-950/40", iconColor: "text-emerald-600 dark:text-emerald-400" },
-    { icon: Globe, title: t.benefit4Title, desc: t.benefit4Desc, bg: "bg-teal-50 dark:bg-teal-950/40", iconColor: "text-teal-600 dark:text-teal-400" },
+  const painPoints = [
+    { icon: Clock, text: "ใช้เวลาหลายชั่วโมงทุกเดือนในการจัดเวร" },
+    { icon: AlertTriangle, text: "เวรชน คนไม่พอ ต้องแก้ซ้ำหลายรอบ" },
+    { icon: Users, text: "ทีมรู้สึกเวรไม่แฟร์ เกิดข้อร้องเรียน" },
+    { icon: RefreshCw, text: "เปลี่ยนเวรฉุกเฉินแล้วกระทบทั้งตาราง" },
+    { icon: ClipboardX, text: "ตรวจสอบกฎการทำงานด้วยมือ เสี่ยงผิดพลาด" },
+    { icon: Briefcase, text: "หัวหน้าทีมเสียเวลากับงานเอกสาร แทนงานสำคัญกว่า" },
+  ];
+
+  const outcomes = [
+    {
+      icon: Clock,
+      title: "ลดเวลาจัดเวรจากหลายชั่วโมงเหลือไม่กี่นาที",
+      desc: "ระบบ AI คำนวณตารางที่สมดุลให้โดยอัตโนมัติ คุณแค่ตั้งค่าและกดสร้าง",
+      bg: "bg-amber-50 dark:bg-amber-950/40",
+      iconColor: "text-amber-600 dark:text-amber-400",
+    },
+    {
+      icon: Scale,
+      title: "กระจายเวรยุติธรรม ลดข้อร้องเรียน",
+      desc: "AI กระจายภาระงานสมดุล ขจัดอคติ ลดข้อร้องเรียน กระจายเวรวันหยุดเท่าเทียมทุกคน",
+      bg: "bg-blue-50 dark:bg-blue-950/40",
+      iconColor: "text-blue-600 dark:text-blue-400",
+    },
+    {
+      icon: Puzzle,
+      title: "รองรับกฎและเงื่อนไขซับซ้อน",
+      desc: "บล็อกวันลา เวรที่ร้องขอ ห้ามเวรต่อเนื่อง ระดับบุคลากร 5 ระดับ ตั้งครั้งเดียวใช้ได้เลย",
+      bg: "bg-violet-50 dark:bg-violet-950/40",
+      iconColor: "text-violet-600 dark:text-violet-400",
+    },
+    {
+      icon: FileSpreadsheet,
+      title: "ส่งออก Excel พร้อมใช้งานทันที",
+      desc: "ส่งออกไฟล์ Excel แยกสีตามเวร รายบุคคล รายแผนก พร้อมพิมพ์แจกทีมทันที",
+      bg: "bg-emerald-50 dark:bg-emerald-950/40",
+      iconColor: "text-emerald-600 dark:text-emerald-400",
+    },
   ];
 
   const steps = [
@@ -169,13 +207,25 @@ export default function HomePage() {
     { q: t.faq5Q, a: t.faq5A },
   ];
 
+  const comparisonRows = [
+    { topic: "วิธีการทำงานหลัก", excel: "ต้องจัดตารางด้วยตนเอง แล้วค่อยตรวจสอบทีหลังเมื่อมีเวรชน ผิดกฎ หรือคนไม่พอ", ai: "AI ประมวลผลเงื่อนไขทั้งหมด และสร้างตารางที่พร้อมใช้งานทันทีตั้งแต่ต้น" },
+    { topic: "การแก้ปัญหาเวรชน / เวรซ้อน", excel: "ระบบอาจแจ้งเตือน แต่ผู้จัดต้องไล่แก้และสลับเวรเองทีละคน", ai: "AI คำนวณความเป็นไปได้จำนวนมาก เพื่อหลีกเลี่ยงเวรชนและหาคำตอบที่เหมาะสมอัตโนมัติ" },
+    { topic: "ความยุติธรรมในการจัดเวร", excel: "มักอาศัยประสบการณ์หรือการตัดสินใจของผู้จัด อาจเกิดข้อโต้แย้งเรื่องความไม่เท่าเทียม", ai: "AI กระจายเวรอย่างสมดุล โดยคำนึงถึงภาระงาน OT วันหยุด และความเหมาะสมของแต่ละคน" },
+    { topic: "ข้อกำหนดทางกฎหมาย / นโยบายองค์กร", excel: "ต้องสร้างสูตรและตรวจสอบเอง เช่น ชั่วโมงงานสูงสุด หรือวันทำงานต่อเนื่อง", ai: "ตั้งกฎไว้ครั้งเดียว ระบบจะไม่สร้างตารางที่ผิดข้อกำหนด" },
+    { topic: "เวลาที่ใช้ในการจัดตาราง", excel: "อาจใช้เวลาหลายชั่วโมงหรือหลายวัน เมื่อทีมใหญ่และเงื่อนไขซับซ้อน", ai: "ใช้เวลาเพียงไม่กี่นาที แม้มีบุคลากรจำนวนมาก" },
+    { topic: "การแก้ไขเมื่อมีการเปลี่ยนเวรฉุกเฉิน", excel: "ต้องปรับตารางเองใหม่ เสี่ยงกระทบคนอื่นทั้งระบบ", ai: "AI ช่วยคำนวณตัวเลือกใหม่อย่างรวดเร็ว พร้อมลดผลกระทบต่อทีม" },
+    { topic: "รายงาน / เอกสารใช้งานต่อ", excel: "ต้องแยกทำเองหลายไฟล์ หรือคัดลอกข้อมูลซ้ำ", ai: "สร้างตารางรายบุคคล รายแผนก และไฟล์พร้อมใช้งานได้ทันที" },
+    { topic: "การเติบโตขององค์กร", excel: "ยิ่งคนเยอะ ยิ่งซับซ้อน และดูแลยาก", ai: "รองรับทีมขนาดเล็กถึงองค์กรขนาดใหญ่ได้อย่างมีประสิทธิภาพ" },
+  ];
+
   return (
     <LazyMotion features={domAnimation}>
     <div className="min-h-screen bg-white dark:bg-slate-950 overflow-x-hidden">
       <Navbar isHomePage />
 
       <main>
-        <section className="relative min-h-[100svh] flex flex-col justify-center pt-20 pb-10 px-4 sm:px-6">
+        {/* ── 1. HERO ── */}
+        <section className="relative min-h-[100svh] flex flex-col justify-center pt-20 pb-16 px-4 sm:px-6">
           <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
             <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-gradient-radial from-primary/8 via-transparent to-transparent rounded-full" />
             <div className="absolute top-1/4 right-0 w-[400px] h-[400px] bg-blue-100/40 dark:bg-blue-900/10 rounded-full blur-3xl" />
@@ -185,34 +235,234 @@ export default function HomePage() {
 
           <div className="relative max-w-4xl mx-auto text-center">
             <m.div initial="hidden" animate="visible" variants={staggerContainer}>
+              <m.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 bg-primary/8 dark:bg-primary/10 text-primary rounded-full px-4 py-1.5 text-sm font-medium mb-6">
+                <CheckCircle2 className="w-4 h-4" />
+                ใช้งานแล้วใน 40+ แผนก
+              </m.div>
+
               <m.h1 variants={fadeUp} custom={1} className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold text-slate-900 dark:text-white leading-[1.1] tracking-tight" data-testid="text-hero-title">
-                {t.heroTitle1}
+                โปรแกรมจัดตารางเวรพยาบาลอัตโนมัติ{" "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">ลดเวลาจัดเวร 90%</span>
               </m.h1>
 
-              <m.p variants={fadeUp} custom={2} className="mt-4 text-lg sm:text-xl md:text-2xl font-medium text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent" data-testid="text-hero-subtitle">
-                {t.heroTitle2}
+              <m.p variants={fadeUp} custom={2} className="mt-6 text-lg sm:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed" data-testid="text-hero-subtitle">
+                แทน Excel ได้ทันที ลด OT ลดเวรไม่แฟร์<br className="hidden sm:block" />
+                เหมาะสำหรับโรงพยาบาล คลินิก และทีมบุคลากรทางการแพทย์
               </m.p>
 
-              <m.p variants={fadeUp} custom={3} className="mt-6 text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed" data-testid="text-hero-desc">
-                {t.heroDesc.split("\n").map((line: string, i: number) => (
-                  <span key={i}>{line}{i < t.heroDesc.split("\n").length - 1 && <br />}</span>
-                ))}
-              </m.p>
-
-              <m.div variants={fadeUp} custom={4} className="mt-10 flex flex-col sm:flex-row gap-3 justify-center items-center flex-wrap">
+              <m.div variants={fadeUp} custom={3} className="mt-10 flex flex-col sm:flex-row gap-3 justify-center items-center">
                 <Link href="/create" className="w-full sm:w-auto">
-                  <Button size="lg" className="w-full sm:w-auto shadow-lg shadow-primary/25 text-base px-5" data-testid="button-create-schedule">
-                    {t.getStartedFree}
+                  <Button size="lg" className="w-full sm:w-auto shadow-lg shadow-primary/25 text-base px-7 py-6 text-base font-semibold" data-testid="button-create-schedule">
+                    ทดลองใช้ฟรี
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
+                <a
+                  href="#how-it-works"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const el = document.getElementById("how-it-works");
+                    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 96, behavior: "smooth" });
+                  }}
+                  className="w-full sm:w-auto"
+                >
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto text-base px-7 py-6 font-semibold" data-testid="button-how-it-works">
+                    ดูวิธีใช้งาน
+                  </Button>
+                </a>
               </m.div>
-
             </m.div>
           </div>
         </section>
 
-        <section id="how-it-works" className="scroll-mt-24 min-h-screen flex flex-col justify-center py-16 sm:py-20 px-4 sm:px-6">
+        {/* ── 2. SOCIAL PROOF / STATS ── */}
+        <section className="py-16 sm:py-20 px-4 sm:px-6 bg-slate-50 dark:bg-slate-900/60 border-y border-slate-100 dark:border-slate-800/50">
+          <div className="max-w-5xl mx-auto">
+            <m.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-80px" }}
+              variants={staggerContainer}
+            >
+              <m.div variants={fadeUp} custom={0} className="text-center mb-10 sm:mb-14">
+                <p className="text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase text-slate-400 dark:text-slate-500 mb-2" data-testid="text-stats-label">
+                  {t.statsSectionLabel}
+                </p>
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-stats-title">
+                  {t.statsSectionTitle}
+                </h2>
+              </m.div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-6">
+                {[
+                  { target: parseInt(t.stat1Value), label: t.stat1Label, testId: "stat-departments" },
+                  { target: parseInt(t.stat2Value), label: t.stat2Label, testId: "stat-schedules" },
+                  { target: parseInt(t.stat3Value), label: t.stat3Label, testId: "stat-mandays" },
+                ].map((stat, i) => (
+                  <m.div key={i} variants={fadeUp} custom={i + 1} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-8 flex flex-col items-center gap-3 text-center" data-testid={stat.testId}>
+                    <span className="text-6xl sm:text-7xl font-display font-extrabold text-primary leading-none tracking-tight">
+                      <CountUp target={stat.target} suffix="+" />
+                    </span>
+                    <span className="text-sm sm:text-base font-medium text-slate-600 dark:text-slate-300 max-w-[180px] leading-snug">
+                      {stat.label.split("\n").map((line: string, j: number) => (
+                        <span key={j}>{line}{j < stat.label.split("\n").length - 1 && <br />}</span>
+                      ))}
+                    </span>
+                  </m.div>
+                ))}
+              </div>
+            </m.div>
+          </div>
+        </section>
+
+        {/* ── 3. PAIN SECTION ── */}
+        <section className="py-20 sm:py-28 px-4 sm:px-6">
+          <div className="max-w-5xl mx-auto">
+            <m.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-80px" }}
+              variants={staggerContainer}
+            >
+              <m.div variants={fadeUp} custom={0} className="text-center mb-12 sm:mb-14">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white mb-4">
+                  ยังใช้ Excel จัดตารางเวรอยู่หรือไม่?
+                </h2>
+                <p className="text-slate-500 dark:text-slate-400 text-base sm:text-lg max-w-2xl mx-auto">
+                  เมื่อทีมโตขึ้น การจัดเวรด้วยมือจะเริ่มเสียเวลา และเกิดปัญหาซ้ำเดิมทุกเดือน
+                </p>
+              </m.div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                {painPoints.map((point, i) => (
+                  <m.div key={i} variants={fadeUp} custom={i + 1}>
+                    <div className="flex items-start gap-4 p-5 sm:p-6 rounded-2xl bg-orange-50/60 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/30 hover:border-orange-200 dark:hover:border-orange-800/50 hover:shadow-md hover:shadow-orange-100/50 dark:hover:shadow-orange-900/20 transition-all duration-200 h-full">
+                      <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center shrink-0 mt-0.5">
+                        <point.icon className="w-5 h-5 text-orange-600 dark:text-orange-400" aria-hidden="true" />
+                      </div>
+                      <p className="text-slate-700 dark:text-slate-300 text-sm sm:text-base font-medium leading-relaxed">
+                        {point.text}
+                      </p>
+                    </div>
+                  </m.div>
+                ))}
+              </div>
+
+              <m.div variants={fadeUp} custom={7} className="mt-10 sm:mt-12 text-center">
+                <div className="inline-block bg-gradient-to-r from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10 border border-primary/20 dark:border-primary/30 rounded-2xl px-8 py-5">
+                  <p className="text-base sm:text-lg font-semibold text-slate-800 dark:text-slate-200">
+                    <span className="text-primary">Shift Optimizer</span> ช่วยเปลี่ยนงานจัดเวรที่วุ่นวาย ให้เป็นระบบอัตโนมัติภายในไม่กี่นาที
+                  </p>
+                </div>
+              </m.div>
+            </m.div>
+          </div>
+        </section>
+
+        {/* ── 4. BENEFITS / OUTCOMES ── */}
+        <section id="features" className="scroll-mt-24 py-20 sm:py-28 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-y border-slate-100 dark:border-slate-800/50">
+          <div className="max-w-6xl mx-auto">
+            <m.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-100px" }}
+              variants={staggerContainer}
+            >
+              <m.div variants={fadeUp} custom={0} className="text-center mb-14 sm:mb-16">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-features-title">
+                  ผลลัพธ์ที่ทีมของคุณจะได้รับ
+                </h2>
+                <p className="mt-3 text-slate-600 dark:text-slate-300 text-base sm:text-lg max-w-xl mx-auto">
+                  ออกแบบมาสำหรับโรงพยาบาลและสถานพยาบาลโดยเฉพาะ
+                </p>
+              </m.div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {outcomes.map((item, i) => (
+                  <m.div key={i} variants={fadeUp} custom={i + 1} data-testid={`card-feature-${i}`}>
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 sm:p-7 h-full hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50 transition-shadow duration-300">
+                      <div className={`w-12 h-12 rounded-xl ${item.bg} flex items-center justify-center mb-5`}>
+                        <item.icon className={`w-6 h-6 ${item.iconColor}`} aria-hidden="true" />
+                      </div>
+                      <h3 className="font-bold text-base text-slate-900 dark:text-white mb-2 leading-snug" data-testid={`text-feature-title-${i}`}>
+                        {item.title}
+                      </h3>
+                      <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed" data-testid={`text-feature-desc-${i}`}>
+                        {item.desc}
+                      </p>
+                    </div>
+                  </m.div>
+                ))}
+              </div>
+            </m.div>
+          </div>
+        </section>
+
+        {/* ── 5. EXCEL vs AI COMPARISON ── */}
+        <section id="about" className="scroll-mt-24 py-20 sm:py-28 px-4 sm:px-6">
+          <div className="max-w-5xl mx-auto">
+            <m.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-100px" }}
+              variants={staggerContainer}
+            >
+              <m.div variants={fadeUp} custom={0} className="text-center mb-10 sm:mb-12">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-what-is-title">
+                  Excel / Google Sheets vs AI Scheduling
+                </h2>
+                <p className="mt-3 text-slate-600 dark:text-slate-300 text-base sm:text-lg max-w-xl mx-auto">
+                  เปรียบเทียบวิธีการจัดเวรแบบเดิมกับระบบ Shift Optimizer
+                </p>
+              </m.div>
+
+              <m.div variants={fadeUp} custom={1} className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                <table className="w-full text-sm sm:text-base border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 dark:bg-slate-800/60">
+                      <th className="text-left px-4 sm:px-6 py-4 font-semibold text-slate-600 dark:text-slate-300 w-[28%] border-b border-slate-200 dark:border-slate-700">
+                        หัวข้อเปรียบเทียบ
+                      </th>
+                      <th className="text-left px-4 sm:px-6 py-4 font-semibold text-amber-700 dark:text-amber-400 w-[36%] border-b border-slate-200 dark:border-slate-700">
+                        <span className="inline-flex items-center gap-2">
+                          <span className="text-lg">📊</span> Excel / Google Sheets
+                        </span>
+                      </th>
+                      <th className="text-left px-4 sm:px-6 py-4 font-semibold text-primary w-[36%] border-b border-slate-200 dark:border-slate-700 bg-primary/3 dark:bg-primary/5">
+                        <span className="inline-flex items-center gap-2">
+                          <span className="text-lg">✨</span> AI Scheduling (Shift Optimizer)
+                        </span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {comparisonRows.map((row, i) => (
+                      <tr key={i} className={i % 2 === 0 ? "bg-white dark:bg-slate-900" : "bg-slate-50/60 dark:bg-slate-800/30"}>
+                        <td className="px-4 sm:px-6 py-4 font-semibold text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 align-top text-sm">
+                          {row.topic}
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800 align-top">
+                          <span className="inline-flex gap-2">
+                            <span className="text-orange-400 mt-0.5 shrink-0 font-bold">✗</span>
+                            <span>{row.excel}</span>
+                          </span>
+                        </td>
+                        <td className="px-4 sm:px-6 py-4 text-slate-700 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800 align-top bg-primary/2 dark:bg-primary/3">
+                          <span className="inline-flex gap-2">
+                            <span className="text-emerald-500 mt-0.5 shrink-0 font-bold">✓</span>
+                            <span>{row.ai}</span>
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </m.div>
+            </m.div>
+          </div>
+        </section>
+
+        {/* ── 6. HOW IT WORKS ── */}
+        <section id="how-it-works" className="scroll-mt-24 py-20 sm:py-28 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-y border-slate-100 dark:border-slate-800/50">
           <div className="max-w-6xl mx-auto">
             <m.div
               initial="hidden"
@@ -231,12 +481,7 @@ export default function HomePage() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
                 {steps.map((step, i) => (
-                  <m.div
-                    key={i}
-                    variants={fadeUp}
-                    custom={i + 1}
-                    className="relative group"
-                  >
+                  <m.div key={i} variants={fadeUp} custom={i + 1} className="relative group">
                     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-7 sm:p-8 h-full transition-shadow duration-300 hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50">
                       <div className="flex items-start gap-4 mb-4">
                         <span className="text-4xl font-display font-bold text-slate-200 dark:text-slate-700 select-none leading-none" aria-hidden="true" data-testid={`text-step-num-${step.num}`}>
@@ -263,224 +508,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="features" className="scroll-mt-24 min-h-screen flex flex-col justify-center py-16 sm:py-20 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-y border-slate-100 dark:border-slate-800/50">
-          <div className="max-w-6xl mx-auto">
-            <m.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-100px" }}
-              variants={staggerContainer}
-            >
-              <m.div variants={fadeUp} custom={0} className="text-center mb-14 sm:mb-16">
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-features-title">
-                  {t.featureSectionTitle}
-                </h2>
-                <p className="mt-3 text-slate-600 dark:text-slate-300 text-base sm:text-lg max-w-xl mx-auto">
-                  {t.featureSectionDesc}
-                </p>
-              </m.div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-                {features.slice(0, 3).map((feature, i) => (
-                  <m.div
-                    key={i}
-                    variants={fadeUp}
-                    custom={i}
-                    data-testid={`card-feature-${i}`}
-                  >
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-7 sm:p-8 h-full transition-shadow duration-300 hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50">
-                      <div className={`w-12 h-12 rounded-xl ${feature.bg} flex items-center justify-center mb-5`}>
-                        <feature.icon className={`w-6 h-6 ${feature.iconColor}`} aria-hidden="true" />
-                      </div>
-                      <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-2" data-testid={`text-feature-title-${i}`}>
-                        {feature.title}
-                      </h3>
-                      <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed" data-testid={`text-feature-desc-${i}`}>
-                        {feature.desc}
-                      </p>
-                    </div>
-                  </m.div>
-                ))}
-              </div>
-              <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 justify-center mt-6 sm:mt-8">
-                {features.slice(3).map((feature, i) => (
-                  <m.div
-                    key={i + 3}
-                    variants={fadeUp}
-                    custom={i + 3}
-                    className="w-full sm:w-[calc(50%-1rem)] lg:w-[calc(33.333%-1.333rem)]"
-                    data-testid={`card-feature-${i + 3}`}
-                  >
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-7 sm:p-8 h-full transition-shadow duration-300 hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50">
-                      <div className={`w-12 h-12 rounded-xl ${feature.bg} flex items-center justify-center mb-5`}>
-                        <feature.icon className={`w-6 h-6 ${feature.iconColor}`} aria-hidden="true" />
-                      </div>
-                      <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-2" data-testid={`text-feature-title-${i + 3}`}>
-                        {feature.title}
-                      </h3>
-                      <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed" data-testid={`text-feature-desc-${i + 3}`}>
-                        {feature.desc}
-                      </p>
-                    </div>
-                  </m.div>
-                ))}
-              </div>
-            </m.div>
-          </div>
-        </section>
-
-        <section className="py-16 sm:py-20 px-4 sm:px-6 bg-slate-100 dark:bg-slate-800/60 border-y border-slate-200 dark:border-slate-700/40">
-          <div className="max-w-5xl mx-auto">
-            <m.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-80px" }}
-              variants={staggerContainer}
-            >
-              <m.div variants={fadeUp} custom={0} className="text-center mb-10 sm:mb-14">
-                <p className="text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase text-slate-400 dark:text-slate-500 mb-2" data-testid="text-stats-label">
-                  {t.statsSectionLabel}
-                </p>
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-stats-title">
-                  {t.statsSectionTitle}
-                </h2>
-              </m.div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-6 text-center">
-                {[
-                  { target: parseInt(t.stat1Value), label: t.stat1Label, testId: "stat-departments" },
-                  { target: parseInt(t.stat2Value), label: t.stat2Label, testId: "stat-schedules" },
-                  { target: parseInt(t.stat3Value), label: t.stat3Label, testId: "stat-mandays" },
-                ].map((stat, i) => (
-                  <m.div key={i} variants={fadeUp} custom={i + 1} className="flex flex-col items-center gap-3" data-testid={stat.testId}>
-                    <span className="text-6xl sm:text-7xl md:text-8xl font-display font-extrabold text-primary leading-none tracking-tight">
-                      <CountUp target={stat.target} suffix="+" />
-                    </span>
-                    <span className="text-sm sm:text-base font-medium text-slate-600 dark:text-slate-300 max-w-[180px] leading-snug text-center">
-                      {stat.label.split("\n").map((line: string, j: number) => (
-                        <span key={j}>{line}{j < stat.label.split("\n").length - 1 && <br />}</span>
-                      ))}
-                    </span>
-                  </m.div>
-                ))}
-              </div>
-            </m.div>
-          </div>
-        </section>
-
-        <section id="about" className="scroll-mt-24 min-h-screen flex flex-col justify-center py-20 sm:py-28 px-4 sm:px-6">
-          <div className="max-w-4xl mx-auto">
-            <m.div
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-100px" }}
-              variants={staggerContainer}
-            >
-              <m.div variants={fadeUp} custom={0} className="text-center mb-10 sm:mb-12">
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-what-is-title">
-                  {t.whatIsTitle}
-                </h2>
-              </m.div>
-              <m.div variants={fadeUp} custom={1} className="space-y-5 text-slate-700 dark:text-slate-300 text-base sm:text-lg leading-relaxed max-w-3xl mx-auto">
-                <p data-testid="text-what-is-desc">{t.whatIsDesc}</p>
-                <p data-testid="text-what-is-desc2">{t.whatIsDesc2}</p>
-                <p data-testid="text-what-is-desc3">{t.whatIsDesc3}</p>
-              </m.div>
-
-              <m.div variants={fadeUp} custom={2} className="mt-14 sm:mt-16">
-                <h3 className="text-xl sm:text-2xl font-display font-bold text-center text-slate-900 dark:text-white mb-8">
-                  Excel / Google Sheets vs AI Scheduling (Shift Optimizer)
-                </h3>
-                <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                  <table className="w-full text-sm sm:text-base border-collapse">
-                    <thead>
-                      <tr className="bg-slate-50 dark:bg-slate-800/60">
-                        <th className="text-left px-4 sm:px-6 py-4 font-semibold text-slate-600 dark:text-slate-300 w-[32%] border-b border-slate-200 dark:border-slate-700">
-                          หัวข้อเปรียบเทียบ
-                        </th>
-                        <th className="text-left px-4 sm:px-6 py-4 font-semibold text-amber-700 dark:text-amber-400 w-[34%] border-b border-slate-200 dark:border-slate-700">
-                          <span className="inline-flex items-center gap-2">
-                            <span className="text-lg">📊</span> Excel / Google Sheets
-                          </span>
-                        </th>
-                        <th className="text-left px-4 sm:px-6 py-4 font-semibold text-primary dark:text-primary w-[34%] border-b border-slate-200 dark:border-slate-700">
-                          <span className="inline-flex items-center gap-2">
-                            <span className="text-lg">✨</span> AI Scheduling (Shift Optimizer)
-                          </span>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        {
-                          topic: "วิธีการทำงานหลัก",
-                          excel: "ต้องจัดตารางด้วยตนเอง แล้วค่อยตรวจสอบทีหลังเมื่อมีเวรชน ผิดกฎ หรือคนไม่พอ",
-                          ai: "AI ประมวลผลเงื่อนไขทั้งหมด และสร้างตารางที่พร้อมใช้งานทันทีตั้งแต่ต้น",
-                        },
-                        {
-                          topic: "การแก้ปัญหาเวรชน / เวรซ้อน",
-                          excel: "ระบบอาจแจ้งเตือน แต่ผู้จัดต้องไล่แก้และสลับเวรเองทีละคน",
-                          ai: "AI คำนวณความเป็นไปได้จำนวนมาก เพื่อหลีกเลี่ยงเวรชนและหาคำตอบที่เหมาะสมอัตโนมัติ",
-                        },
-                        {
-                          topic: "ความยุติธรรมในการจัดเวร",
-                          excel: "มักอาศัยประสบการณ์หรือการตัดสินใจของผู้จัด อาจเกิดข้อโต้แย้งเรื่องความไม่เท่าเทียม",
-                          ai: "AI กระจายเวรอย่างสมดุล โดยคำนึงถึงภาระงาน OT วันหยุด และความเหมาะสมของแต่ละคน",
-                        },
-                        {
-                          topic: "ข้อกำหนดทางกฎหมาย / นโยบายองค์กร",
-                          excel: "ต้องสร้างสูตรและตรวจสอบเอง เช่น ชั่วโมงงานสูงสุด หรือวันทำงานต่อเนื่อง",
-                          ai: "ตั้งกฎไว้ครั้งเดียว ระบบจะไม่สร้างตารางที่ผิดข้อกำหนด",
-                        },
-                        {
-                          topic: "เวลาที่ใช้ในการจัดตาราง",
-                          excel: "อาจใช้เวลาหลายชั่วโมงหรือหลายวัน เมื่อทีมใหญ่และเงื่อนไขซับซ้อน",
-                          ai: "ใช้เวลาเพียงไม่กี่นาที แม้มีบุคลากรจำนวนมาก",
-                        },
-                        {
-                          topic: "การแก้ไขเมื่อมีการเปลี่ยนเวรฉุกเฉิน",
-                          excel: "ต้องปรับตารางเองใหม่ เสี่ยงกระทบคนอื่นทั้งระบบ",
-                          ai: "AI ช่วยคำนวณตัวเลือกใหม่อย่างรวดเร็ว พร้อมลดผลกระทบต่อทีม",
-                        },
-                        {
-                          topic: "รายงาน / เอกสารใช้งานต่อ",
-                          excel: "ต้องแยกทำเองหลายไฟล์ หรือคัดลอกข้อมูลซ้ำ",
-                          ai: "สร้างตารางรายบุคคล รายแผนก และไฟล์พร้อมใช้งานได้ทันที",
-                        },
-                        {
-                          topic: "การเติบโตขององค์กร",
-                          excel: "ยิ่งคนเยอะ ยิ่งซับซ้อน และดูแลยาก",
-                          ai: "รองรับทีมขนาดเล็กถึงองค์กรขนาดใหญ่ได้อย่างมีประสิทธิภาพ",
-                        },
-                      ].map((row, i) => (
-                        <tr
-                          key={i}
-                          className={i % 2 === 0 ? "bg-white dark:bg-slate-900" : "bg-slate-50/60 dark:bg-slate-800/30"}
-                        >
-                          <td className="px-4 sm:px-6 py-4 font-semibold text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 align-top">
-                            {row.topic}
-                          </td>
-                          <td className="px-4 sm:px-6 py-4 text-slate-600 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800 align-top">
-                            <span className="inline-flex gap-2">
-                              <span className="text-amber-500 mt-0.5 shrink-0">✗</span>
-                              <span>{row.excel}</span>
-                            </span>
-                          </td>
-                          <td className="px-4 sm:px-6 py-4 text-slate-700 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800 align-top">
-                            <span className="inline-flex gap-2">
-                              <span className="text-emerald-500 mt-0.5 shrink-0">✓</span>
-                              <span>{row.ai}</span>
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </m.div>
-            </m.div>
-          </div>
-        </section>
-
+        {/* ── 7. FAQ ── */}
         <section id="faq" className="scroll-mt-24 py-20 sm:py-28 px-4 sm:px-6">
           <div className="max-w-3xl mx-auto">
             <m.div
@@ -494,7 +522,6 @@ export default function HomePage() {
                   {t.faqTitle}
                 </h2>
               </m.div>
-
               <m.div variants={fadeUp} custom={1} className="space-y-3">
                 {faqs.map((faq, i) => (
                   <FAQItem key={i} q={faq.q} a={faq.a} testId={`faq-item-${i}`} />
@@ -504,6 +531,7 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* ── ARTICLES ── */}
         {latestArticles.length > 0 && (
           <section className="py-16 sm:py-20 px-4 sm:px-6 border-t border-slate-100 dark:border-slate-800/50">
             <div className="max-w-5xl mx-auto">
@@ -585,7 +613,8 @@ export default function HomePage() {
           </section>
         )}
 
-        <section className="py-16 sm:py-20 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800/50">
+        {/* ── 8. FINAL CTA ── */}
+        <section className="py-20 sm:py-28 px-4 sm:px-6 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 dark:from-primary/10 dark:to-accent/10 border-t border-slate-100 dark:border-slate-800/50">
           <div className="max-w-3xl mx-auto text-center">
             <m.div
               initial="hidden"
@@ -594,85 +623,109 @@ export default function HomePage() {
               variants={staggerContainer}
             >
               <m.h2 variants={fadeUp} custom={0} className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white" data-testid="text-cta-title">
-                {t.ctaTitle}
+                เริ่มจัดตารางเวรอย่างมืออาชีพวันนี้
               </m.h2>
               <m.p variants={fadeUp} custom={1} className="mt-4 text-slate-600 dark:text-slate-300 text-base sm:text-lg">
-                {t.ctaDesc}
+                ลดเวลา ลดความวุ่นวาย เพิ่มความยุติธรรมให้ทีมของคุณ
               </m.p>
-              <m.div variants={fadeUp} custom={2} className="mt-8">
+              <m.div variants={fadeUp} custom={2} className="mt-8 flex flex-col sm:flex-row gap-3 justify-center items-center">
                 <Link href="/create">
-                  <Button size="lg" className="shadow-lg shadow-primary/25 text-base px-5" data-testid="button-cta-bottom">
-                    {t.ctaBottomButton}
+                  <Button size="lg" className="shadow-lg shadow-primary/25 text-base px-7 py-6 font-semibold" data-testid="button-cta-bottom">
+                    ทดลองใช้ฟรี
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
+                <a
+                  href="#contact"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const el = document.getElementById("contact");
+                    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 96, behavior: "smooth" });
+                  }}
+                >
+                  <Button size="lg" variant="outline" className="text-base px-7 py-6 font-semibold" data-testid="button-cta-contact">
+                    ติดต่อเรา
+                  </Button>
+                </a>
               </m.div>
             </m.div>
           </div>
         </section>
       </main>
 
-      {/* Contact Us Section */}
-      <section id="contact" className="border-t border-slate-100 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 py-16 px-4 sm:px-6">
+      {/* ── 9. CONTACT ── */}
+      <section id="contact" className="border-t border-slate-100 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 py-20 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl sm:text-3xl font-display font-bold text-slate-900 dark:text-white mb-3" data-testid="text-contact-title">
-              ติดต่อเรา
-            </h2>
-            <p className="text-slate-500 dark:text-slate-400 text-base sm:text-lg">
-              มีคำถามหรือต้องการความช่วยเหลือ? ทีมงานของเราพร้อมตอบทุกข้อสงสัย
-            </p>
-          </div>
+          <m.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-80px" }}
+            variants={staggerContainer}
+          >
+            <m.div variants={fadeUp} custom={0} className="text-center mb-12">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white mb-4" data-testid="text-contact-title">
+                ติดต่อเรา
+              </h2>
+              <p className="text-slate-500 dark:text-slate-400 text-base sm:text-lg max-w-xl mx-auto">
+                มีคำถาม ต้องการเดโม หรือสนใจใช้งานในองค์กร ทีมงานพร้อมช่วยเหลือ
+              </p>
+            </m.div>
 
-          <div className="grid sm:grid-cols-3 gap-6 mb-10">
-            {/* Email */}
-            <a
-              href="mailto:contact@shift-optimizer.com"
-              className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-primary/30 transition-all group"
-              data-testid="link-contact-email"
-            >
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                <Mail className="w-6 h-6 text-primary" />
-              </div>
-              <div className="text-center">
-                <p className="font-semibold text-slate-900 dark:text-white mb-1">Email</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400">contact@shift-optimizer.com</p>
-              </div>
-            </a>
+            <m.div variants={fadeUp} custom={1} className="grid sm:grid-cols-3 gap-5 mb-10">
+              <a
+                href="mailto:contact@shift-optimizer.com"
+                className="flex flex-col items-center gap-4 p-7 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-primary/30 transition-all group"
+                data-testid="link-contact-email"
+              >
+                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                  <Mail className="w-7 h-7 text-primary" />
+                </div>
+                <div className="text-center">
+                  <p className="font-bold text-slate-900 dark:text-white mb-1">Email</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">contact@shift-optimizer.com</p>
+                </div>
+              </a>
 
-            {/* Facebook */}
-            <a
-              href="https://www.facebook.com/profile.php?id=61564671372755"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-blue-400/40 transition-all group"
-              data-testid="link-contact-facebook"
-            >
-              <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 transition-colors">
-                <SiFacebook className="w-6 h-6 text-blue-600" />
-              </div>
-              <div className="text-center">
-                <p className="font-semibold text-slate-900 dark:text-white mb-1">Facebook</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400">Shift Optimizer</p>
-              </div>
-            </a>
+              <a
+                href="https://www.facebook.com/profile.php?id=61564671372755"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center gap-4 p-7 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-blue-400/40 transition-all group"
+                data-testid="link-contact-facebook"
+              >
+                <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 transition-colors">
+                  <SiFacebook className="w-7 h-7 text-blue-600" />
+                </div>
+                <div className="text-center">
+                  <p className="font-bold text-slate-900 dark:text-white mb-1">Facebook</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Shift Optimizer</p>
+                </div>
+              </a>
 
-            {/* LINE */}
-            <button
-              onClick={() => setShowLineQR(true)}
-              className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-green-400/40 transition-all group"
-              data-testid="button-contact-line"
-            >
-              <div className="w-12 h-12 rounded-full bg-green-50 dark:bg-green-900/20 flex items-center justify-center group-hover:bg-green-100 dark:group-hover:bg-green-900/40 transition-colors">
-                <SiLine className="w-6 h-6 text-green-500" />
-              </div>
-              <div className="text-center">
-                <p className="font-semibold text-slate-900 dark:text-white mb-1">LINE Official</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400">@shift-optimizer</p>
-              </div>
-            </button>
-          </div>
+              <button
+                onClick={() => setShowLineQR(true)}
+                className="flex flex-col items-center gap-4 p-7 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-green-400/40 transition-all group"
+                data-testid="button-contact-line"
+              >
+                <div className="w-14 h-14 rounded-2xl bg-green-50 dark:bg-green-900/20 flex items-center justify-center group-hover:bg-green-100 dark:group-hover:bg-green-900/40 transition-colors">
+                  <SiLine className="w-7 h-7 text-green-500" />
+                </div>
+                <div className="text-center">
+                  <p className="font-bold text-slate-900 dark:text-white mb-1">LINE Official</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">@shift-optimizer</p>
+                </div>
+              </button>
+            </m.div>
 
+            <m.div variants={fadeUp} custom={2} className="text-center">
+              <a href="mailto:contact@shift-optimizer.com?subject=ขอนัดเดโมระบบ Shift Optimizer">
+                <Button size="lg" className="shadow-lg shadow-primary/25 text-base px-8 py-6 font-semibold" data-testid="button-request-demo">
+                  <MessageSquareWarning className="mr-2 h-5 w-5" />
+                  นัดเดโมระบบ
+                </Button>
+              </a>
+            </m.div>
+          </m.div>
         </div>
       </section>
 
