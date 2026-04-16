@@ -241,12 +241,12 @@ export default function HomePage() {
               </m.div>
 
               <m.h1 variants={fadeUp} custom={1} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-bold text-slate-900 dark:text-white leading-[1.2] tracking-tight" data-testid="text-hero-title">
-                <span className="block whitespace-nowrap">โปรแกรมจัดตารางเวรพยาบาลอัตโนมัติ</span>
+                <span className="block whitespace-nowrap">โปรแกรมจัดตารางเวรพยาบาลด้วย AI อัตโนมัติ</span>
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">ลดเวลาจัดเวร 90%</span>
               </m.h1>
 
               <m.p variants={fadeUp} custom={2} className="mt-6 text-lg sm:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed" data-testid="text-hero-subtitle">
-                แทน Excel ได้ทันที ลด OT ลดเวรไม่แฟร์<br className="hidden sm:block" />
+                แทน Excel ได้ทันที กระจายเวรอย่างยุติธรรม<br className="hidden sm:block" />
                 เหมาะสำหรับโรงพยาบาล คลินิก และทีมบุคลากรทางการแพทย์
               </m.p>
 
