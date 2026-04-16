@@ -423,12 +423,12 @@ export default function HomePage() {
                       </th>
                       <th className="text-left px-4 sm:px-6 py-4 font-semibold text-amber-700 dark:text-amber-400 w-[36%] border-b border-slate-200 dark:border-slate-700">
                         <span className="inline-flex items-center gap-2">
-                          <span className="text-lg">📊</span> Excel / Google Sheets
+                          Excel / Google Sheets
                         </span>
                       </th>
                       <th className="text-left px-4 sm:px-6 py-4 font-semibold text-primary w-[36%] border-b border-slate-200 dark:border-slate-700 bg-primary/3 dark:bg-primary/5">
                         <span className="inline-flex items-center gap-2">
-                          <span className="text-lg">✨</span> AI Scheduling (Shift Optimizer)
+                          AI Scheduling (Shift Optimizer)
                         </span>
                       </th>
                     </tr>
