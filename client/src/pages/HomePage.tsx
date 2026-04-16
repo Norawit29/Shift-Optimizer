@@ -240,7 +240,7 @@ export default function HomePage() {
               </m.div>
 
               <m.h1 variants={fadeUp} custom={1} className="text-3xl sm:text-4xl md:text-[2.75rem] lg:text-5xl font-display font-bold text-slate-900 dark:text-white leading-[1.2] tracking-tight text-center" data-testid="text-hero-title">
-                <span className="block">โปรแกรมจัดตารางเวรพยาบาลด้วย AI อัตโนมัติ</span>
+                <span className="block">โปรแกรมจัดตารางเวรพยาบาลด้วย AI</span>
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">ลดเวลาจัดเวร 90%</span>
               </m.h1>
 
