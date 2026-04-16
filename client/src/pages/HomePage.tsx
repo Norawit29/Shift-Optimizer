@@ -240,8 +240,8 @@ export default function HomePage() {
                 ใช้งานแล้วใน 40+ แผนก
               </m.div>
 
-              <m.h1 variants={fadeUp} custom={1} className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-display font-bold text-slate-900 dark:text-white leading-[1.1] tracking-tight" data-testid="text-hero-title">
-                โปรแกรมจัดตารางเวรพยาบาลอัตโนมัติ{" "}
+              <m.h1 variants={fadeUp} custom={1} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-display font-bold text-slate-900 dark:text-white leading-[1.2] tracking-tight" data-testid="text-hero-title">
+                <span className="block whitespace-nowrap">โปรแกรมจัดตารางเวรพยาบาลอัตโนมัติ</span>
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">ลดเวลาจัดเวร 90%</span>
               </m.h1>
 
