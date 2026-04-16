@@ -385,6 +385,98 @@ export default function HomePage() {
                 <p data-testid="text-what-is-desc2">{t.whatIsDesc2}</p>
                 <p data-testid="text-what-is-desc3">{t.whatIsDesc3}</p>
               </m.div>
+
+              <m.div variants={fadeUp} custom={2} className="mt-14 sm:mt-16">
+                <h3 className="text-xl sm:text-2xl font-display font-bold text-center text-slate-900 dark:text-white mb-8">
+                  Excel / Google Sheets vs AI Scheduling (Shift Optimizer)
+                </h3>
+                <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                  <table className="w-full text-sm sm:text-base border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50 dark:bg-slate-800/60">
+                        <th className="text-left px-4 sm:px-6 py-4 font-semibold text-slate-600 dark:text-slate-300 w-[32%] border-b border-slate-200 dark:border-slate-700">
+                          หัวข้อเปรียบเทียบ
+                        </th>
+                        <th className="text-left px-4 sm:px-6 py-4 font-semibold text-amber-700 dark:text-amber-400 w-[34%] border-b border-slate-200 dark:border-slate-700">
+                          <span className="inline-flex items-center gap-2">
+                            <span className="text-lg">📊</span> Excel / Google Sheets
+                          </span>
+                        </th>
+                        <th className="text-left px-4 sm:px-6 py-4 font-semibold text-primary dark:text-primary w-[34%] border-b border-slate-200 dark:border-slate-700">
+                          <span className="inline-flex items-center gap-2">
+                            <span className="text-lg">✨</span> AI Scheduling (Shift Optimizer)
+                          </span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        {
+                          topic: "วิธีการทำงานหลัก",
+                          excel: "ต้องจัดตารางด้วยตนเอง แล้วค่อยตรวจสอบทีหลังเมื่อมีเวรชน ผิดกฎ หรือคนไม่พอ",
+                          ai: "AI ประมวลผลเงื่อนไขทั้งหมด และสร้างตารางที่พร้อมใช้งานทันทีตั้งแต่ต้น",
+                        },
+                        {
+                          topic: "การแก้ปัญหาเวรชน / เวรซ้อน",
+                          excel: "ระบบอาจแจ้งเตือน แต่ผู้จัดต้องไล่แก้และสลับเวรเองทีละคน",
+                          ai: "AI คำนวณความเป็นไปได้จำนวนมาก เพื่อหลีกเลี่ยงเวรชนและหาคำตอบที่เหมาะสมอัตโนมัติ",
+                        },
+                        {
+                          topic: "ความยุติธรรมในการจัดเวร",
+                          excel: "มักอาศัยประสบการณ์หรือการตัดสินใจของผู้จัด อาจเกิดข้อโต้แย้งเรื่องความไม่เท่าเทียม",
+                          ai: "AI กระจายเวรอย่างสมดุล โดยคำนึงถึงภาระงาน OT วันหยุด และความเหมาะสมของแต่ละคน",
+                        },
+                        {
+                          topic: "ข้อกำหนดทางกฎหมาย / นโยบายองค์กร",
+                          excel: "ต้องสร้างสูตรและตรวจสอบเอง เช่น ชั่วโมงงานสูงสุด หรือวันทำงานต่อเนื่อง",
+                          ai: "ตั้งกฎไว้ครั้งเดียว ระบบจะไม่สร้างตารางที่ผิดข้อกำหนด",
+                        },
+                        {
+                          topic: "เวลาที่ใช้ในการจัดตาราง",
+                          excel: "อาจใช้เวลาหลายชั่วโมงหรือหลายวัน เมื่อทีมใหญ่และเงื่อนไขซับซ้อน",
+                          ai: "ใช้เวลาเพียงไม่กี่นาที แม้มีบุคลากรจำนวนมาก",
+                        },
+                        {
+                          topic: "การแก้ไขเมื่อมีการเปลี่ยนเวรฉุกเฉิน",
+                          excel: "ต้องปรับตารางเองใหม่ เสี่ยงกระทบคนอื่นทั้งระบบ",
+                          ai: "AI ช่วยคำนวณตัวเลือกใหม่อย่างรวดเร็ว พร้อมลดผลกระทบต่อทีม",
+                        },
+                        {
+                          topic: "รายงาน / เอกสารใช้งานต่อ",
+                          excel: "ต้องแยกทำเองหลายไฟล์ หรือคัดลอกข้อมูลซ้ำ",
+                          ai: "สร้างตารางรายบุคคล รายแผนก และไฟล์พร้อมใช้งานได้ทันที",
+                        },
+                        {
+                          topic: "การเติบโตขององค์กร",
+                          excel: "ยิ่งคนเยอะ ยิ่งซับซ้อน และดูแลยาก",
+                          ai: "รองรับทีมขนาดเล็กถึงองค์กรขนาดใหญ่ได้อย่างมีประสิทธิภาพ",
+                        },
+                      ].map((row, i) => (
+                        <tr
+                          key={i}
+                          className={i % 2 === 0 ? "bg-white dark:bg-slate-900" : "bg-slate-50/60 dark:bg-slate-800/30"}
+                        >
+                          <td className="px-4 sm:px-6 py-4 font-semibold text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 align-top">
+                            {row.topic}
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 text-slate-600 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800 align-top">
+                            <span className="inline-flex gap-2">
+                              <span className="text-amber-500 mt-0.5 shrink-0">✗</span>
+                              <span>{row.excel}</span>
+                            </span>
+                          </td>
+                          <td className="px-4 sm:px-6 py-4 text-slate-700 dark:text-slate-300 border-b border-slate-100 dark:border-slate-800 align-top">
+                            <span className="inline-flex gap-2">
+                              <span className="text-emerald-500 mt-0.5 shrink-0">✓</span>
+                              <span>{row.ai}</span>
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </m.div>
             </m.div>
           </div>
         </section>
