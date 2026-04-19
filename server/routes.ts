@@ -808,7 +808,7 @@ export async function registerRoutes(
       if (!parsed.success) {
         return res.status(400).json({ message: "Invalid data", errors: parsed.error.errors });
       }
-      const [lead] = await db.insert(enterpriseLeads).values(parsed.data).returning();
+      const [lead] = await db.insert(enterpriseLeads).values({ ...parsed.data, createdAt: new Date() }).returning();
       res.json({ success: true, id: lead.id });
     } catch (error: any) {
       const detail = error?.message || String(error);
