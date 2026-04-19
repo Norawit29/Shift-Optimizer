@@ -2,7 +2,7 @@ import type { Express } from "express";
 import type { Server } from "http";
 import { OAuth2Client } from "google-auth-library";
 import { db } from "./db";
-import { users, userPresets, feedbacks, usageLogs, generatedSchedules, schedules, insertScheduleSchema } from "@shared/schema";
+import { users, userPresets, feedbacks, usageLogs, generatedSchedules, schedules, insertScheduleSchema, enterpriseLeads, insertEnterpriseLeadSchema } from "@shared/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { sanityClient, urlFor } from "./sanity";
 import { stripeStorage } from "./stripeStorage";
@@ -804,7 +804,6 @@ export async function registerRoutes(
 
   app.post("/api/enterprise-leads", async (req, res) => {
     try {
-      const { enterpriseLeads, insertEnterpriseLeadSchema } = await import("../shared/schema");
       const parsed = insertEnterpriseLeadSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ message: "Invalid data", errors: parsed.error.errors });
