@@ -169,10 +169,11 @@ export default function PricingPage() {
       setEnterpriseSubmitted(true);
       setEnterpriseForm({ orgName: "", contactName: "", email: "", phone: "", staffCount: "", message: "" });
     },
-    onError: () => {
+    onError: (error: Error) => {
+      console.error("[enterprise-lead] submit error:", error);
       toast({
         title: lang === "th" ? "เกิดข้อผิดพลาด" : "Error",
-        description: lang === "th" ? "ไม่สามารถส่งข้อมูลได้ กรุณาลองใหม่" : "Could not submit. Please try again.",
+        description: error?.message || (lang === "th" ? "ไม่สามารถส่งข้อมูลได้ กรุณาลองใหม่" : "Could not submit. Please try again."),
         variant: "destructive",
       });
     },
