@@ -811,8 +811,9 @@ export async function registerRoutes(
       const [lead] = await db.insert(enterpriseLeads).values(parsed.data).returning();
       res.json({ success: true, id: lead.id });
     } catch (error: any) {
-      console.error("Error saving enterprise lead:", error);
-      res.status(500).json({ message: "Failed to save inquiry" });
+      const detail = error?.message || String(error);
+      console.log("[enterprise-lead] DB error:", detail);
+      res.status(500).json({ message: "Failed to save inquiry", detail });
     }
   });
 
