@@ -10,9 +10,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogIn, Crown, LogOut, CreditCard, ChevronDown, Sparkles, CalendarDays, Clock } from "lucide-react";
+import { LogIn, Crown, LogOut, CreditCard, ChevronDown, Sparkles, CalendarDays, Clock, FlaskConical } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 
@@ -140,10 +140,31 @@ export function GoogleSignInButton({
 
 export function UserMenu() {
   const { user, logout } = useAuth();
-  const { isPro, isTrialing, trialDaysLeft } = useProStatus();
+  const { isPro, isTrialing, trialDaysLeft, trialUsed } = useProStatus();
   const { lang } = useLanguage();
   const { toast } = useToast();
   const [, navigate] = useLocation();
+
+  const trialMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/trial/start", {});
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/stripe/subscription"] });
+      toast({
+        title: lang === "th" ? "เริ่มทดลองใช้ฟรีแล้ว!" : "Free trial started!",
+        description: lang === "th" ? "คุณมีสิทธิ์ใช้ฟีเจอร์ Pro ฟรี 14 วัน" : "You have 14 days of free Pro access.",
+      });
+    },
+    onError: (err: any) => {
+      toast({
+        title: lang === "th" ? "เกิดข้อผิดพลาด" : "Error",
+        description: err.message || (lang === "th" ? "ไม่สามารถเริ่มทดลองได้" : "Could not start trial"),
+        variant: "destructive",
+      });
+    },
+  });
 
   const portalMutation = useMutation({
     mutationFn: async () => {
@@ -172,6 +193,8 @@ export function UserMenu() {
     trialPlan: lang === "th" ? "ทดลองใช้ฟรี" : "Free Trial",
     manageSub: lang === "th" ? "จัดการสมาชิก" : "Manage Subscription",
     upgradePro: lang === "th" ? "สมัคร Pro" : "Subscribe to Pro",
+    startTrial: lang === "th" ? "ทดลองใช้ฟรี 14 วัน" : "Start 14-Day Free Trial",
+    noCard: lang === "th" ? "ไม่ต้องใส่บัตรเครดิต" : "No credit card required",
     logout: lang === "th" ? "ออกจากระบบ" : "Logout",
   };
 
@@ -297,6 +320,23 @@ export function UserMenu() {
             >
               <Crown className="w-4 h-4 shrink-0" />
               <span>{lang === "th" ? "สมัคร Pro เพื่อต่ออายุ" : "Subscribe to continue"}</span>
+            </button>
+          </div>
+        ) : !trialUsed ? (
+          <div className="px-1 py-0.5">
+            <button
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-60"
+              onClick={() => trialMutation.mutate()}
+              disabled={trialMutation.isPending}
+              data-testid="menu-item-start-trial"
+            >
+              <FlaskConical className="w-4 h-4 shrink-0" />
+              <span className="whitespace-nowrap">
+                {trialMutation.isPending ? (lang === "th" ? "กำลังเริ่ม..." : "Starting...") : t.startTrial}
+              </span>
+              {!trialMutation.isPending && (
+                <span className="ml-auto text-[10px] font-normal bg-white/20 rounded-full px-1.5 py-0.5 whitespace-nowrap">{t.noCard}</span>
+              )}
             </button>
           </div>
         ) : (
