@@ -296,64 +296,6 @@ export function UserMenu() {
 
         <DropdownMenuSeparator className="my-1.5 bg-slate-100 dark:bg-slate-800" />
 
-        {/* Subscription action */}
-        {hasActivePaidSub ? (
-          <DropdownMenuItem
-            className="flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-            onSelect={() => portalMutation.mutate()}
-            disabled={portalMutation.isPending}
-            data-testid="menu-item-manage-subscription"
-          >
-            <CreditCard className="w-4 h-4 text-slate-400 shrink-0" />
-            <span>{portalMutation.isPending ? (lang === "th" ? "กำลังโหลด..." : "Loading...") : t.manageSub}</span>
-          </DropdownMenuItem>
-        ) : isTrialing ? (
-          <div className="px-1 py-0.5 space-y-1">
-            <div className="flex items-center gap-2 px-3 py-1.5 text-[11px] text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
-              <Clock className="w-3.5 h-3.5 shrink-0" />
-              <span>{lang === "th" ? `ทดลองใช้ฟรี — เหลืออีก ${trialDaysLeft} วัน` : `Free trial — ${trialDaysLeft} days left`}</span>
-            </div>
-            <button
-              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl bg-amber-500 text-white hover:bg-amber-600 transition-colors"
-              onClick={() => navigate("/pricing")}
-              data-testid="menu-item-upgrade-pro"
-            >
-              <Crown className="w-4 h-4 shrink-0" />
-              <span>{lang === "th" ? "สมัคร Pro เพื่อต่ออายุ" : "Subscribe to continue"}</span>
-            </button>
-          </div>
-        ) : !trialUsed ? (
-          <div className="px-1 py-0.5">
-            <button
-              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-60"
-              onClick={() => trialMutation.mutate()}
-              disabled={trialMutation.isPending}
-              data-testid="menu-item-start-trial"
-            >
-              <FlaskConical className="w-4 h-4 shrink-0" />
-              <span className="whitespace-nowrap">
-                {trialMutation.isPending ? (lang === "th" ? "กำลังเริ่ม..." : "Starting...") : t.startTrial}
-              </span>
-              {!trialMutation.isPending && (
-                <span className="ml-auto text-[10px] font-normal bg-white/20 rounded-full px-1.5 py-0.5 whitespace-nowrap">{t.noCard}</span>
-              )}
-            </button>
-          </div>
-        ) : (
-          <div className="px-1 py-0.5">
-            <button
-              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm font-semibold rounded-xl bg-primary text-white hover:bg-primary/90 transition-colors"
-              onClick={() => navigate("/pricing")}
-              data-testid="menu-item-upgrade-pro"
-            >
-              <Sparkles className="w-4 h-4 shrink-0" />
-              <span>{t.upgradePro}</span>
-            </button>
-          </div>
-        )}
-
-        <DropdownMenuSeparator className="my-1.5 bg-slate-100 dark:bg-slate-800" />
-
         {/* Logout */}
         <DropdownMenuItem
           className="flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer rounded-xl text-slate-500 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
