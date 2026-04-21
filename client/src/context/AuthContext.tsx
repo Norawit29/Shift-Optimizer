@@ -64,6 +64,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.invalidateQueries({ queryKey: ["/api/stripe/subscription"] });
       queryClient.invalidateQueries({ queryKey: ["/api/schedules"] });
       queryClient.invalidateQueries({ queryKey: ["/api/presets"] });
+    } else {
+      let message = "Authentication failed";
+      try {
+        const body = await res.json();
+        if (body?.message) message = body.message;
+      } catch {}
+      throw new Error(message);
     }
   }, []);
 

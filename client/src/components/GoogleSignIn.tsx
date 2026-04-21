@@ -67,11 +67,23 @@ export function GoogleSignInButton({
   const [scriptReady, setScriptReady] = useState(false);
   const [showGoogleBtn, setShowGoogleBtn] = useState(false);
 
-  const handleCredentialResponse = useCallback((response: any) => {
+  const { toast } = useToast();
+
+  const handleCredentialResponse = useCallback(async (response: any) => {
     if (response.credential) {
-      login(response.credential);
+      try {
+        await login(response.credential);
+      } catch (err: any) {
+        console.error("[GoogleSignIn] login failed:", err?.message);
+        toast({
+          title: "เข้าสู่ระบบไม่สำเร็จ",
+          description: err?.message || "กรุณาลองใหม่อีกครั้ง",
+          variant: "destructive",
+        });
+        setShowGoogleBtn(false);
+      }
     }
-  }, [login]);
+  }, [login, toast]);
 
   const handleClick = useCallback(async () => {
     if (showGoogleBtn || !clientId) return;
@@ -81,8 +93,13 @@ export function GoogleSignInButton({
       setScriptReady(true);
     } catch {
       setShowGoogleBtn(false);
+      toast({
+        title: "โหลด Google Sign-In ไม่สำเร็จ",
+        description: "กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต แล้วลองใหม่",
+        variant: "destructive",
+      });
     }
-  }, [showGoogleBtn, clientId]);
+  }, [showGoogleBtn, clientId, toast]);
 
   useEffect(() => {
     if (!scriptReady || !clientId || !buttonRef.current || !window.google) return;

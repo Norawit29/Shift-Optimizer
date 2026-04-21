@@ -205,9 +205,9 @@ export async function registerRoutes(
         email: user.email,
         picture: user.picture,
       });
-    } catch (error) {
-      console.error("Google auth error:", error);
-      res.status(401).json({ message: "Authentication failed" });
+    } catch (error: any) {
+      console.log("[auth] Google auth error:", error?.message || error);
+      res.status(401).json({ message: "Authentication failed", detail: error?.message });
     }
   });
 
