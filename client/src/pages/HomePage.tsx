@@ -148,8 +148,8 @@ function EarlyAdopterBanner({ lang }: { lang: string }) {
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-500 mt-0.5">
               {lang === "th"
-                ? "ราคาสำหรับ 10 คน — ดูราคาทีมใหญ่กว่าที่หน้าราคา"
-                : "Price for 10 staff — see larger team pricing on the pricing page"}
+                ? "ราคาสำหรับ 15 คน — ดูราคาทีมใหญ่กว่าที่หน้าราคา"
+                : "Price for 15 staff — see larger team pricing on the pricing page"}
             </p>
           </div>
           <div className="flex flex-col items-center gap-1 shrink-0">
