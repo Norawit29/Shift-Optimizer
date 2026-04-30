@@ -670,54 +670,7 @@ export default function HomePage() {
               </p>
             </m.div>
 
-            {/* Early Adopter card */}
-            <m.div variants={fadeUp} custom={1} className="mb-10">
-              <a
-                href="https://line.me/R/ti/p/@shift-optimizer"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group block relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-700 shadow-xl shadow-emerald-500/20 hover:shadow-emerald-500/35 hover:scale-[1.01] transition-all duration-200"
-                data-testid="link-early-adopter-line"
-              >
-                {/* decorative circles */}
-                <div className="pointer-events-none absolute -top-10 -right-10 w-52 h-52 rounded-full bg-white/10" />
-                <div className="pointer-events-none absolute -bottom-12 -left-8 w-44 h-44 rounded-full bg-white/10" />
-
-                <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-6 px-7 py-7">
-                  {/* left: text content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="inline-flex items-center gap-2 bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full mb-3">
-                      <span>🎁</span>
-                      <span>Early Adopter — ถึง 30 มิ.ย. นี้</span>
-                    </div>
-                    <p className="text-white font-semibold text-base sm:text-lg leading-snug mb-3">
-                      จัดเวรทั้งเดือนในไม่กี่นาที<br className="hidden sm:block" /> ช่วยลดเวลาทำงานซ้ำซ้อน
-                    </p>
-                    <ul className="flex flex-col gap-1.5">
-                      <li className="flex items-center gap-2 text-white/90 text-sm">
-                        <span className="text-white font-bold">✔</span>
-                        <span>ลด 30% ตลอดชีพ</span>
-                      </li>
-                      <li className="flex items-center gap-2 text-white/90 text-sm">
-                        <span className="text-white font-bold">✔</span>
-                        <span>ฟรีช่วยตั้งตารางเวรครั้งแรก</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  {/* right: LINE button */}
-                  <div className="shrink-0 flex flex-col items-center gap-2">
-                    <div className="flex items-center gap-2.5 bg-white text-emerald-600 font-bold text-sm sm:text-base px-5 py-3 rounded-xl shadow-md group-hover:bg-emerald-50 transition-colors">
-                      <SiLine className="w-5 h-5" />
-                      <span>แอดไลน์ แสดงความสนใจ</span>
-                    </div>
-                    <span className="text-white/70 text-xs">@shift-optimizer</span>
-                  </div>
-                </div>
-              </a>
-            </m.div>
-
-            <m.div variants={fadeUp} custom={2} className="grid sm:grid-cols-3 gap-5 mb-10">
+            <m.div variants={fadeUp} custom={1} className="grid sm:grid-cols-3 gap-5 mb-10">
               <a
                 href="mailto:contact@shift-optimizer.com"
                 className="flex flex-col items-center gap-4 p-7 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-primary/30 transition-all group"
