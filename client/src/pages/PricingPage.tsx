@@ -409,7 +409,7 @@ export default function PricingPage() {
             </button>
             <p className="mt-2.5 text-center text-xs text-slate-500 dark:text-slate-400">
               {lang === "th"
-                ? <>หมดเขต 30 มิ.ย. 2569<br />หรือเมื่อครบ 50 account แรก</>
+                ? <>หมดเขต 30 มิ.ย. 2569<br />หรือเมื่อครบ 50 ทีมแรก</>
                 : <>Offer ends June 30, 2026<br />or when the first 50 accounts are filled</>}
             </p>
 

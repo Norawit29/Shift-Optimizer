@@ -113,7 +113,7 @@ function EarlyAdopterBanner({ lang }: { lang: string }) {
             <span className="text-base leading-snug mt-0.5 shrink-0">🎁</span>
             <span className="font-semibold text-sm sm:text-[15px] leading-snug" style={{ color: "#1A2B4A" }}>
               {lang === "th"
-                ? <>Early Adopter — หมดเขต 30 มิ.ย. 2569<br />หรือเมื่อครบ 50 account แรก</>
+                ? <>Early Adopter — หมดเขต 30 มิ.ย. 2569<br />หรือเมื่อครบ 50 ทีมแรก</>
                 : <>Early Adopter — Ends June 30, 2026<br />or first 50 accounts</>}
             </span>
           </div>
