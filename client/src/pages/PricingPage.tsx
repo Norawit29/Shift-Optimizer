@@ -5,7 +5,8 @@ import { useSubscription } from "@/hooks/useSubscription";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Loader2, Crown, Gift, FlaskConical, Clock } from "lucide-react";
+import { Check, Loader2, Crown, Gift, FlaskConical, Clock, Tag } from "lucide-react";
+import { SiLine } from "react-icons/si";
 import { GoogleSignInButton } from "@/components/GoogleSignIn";
 import { Link, useSearch } from "wouter";
 import { useEffect, useState } from "react";
@@ -280,16 +281,16 @@ export default function PricingPage() {
           </div>
 
           {/* Pro Plan */}
-          <div className="rounded-2xl border-2 border-primary bg-white dark:bg-slate-800 px-7 pt-10 pb-8 shadow-xl relative overflow-visible flex flex-col md:-my-4">
+          <div className="rounded-2xl border-2 border-emerald-500 bg-white dark:bg-slate-800 px-7 pt-10 pb-8 shadow-xl relative overflow-visible flex flex-col md:-my-4">
             <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-              <Badge className="gap-1.5 bg-primary text-white border-0 text-sm px-4 py-1.5 font-semibold shadow-md whitespace-nowrap">
-                <Gift className="w-3.5 h-3.5" />
-                {lang === "th" ? "แนะนำสำหรับผู้ใช้ปัจจุบัน" : "Recommended for current users"}
+              <Badge className="gap-1.5 bg-emerald-600 text-white border-0 text-sm px-4 py-1.5 font-semibold shadow-md whitespace-nowrap">
+                <Tag className="w-3.5 h-3.5" />
+                {lang === "th" ? "Early Adopter — ราคาพิเศษ" : "Early Adopter — Special Price"}
               </Badge>
             </div>
 
             <div className="mb-4">
-              <div className="text-sm font-semibold text-primary uppercase tracking-wide mb-2">
+              <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide mb-2">
                 {t.pro}
               </div>
 
@@ -312,13 +313,33 @@ export default function PricingPage() {
                 </button>
               </div>
 
-              {/* Dynamic price */}
-              <div className="flex items-end gap-1">
-                <div className="text-4xl font-bold text-slate-900 dark:text-slate-50">
-                  ฿{billingCycle === "monthly" ? selectedTier.monthly.toLocaleString() : selectedTier.yearly.toLocaleString()}
+              {/* Early Adopter pricing */}
+              <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 px-3.5 py-3 mb-3">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="text-[11px] font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full">ลด 30%</span>
+                  <span className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
+                    {lang === "th" ? "ราคา Early Adopter" : "Early Adopter Price"}
+                  </span>
                 </div>
-                <div className="text-base font-normal text-slate-500 mb-1">
-                  {billingCycle === "monthly" ? t.month : t.year}
+                <div className="flex items-end gap-2">
+                  <div className="text-4xl font-bold text-emerald-700 dark:text-emerald-400">
+                    ฿{billingCycle === "monthly"
+                      ? Math.round(selectedTier.monthly * 0.7).toLocaleString()
+                      : Math.round(selectedTier.yearly * 0.7).toLocaleString()}
+                  </div>
+                  <div className="mb-1.5 flex items-center gap-1.5">
+                    <span className="text-sm text-slate-400 line-through">
+                      ฿{billingCycle === "monthly" ? selectedTier.monthly.toLocaleString() : selectedTier.yearly.toLocaleString()}
+                    </span>
+                    <span className="text-sm text-slate-500 dark:text-slate-400">
+                      {billingCycle === "monthly" ? t.month : t.year}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-xs text-emerald-600 dark:text-emerald-500 mt-0.5 font-medium">
+                  {lang === "th"
+                    ? `ราคาพิเศษล็อกไว้ตลอดการสมัครสมาชิก`
+                    : "Special price locked in for the lifetime of your subscription"}
                 </div>
               </div>
 
@@ -330,8 +351,8 @@ export default function PricingPage() {
               </div>
               <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
                 {lang === "th"
-                  ? `เริ่มต้นเพียง ~${Math.round((billingCycle === "yearly" ? selectedTier.yearly / 12 : selectedTier.monthly) / selectedTier.slots)} บาท/คน/เดือน`
-                  : `From ~฿${Math.round((billingCycle === "yearly" ? selectedTier.yearly / 12 : selectedTier.monthly) / selectedTier.slots)}/person/mo`}
+                  ? `เริ่มต้นเพียง ~${Math.round((billingCycle === "yearly" ? Math.round(selectedTier.yearly * 0.7) / 12 : Math.round(selectedTier.monthly * 0.7)) / selectedTier.slots)} บาท/คน/เดือน`
+                  : `From ~฿${Math.round((billingCycle === "yearly" ? Math.round(selectedTier.yearly * 0.7) / 12 : Math.round(selectedTier.monthly * 0.7)) / selectedTier.slots)}/person/mo`}
               </div>
             </div>
 
@@ -373,69 +394,23 @@ export default function PricingPage() {
               ))}
             </ul>
 
-            {hasActivePaidSub ? (
-              <Button className="w-full gap-2" variant="outline" onClick={() => portalMutation.mutate()} disabled={portalMutation.isPending} data-testid="button-manage-subscription">
-                {portalMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                {t.manageSubscription}
-              </Button>
-            ) : isTrialing ? (
-              <div className="space-y-2">
-                <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-sm font-medium">
-                  <Clock className="w-4 h-4 shrink-0" />
-                  {lang === "th" ? `ทดลองใช้อยู่ — เหลืออีก ${trialDaysLeft} วัน` : `Trial active — ${trialDaysLeft} days left`}
-                </div>
-                <Button
-                  className="w-full gap-2 bg-amber-500 hover:bg-amber-600"
-                  onClick={() => checkoutMutation.mutate({ slotCount: selectedTier.slots, billingCycle })}
-                  disabled={checkoutMutation.isPending}
-                  data-testid="button-subscribe-pro"
-                >
-                  {checkoutMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                  <Crown className="w-4 h-4" />
-                  {lang === "th" ? "สมัคร Pro เพื่อต่ออายุ" : "Subscribe to continue"}
-                </Button>
-              </div>
-            ) : !user ? null : !trialUsed ? (
-              <div className="space-y-2">
-                <Button
-                  className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 h-auto py-3 whitespace-normal text-center leading-snug"
-                  onClick={() => trialMutation.mutate()}
-                  disabled={trialMutation.isPending}
-                  data-testid="button-start-trial"
-                >
-                  {trialMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin shrink-0" /> : <FlaskConical className="w-4 h-4 shrink-0" />}
-                  {trialMutation.isPending ? (lang === "th" ? "กำลังเริ่ม..." : "Starting...") : t.startTrial}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full gap-2 text-sm"
-                  onClick={() => checkoutMutation.mutate({ slotCount: selectedTier.slots, billingCycle })}
-                  disabled={checkoutMutation.isPending}
-                  data-testid="button-subscribe-pro"
-                >
-                  {checkoutMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {t.subscribePro}
-                </Button>
-              </div>
-            ) : (
-              <Button
-                className="w-full gap-2"
-                onClick={() => checkoutMutation.mutate({ slotCount: selectedTier.slots, billingCycle })}
-                disabled={checkoutMutation.isPending}
-                data-testid="button-subscribe-pro"
-              >
-                {checkoutMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                {t.subscribePro}
-              </Button>
-            )}
-
-            {!isPro && user && !trialUsed && (
-              <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">
-                {lang === "th"
-                  ? "ทดลองได้ 1 ครั้งต่อ 1 บัญชี — ใช้ฟีเจอร์ Pro ครบทุกอย่างฟรี 14 วัน"
-                  : "One trial per account — full Pro access for 14 days"}
-              </p>
-            )}
+            <a
+              href="https://line.me/ti/p/~@shiftoption"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="button-line-early-adopter"
+              className="w-full flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-xl bg-[#06C755] hover:bg-[#05b34d] active:bg-[#04a045] text-white font-semibold text-sm transition-colors shadow-md shadow-emerald-200 dark:shadow-emerald-900/40"
+            >
+              <SiLine className="w-5 h-5 shrink-0" />
+              <span>
+                {lang === "th" ? "แอดไลน์เพื่อรับลิงก์จองสิทธิ์ Early Adopter" : "Add LINE to reserve Early Adopter access"}
+              </span>
+            </a>
+            <p className="mt-2.5 text-center text-xs text-slate-500 dark:text-slate-400">
+              {lang === "th"
+                ? "สิทธิ์มีจำนวนจำกัด — ราคาพิเศษนี้ล็อกไว้ให้ตลอดการเป็นสมาชิก"
+                : "Limited spots — this special price is locked in for your entire subscription"}
+            </p>
           </div>
 
           {/* Enterprise Plan */}
