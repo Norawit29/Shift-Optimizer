@@ -121,9 +121,9 @@ function EarlyAdopterBanner({ lang }: { lang: string }) {
           <div className="flex items-center gap-1 shrink-0">
             {units.map((unit, i) => (
               <div key={i} className="flex items-center gap-1">
-                <div className="flex flex-col items-center bg-white dark:bg-slate-800 rounded-lg py-1.5 w-[52px] border border-emerald-200 dark:border-emerald-700 shadow-sm">
-                  <span className="text-2xl sm:text-3xl font-bold tabular-nums text-emerald-800 dark:text-emerald-300 leading-none">{unit.value}</span>
-                  <span className="text-[11px] sm:text-xs text-emerald-600 dark:text-emerald-500 mt-0.5 font-medium">{unit.label}</span>
+                <div className="flex flex-col items-center bg-[#3B6D11] rounded-lg py-1.5 w-[52px] shadow-sm">
+                  <span className="text-2xl sm:text-3xl font-bold tabular-nums text-white leading-none">{unit.value}</span>
+                  <span className="text-[11px] sm:text-xs text-emerald-200 mt-0.5 font-medium">{unit.label}</span>
                 </div>
                 {i < 3 && <span className="text-emerald-500 dark:text-emerald-500 font-bold text-xl px-0.5">:</span>}
               </div>
@@ -149,9 +149,10 @@ function EarlyAdopterBanner({ lang }: { lang: string }) {
                 : "Price locked as long as you stay subscribed + free first-time schedule setup"}
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-500 mt-0.5">
-              {lang === "th"
-                ? "ราคาสำหรับ 15 คน — ดูราคาทีมใหญ่กว่าที่หน้าราคา"
-                : "Price for 15 staff — see larger team pricing on the pricing page"}
+              {lang === "th" ? "ราคาสำหรับ 15 คน — " : "Price for 15 staff — "}
+              <Link href="/pricing" className="underline underline-offset-2 text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 transition-colors">
+                {lang === "th" ? "ดูราคาทีมใหญ่กว่าที่หน้าราคา" : "see larger team pricing"}
+              </Link>
             </p>
           </div>
           <div className="flex flex-col items-center gap-1 shrink-0">
