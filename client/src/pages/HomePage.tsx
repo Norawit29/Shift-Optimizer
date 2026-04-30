@@ -112,7 +112,7 @@ function EarlyAdopterBanner({ lang }: { lang: string }) {
           <div className="flex items-center gap-2">
             <span className="text-base">🎁</span>
             <span className="font-semibold text-emerald-900 dark:text-emerald-200 text-sm sm:text-[15px]">
-              {lang === "th" ? "Early Adopter — ราคาพิเศษปิดรับใน" : "Early Adopter — Special price closes in"}
+              {lang === "th" ? "Early Adopter — หมดเขต 30 มิ.ย. 2569 หรือเมื่อครบ 50 account แรก" : "Early Adopter — Ends June 30, 2026 or first 50 accounts"}
             </span>
           </div>
           {/* Countdown boxes */}
@@ -143,8 +143,8 @@ function EarlyAdopterBanner({ lang }: { lang: string }) {
             </div>
             <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
               {lang === "th"
-                ? "ล็อคราคานี้ตราบใดที่ใช้งานต่อเนื่อง + ฟรี onboarding 1:1"
-                : "Price locked as long as you stay subscribed + free 1:1 onboarding"}
+                ? "ล็อคราคานี้ตราบใดที่ใช้งานต่อเนื่อง + ฟรี การช่วยตั้งค่าตารางเวรในการใช้งานครั้งแรก"
+                : "Price locked as long as you stay subscribed + free first-time schedule setup"}
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-500 mt-0.5">
               {lang === "th"
