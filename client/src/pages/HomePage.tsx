@@ -157,11 +157,13 @@ function EarlyAdopterBanner({ lang }: { lang: string }) {
           <div className="flex flex-col items-center gap-1 shrink-0">
             <button
               onClick={() => setQrOpen(true)}
-              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#06C755] hover:bg-[#05b34d] text-white font-semibold text-sm transition-colors shadow-sm whitespace-nowrap min-w-[180px]"
+              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#06C755] hover:bg-[#05b34d] text-white font-semibold text-sm transition-colors shadow-sm min-w-[180px] text-center"
               data-testid="button-banner-line"
             >
               <SiLine className="w-4 h-4 shrink-0" />
-              {lang === "th" ? "จองสิทธิ์ผ่าน LINE" : "Reserve via LINE"}
+              <span className="leading-snug">
+                {lang === "th" ? <>แอดไลน์เพื่อจองสิทธิ์<br />Early Adopter</> : <>Add LINE to reserve<br />Early Adopter</>}
+              </span>
             </button>
             <span className="text-[11px] text-slate-400 dark:text-slate-500">@shift-optimizer</span>
           </div>

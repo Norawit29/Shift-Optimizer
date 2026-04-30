@@ -403,8 +403,8 @@ export default function PricingPage() {
               className="w-full flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-xl bg-[#06C755] hover:bg-[#05b34d] active:bg-[#04a045] text-white font-semibold text-sm transition-colors shadow-md shadow-emerald-200 dark:shadow-emerald-900/40"
             >
               <SiLine className="w-5 h-5 shrink-0" />
-              <span>
-                {lang === "th" ? "แอดไลน์เพื่อรับลิงก์จองสิทธิ์ Early Adopter" : "Add LINE to reserve Early Adopter access"}
+              <span className="text-center leading-snug">
+                {lang === "th" ? <>แอดไลน์เพื่อจองสิทธิ์<br />Early Adopter</> : <>Add LINE to reserve<br />Early Adopter access</>}
               </span>
             </button>
             <p className="mt-2.5 text-center text-xs text-slate-500 dark:text-slate-400">
