@@ -28,6 +28,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { th, enUS } from "date-fns/locale";
 import { Navbar } from "@/components/Navbar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 function CountUp({ target, suffix = "" }: { target: number; suffix?: string }) {
   const [count, setCount] = useState(0);
@@ -65,6 +66,130 @@ function CountUp({ target, suffix = "" }: { target: number; suffix?: string }) {
       {count.toLocaleString()}
       {suffix && <span className="text-4xl sm:text-5xl font-bold ml-0.5">{suffix}</span>}
     </span>
+  );
+}
+
+// June 30, 2026 23:59:59 Bangkok time (UTC+7)
+const EARLY_ADOPTER_DEADLINE = new Date("2026-06-30T23:59:59+07:00");
+
+function useCountdown(target: Date) {
+  const calc = () => {
+    const diff = target.getTime() - Date.now();
+    if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+    return {
+      days: Math.floor(diff / 86400000),
+      hours: Math.floor((diff % 86400000) / 3600000),
+      minutes: Math.floor((diff % 3600000) / 60000),
+      seconds: Math.floor((diff % 60000) / 1000),
+    };
+  };
+  const [remaining, setRemaining] = useState(calc);
+  useEffect(() => {
+    const id = setInterval(() => setRemaining(calc()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return remaining;
+}
+
+function EarlyAdopterBanner({ lang }: { lang: string }) {
+  const { days, hours, minutes, seconds } = useCountdown(EARLY_ADOPTER_DEADLINE);
+  const [qrOpen, setQrOpen] = useState(false);
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  return (
+    <section className="px-4 sm:px-6 py-6">
+      <div className="max-w-5xl mx-auto">
+        <div className="rounded-2xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 px-5 py-5 shadow-sm">
+          {/* Top row: label + countdown */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🎁</span>
+              <span className="font-semibold text-emerald-800 dark:text-emerald-300 text-sm sm:text-base">
+                {lang === "th" ? "Early Adopter — ราคาพิเศษปิดรับใน" : "Early Adopter — Special price closes in"}
+              </span>
+            </div>
+            {/* Countdown */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {[
+                { value: pad(days), label: lang === "th" ? "วัน" : "d" },
+                { value: pad(hours), label: lang === "th" ? "ชม." : "h" },
+                { value: pad(minutes), label: lang === "th" ? "นาที" : "m" },
+                { value: pad(seconds), label: lang === "th" ? "วินาที" : "s" },
+              ].map((unit, i) => (
+                <div key={i} className="flex items-center gap-1.5">
+                  <div className="flex flex-col items-center">
+                    <span className="text-xl sm:text-2xl font-bold tabular-nums text-emerald-800 dark:text-emerald-300 leading-none">{unit.value}</span>
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-500 mt-0.5">{unit.label}</span>
+                  </div>
+                  {i < 3 && <span className="text-emerald-400 dark:text-emerald-600 font-bold text-lg leading-none mb-2">:</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Bottom row: price + button */}
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+            <div>
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <span className="text-3xl font-bold text-emerald-700 dark:text-emerald-400">฿181</span>
+                <span className="text-sm text-slate-500 dark:text-slate-400">{lang === "th" ? "/เดือน ตลอดชีพ" : "/mo locked-in"}</span>
+                <span className="text-sm text-slate-400 line-through">฿259</span>
+                <span className="text-xs font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full">ลด 30%</span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                {lang === "th"
+                  ? "ล็อคราคานี้ตราบใดที่ใช้งานต่อเนื่อง + ฟรี onboarding 1:1"
+                  : "Price locked as long as you stay subscribed + free 1:1 onboarding"}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-500 mt-0.5">
+                {lang === "th"
+                  ? "ราคาสำหรับ 15 คน — ดูราคาทีมใหญ่กว่าที่หน้าราคา"
+                  : "Price for 15 staff — see larger team pricing on the pricing page"}
+              </p>
+            </div>
+            <div className="flex flex-col items-center gap-1 shrink-0">
+              <button
+                onClick={() => setQrOpen(true)}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#06C755] hover:bg-[#05b34d] text-white font-semibold text-sm transition-colors shadow-sm whitespace-nowrap"
+                data-testid="button-banner-line"
+              >
+                <span className="w-2 h-2 rounded-full bg-white/80 animate-pulse shrink-0" />
+                {lang === "th" ? "จองสิทธิ์ผ่าน LINE" : "Reserve via LINE"}
+              </button>
+              <span className="text-[11px] text-slate-400 dark:text-slate-500">@shift-optimizer</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Dialog open={qrOpen} onOpenChange={setQrOpen}>
+        <DialogContent className="max-w-xs text-center">
+          <DialogHeader>
+            <DialogTitle className="text-center">
+              {lang === "th" ? "สแกน QR เพื่อแอดไลน์" : "Scan QR to Add LINE"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-3 py-2">
+            <img
+              src="/line-qr.png"
+              alt="LINE QR Code @shift-optimizer"
+              className="w-52 h-52 object-contain rounded-xl border border-slate-200 dark:border-slate-700 bg-white"
+            />
+            <span className="text-sm font-medium text-slate-600 dark:text-slate-300">@shift-optimizer</span>
+            <a
+              href="https://line.me/ti/p/~@shift-optimizer"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#06C755] hover:bg-[#05b34d] text-white font-semibold text-sm transition-colors"
+            >
+              <SiLine className="w-4 h-4 shrink-0" />
+              {lang === "th" ? "เปิดใน LINE" : "Open in LINE"}
+            </a>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </section>
   );
 }
 
@@ -273,6 +398,8 @@ export default function HomePage() {
             </m.div>
           </div>
         </section>
+
+        <EarlyAdopterBanner lang={lang} />
 
         {/* ── 2. SOCIAL PROOF / STATS ── */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 bg-slate-50 dark:bg-slate-900/60 border-y border-slate-100 dark:border-slate-800/50">
