@@ -28,7 +28,7 @@ const PRICING_TIERS = [
 const FREE_FEATURES = {
   th: [
     "ระบบจัดเวรด้วย AI",
-    "บุคลากรสูงสุด 15 คน",
+    "บุคลากรสูงสุด 10 คน",
     "ประเภทเวรสูงสุด 3 ประเภท",
     "ระดับบุคลากรสูงสุด 3 ระดับ",
     "บันทึกตาราง",
@@ -36,7 +36,7 @@ const FREE_FEATURES = {
   ],
   en: [
     "AI-powered scheduling",
-    "Up to 15 staff members",
+    "Up to 10 staff members",
     "Up to 3 shift types",
     "Up to 3 staff levels",
     "Save schedules",
@@ -240,11 +240,11 @@ export default function PricingPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-200 dark:divide-slate-700">
             <div className="px-5 py-4">
               <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">ข้อมูลเวรเดิมหายไหม?</p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">ข้อมูลทั้งหมดยังคงอยู่ครบถ้วน ไม่มีการสูญหาย อย่างไรก็ตาม หากจำนวนบุคลากรเกิน 15 คน ระบบจะปรับเป็นโหมดอ่านอย่างเดียว และไม่สามารถแก้ไขได้</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">ข้อมูลทั้งหมดยังคงอยู่ครบถ้วน ไม่มีการสูญหาย อย่างไรก็ตาม หากจำนวนบุคลากรเกิน 10 คน ระบบจะปรับเป็นโหมดอ่านอย่างเดียว และไม่สามารถแก้ไขได้</p>
             </div>
             <div className="px-5 py-4">
-              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">ใช้เกิน 15 คนอยู่ ต้องทำยังไง?</p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">อัปเกรดเป็น Pro หรือลดจำนวนบุคลากรลงเหลือ 15 คน</p>
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">ใช้เกิน 10 คนอยู่ ต้องทำยังไง?</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">อัปเกรดเป็น Pro หรือลดจำนวนบุคลากรลงเหลือ 10 คน</p>
             </div>
           </div>
         </div>
