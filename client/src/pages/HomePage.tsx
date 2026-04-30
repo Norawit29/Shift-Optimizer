@@ -97,68 +97,71 @@ function EarlyAdopterBanner({ lang }: { lang: string }) {
 
   const pad = (n: number) => String(n).padStart(2, "0");
 
-  return (
-    <section className="px-4 sm:px-6 py-6">
-      <div className="max-w-5xl mx-auto">
-        <div className="rounded-2xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 px-5 py-5 shadow-sm">
-          {/* Top row: label + countdown */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">🎁</span>
-              <span className="font-semibold text-emerald-800 dark:text-emerald-300 text-sm sm:text-base">
-                {lang === "th" ? "Early Adopter — ราคาพิเศษปิดรับใน" : "Early Adopter — Special price closes in"}
-              </span>
-            </div>
-            {/* Countdown */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              {[
-                { value: pad(days), label: lang === "th" ? "วัน" : "d" },
-                { value: pad(hours), label: lang === "th" ? "ชม." : "h" },
-                { value: pad(minutes), label: lang === "th" ? "นาที" : "m" },
-                { value: pad(seconds), label: lang === "th" ? "วินาที" : "s" },
-              ].map((unit, i) => (
-                <div key={i} className="flex items-center gap-1.5">
-                  <div className="flex flex-col items-center">
-                    <span className="text-xl sm:text-2xl font-bold tabular-nums text-emerald-800 dark:text-emerald-300 leading-none">{unit.value}</span>
-                    <span className="text-[10px] text-emerald-600 dark:text-emerald-500 mt-0.5">{unit.label}</span>
-                  </div>
-                  {i < 3 && <span className="text-emerald-400 dark:text-emerald-600 font-bold text-lg leading-none mb-2">:</span>}
-                </div>
-              ))}
-            </div>
-          </div>
+  const units = [
+    { value: pad(days), label: lang === "th" ? "วัน" : "d" },
+    { value: pad(hours), label: lang === "th" ? "ชม." : "h" },
+    { value: pad(minutes), label: lang === "th" ? "นาที" : "m" },
+    { value: pad(seconds), label: lang === "th" ? "วินาที" : "s" },
+  ];
 
-          {/* Bottom row: price + button */}
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-            <div>
-              <div className="flex items-baseline gap-2 flex-wrap">
-                <span className="text-3xl font-bold text-emerald-700 dark:text-emerald-400">฿181</span>
-                <span className="text-sm text-slate-500 dark:text-slate-400">{lang === "th" ? "/เดือน ตลอดชีพ" : "/mo locked-in"}</span>
-                <span className="text-sm text-slate-400 line-through">฿259</span>
-                <span className="text-xs font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full">ลด 30%</span>
+  return (
+    <>
+      <div className="rounded-2xl border-2 border-emerald-400 dark:border-emerald-600 bg-emerald-100/70 dark:bg-emerald-950/50 overflow-hidden shadow-sm">
+        {/* Top row: label + countdown */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-5 py-3.5">
+          <div className="flex items-center gap-2">
+            <span className="text-base">🎁</span>
+            <span className="font-semibold text-emerald-900 dark:text-emerald-200 text-sm sm:text-[15px]">
+              {lang === "th" ? "Early Adopter — ราคาพิเศษปิดรับใน" : "Early Adopter — Special price closes in"}
+            </span>
+          </div>
+          {/* Countdown boxes */}
+          <div className="flex items-center gap-1 shrink-0">
+            {units.map((unit, i) => (
+              <div key={i} className="flex items-center gap-1">
+                <div className="flex flex-col items-center bg-white dark:bg-slate-800 rounded-lg px-2.5 py-1.5 min-w-[44px] border border-emerald-200 dark:border-emerald-700 shadow-sm">
+                  <span className="text-2xl sm:text-3xl font-bold tabular-nums text-emerald-800 dark:text-emerald-300 leading-none">{unit.value}</span>
+                  <span className="text-[11px] sm:text-xs text-emerald-600 dark:text-emerald-500 mt-0.5 font-medium">{unit.label}</span>
+                </div>
+                {i < 3 && <span className="text-emerald-500 dark:text-emerald-500 font-bold text-xl px-0.5">:</span>}
               </div>
-              <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                {lang === "th"
-                  ? "ล็อคราคานี้ตราบใดที่ใช้งานต่อเนื่อง + ฟรี onboarding 1:1"
-                  : "Price locked as long as you stay subscribed + free 1:1 onboarding"}
-              </p>
-              <p className="text-xs text-slate-500 dark:text-slate-500 mt-0.5">
-                {lang === "th"
-                  ? "ราคาสำหรับ 15 คน — ดูราคาทีมใหญ่กว่าที่หน้าราคา"
-                  : "Price for 15 staff — see larger team pricing on the pricing page"}
-              </p>
+            ))}
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="border-t border-emerald-300 dark:border-emerald-700" />
+
+        {/* Bottom row: price + button */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-5 py-4">
+          <div>
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className="text-3xl font-bold text-emerald-800 dark:text-emerald-300">฿181</span>
+              <span className="text-sm text-slate-600 dark:text-slate-400">{lang === "th" ? "/เดือน ตลอดชีพ" : "/mo locked-in"}</span>
+              <span className="text-sm text-slate-400 line-through">฿259</span>
+              <span className="text-xs font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full">ลด 30%</span>
             </div>
-            <div className="flex flex-col items-center gap-1 shrink-0">
-              <button
-                onClick={() => setQrOpen(true)}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#06C755] hover:bg-[#05b34d] text-white font-semibold text-sm transition-colors shadow-sm whitespace-nowrap"
-                data-testid="button-banner-line"
-              >
-                <span className="w-2 h-2 rounded-full bg-white/80 animate-pulse shrink-0" />
-                {lang === "th" ? "จองสิทธิ์ผ่าน LINE" : "Reserve via LINE"}
-              </button>
-              <span className="text-[11px] text-slate-400 dark:text-slate-500">@shift-optimizer</span>
-            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+              {lang === "th"
+                ? "ล็อคราคานี้ตราบใดที่ใช้งานต่อเนื่อง + ฟรี onboarding 1:1"
+                : "Price locked as long as you stay subscribed + free 1:1 onboarding"}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-500 mt-0.5">
+              {lang === "th"
+                ? "ราคาสำหรับ 15 คน — ดูราคาทีมใหญ่กว่าที่หน้าราคา"
+                : "Price for 15 staff — see larger team pricing on the pricing page"}
+            </p>
+          </div>
+          <div className="flex flex-col items-center gap-1 shrink-0">
+            <button
+              onClick={() => setQrOpen(true)}
+              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#06C755] hover:bg-[#05b34d] text-white font-semibold text-sm transition-colors shadow-sm whitespace-nowrap min-w-[180px]"
+              data-testid="button-banner-line"
+            >
+              <SiLine className="w-4 h-4 shrink-0" />
+              {lang === "th" ? "จองสิทธิ์ผ่าน LINE" : "Reserve via LINE"}
+            </button>
+            <span className="text-[11px] text-slate-500 dark:text-slate-500">@shift-optimizer</span>
           </div>
         </div>
       </div>
@@ -189,7 +192,7 @@ function EarlyAdopterBanner({ lang }: { lang: string }) {
           </div>
         </DialogContent>
       </Dialog>
-    </section>
+    </>
   );
 }
 
@@ -395,11 +398,13 @@ export default function HomePage() {
                   </Button>
                 </a>
               </m.div>
+
+              <m.div variants={fadeUp} custom={4} className="mt-8 w-full max-w-3xl mx-auto">
+                <EarlyAdopterBanner lang={lang} />
+              </m.div>
             </m.div>
           </div>
         </section>
-
-        <EarlyAdopterBanner lang={lang} />
 
         {/* ── 2. SOCIAL PROOF / STATS ── */}
         <section className="py-16 sm:py-20 px-4 sm:px-6 bg-slate-50 dark:bg-slate-900/60 border-y border-slate-100 dark:border-slate-800/50">
