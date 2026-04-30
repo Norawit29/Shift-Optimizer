@@ -108,7 +108,7 @@ function EarlyAdopterBanner({ lang }: { lang: string }) {
     <>
       <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#F8FAFF", border: "1px solid #C3DEFF" }}>
         {/* Top row: label + countdown */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-5 py-3.5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-5 py-2.5">
           <div className="flex items-start gap-2 flex-1">
             <span className="text-base leading-snug mt-0.5 shrink-0">🎁</span>
             <span className="font-semibold text-sm sm:text-[15px] leading-snug" style={{ color: "#1A2B4A" }}>
@@ -135,7 +135,7 @@ function EarlyAdopterBanner({ lang }: { lang: string }) {
         <div className="border-t border-slate-200 dark:border-slate-700" />
 
         {/* Bottom row: price + button */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-5 py-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-5 py-4 bg-white dark:bg-slate-900">
           <div>
             <div className="flex items-baseline gap-2 flex-wrap">
               <span className="text-3xl font-bold text-slate-900 dark:text-white">฿181</span>
