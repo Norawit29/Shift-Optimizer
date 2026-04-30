@@ -106,12 +106,12 @@ function EarlyAdopterBanner({ lang }: { lang: string }) {
 
   return (
     <>
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden shadow-sm">
+      <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: "#F8FAFF", border: "1px solid #C3DEFF" }}>
         {/* Top row: label + countdown */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-5 py-3.5">
           <div className="flex items-start gap-2 flex-1">
             <span className="text-base leading-snug mt-0.5 shrink-0">🎁</span>
-            <span className="font-semibold text-slate-800 dark:text-slate-100 text-sm sm:text-[15px] leading-snug">
+            <span className="font-semibold text-sm sm:text-[15px] leading-snug" style={{ color: "#1A2B4A" }}>
               {lang === "th"
                 ? <>Early Adopter — หมดเขต 30 มิ.ย. 2569<br />หรือเมื่อครบ 50 account แรก</>
                 : <>Early Adopter — Ends June 30, 2026<br />or first 50 accounts</>}
@@ -121,11 +121,11 @@ function EarlyAdopterBanner({ lang }: { lang: string }) {
           <div className="flex items-center gap-1 shrink-0">
             {units.map((unit, i) => (
               <div key={i} className="flex items-center gap-1">
-                <div className="flex flex-col items-center bg-slate-100 dark:bg-slate-800 rounded-lg py-1.5 w-[52px] border border-slate-200 dark:border-slate-700">
-                  <span className="text-2xl sm:text-3xl font-bold tabular-nums text-slate-800 dark:text-white leading-none">{unit.value}</span>
-                  <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">{unit.label}</span>
+                <div className="flex flex-col items-center rounded-lg py-1.5 w-[52px]" style={{ background: "#F0F4FF", border: "0.5px solid #C3DEFF" }}>
+                  <span className="text-2xl sm:text-3xl font-bold tabular-nums leading-none" style={{ color: "#1A2B4A" }}>{unit.value}</span>
+                  <span className="text-[11px] sm:text-xs mt-0.5 font-medium" style={{ color: "#64748B" }}>{unit.label}</span>
                 </div>
-                {i < 3 && <span className="text-slate-400 font-bold text-xl px-0.5">:</span>}
+                {i < 3 && <span className="font-bold text-xl px-0.5" style={{ color: "#C3DEFF" }}>:</span>}
               </div>
             ))}
           </div>
