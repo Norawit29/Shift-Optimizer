@@ -395,7 +395,7 @@ export default function PricingPage() {
             </ul>
 
             <a
-              href="https://line.me/ti/p/~@shiftoption"
+              href="https://line.me/ti/p/~@shift-optimizer"
               target="_blank"
               rel="noopener noreferrer"
               data-testid="button-line-early-adopter"
@@ -406,7 +406,15 @@ export default function PricingPage() {
                 {lang === "th" ? "แอดไลน์เพื่อรับลิงก์จองสิทธิ์ Early Adopter" : "Add LINE to reserve Early Adopter access"}
               </span>
             </a>
-            <p className="mt-2.5 text-center text-xs text-slate-500 dark:text-slate-400">
+            <div className="mt-3 flex flex-col items-center gap-1.5">
+              <img
+                src="/line-qr.png"
+                alt="LINE QR Code @shift-optimizer"
+                className="w-32 h-32 rounded-xl border border-slate-200 dark:border-slate-700 object-contain bg-white"
+              />
+              <span className="text-xs text-slate-400 dark:text-slate-500">@shift-optimizer</span>
+            </div>
+            <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">
               {lang === "th"
                 ? "สิทธิ์มีจำนวนจำกัด — ราคาพิเศษนี้ล็อกไว้ให้ตลอดการเป็นสมาชิก"
                 : "Limited spots — this special price is locked in for your entire subscription"}
