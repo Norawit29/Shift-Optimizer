@@ -409,8 +409,8 @@ export default function PricingPage() {
             </button>
             <p className="mt-2.5 text-center text-xs text-slate-500 dark:text-slate-400">
               {lang === "th"
-                ? "หมดเขต 30 มิ.ย. 2569 หรือเมื่อครบ 50 account แรก"
-                : "Offer ends June 30, 2026 or when the first 50 accounts are filled"}
+                ? <>หมดเขต 30 มิ.ย. 2569<br />หรือเมื่อครบ 50 account แรก</>
+                : <>Offer ends June 30, 2026<br />or when the first 50 accounts are filled</>}
             </p>
 
             <Dialog open={lineQrOpen} onOpenChange={setLineQrOpen}>
