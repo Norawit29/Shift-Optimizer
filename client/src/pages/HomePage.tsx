@@ -106,12 +106,12 @@ function EarlyAdopterBanner({ lang }: { lang: string }) {
 
   return (
     <>
-      <div className="rounded-2xl border-2 border-emerald-400 dark:border-emerald-600 bg-emerald-100/70 dark:bg-emerald-950/50 overflow-hidden shadow-sm">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden shadow-sm">
         {/* Top row: label + countdown */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-5 py-3.5">
           <div className="flex items-start gap-2 flex-1">
             <span className="text-base leading-snug mt-0.5 shrink-0">🎁</span>
-            <span className="font-semibold text-emerald-900 dark:text-emerald-200 text-sm sm:text-[15px] leading-snug">
+            <span className="font-semibold text-slate-800 dark:text-slate-100 text-sm sm:text-[15px] leading-snug">
               {lang === "th"
                 ? <>Early Adopter — หมดเขต 30 มิ.ย. 2569<br />หรือเมื่อครบ 50 account แรก</>
                 : <>Early Adopter — Ends June 30, 2026<br />or first 50 accounts</>}
@@ -121,37 +121,36 @@ function EarlyAdopterBanner({ lang }: { lang: string }) {
           <div className="flex items-center gap-1 shrink-0">
             {units.map((unit, i) => (
               <div key={i} className="flex items-center gap-1">
-                <div className="flex flex-col items-center bg-[#3B6D11] rounded-lg py-1.5 w-[52px] shadow-sm">
-                  <span className="text-2xl sm:text-3xl font-bold tabular-nums text-white leading-none">{unit.value}</span>
-                  <span className="text-[11px] sm:text-xs text-emerald-200 mt-0.5 font-medium">{unit.label}</span>
+                <div className="flex flex-col items-center bg-slate-100 dark:bg-slate-800 rounded-lg py-1.5 w-[52px] border border-slate-200 dark:border-slate-700">
+                  <span className="text-2xl sm:text-3xl font-bold tabular-nums text-slate-800 dark:text-white leading-none">{unit.value}</span>
+                  <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">{unit.label}</span>
                 </div>
-                {i < 3 && <span className="text-emerald-500 dark:text-emerald-500 font-bold text-xl px-0.5">:</span>}
+                {i < 3 && <span className="text-slate-400 font-bold text-xl px-0.5">:</span>}
               </div>
             ))}
           </div>
         </div>
 
         {/* Divider */}
-        <div className="border-t border-emerald-300 dark:border-emerald-700" />
+        <div className="border-t border-slate-200 dark:border-slate-700" />
 
         {/* Bottom row: price + button */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-5 py-4">
           <div>
             <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="text-3xl font-bold text-emerald-800 dark:text-emerald-300">฿181</span>
-              <span className="text-sm text-slate-600 dark:text-slate-400">{lang === "th" ? "/เดือน ตลอดชีพ" : "/mo locked-in"}</span>
+              <span className="text-3xl font-bold text-slate-900 dark:text-white">฿181</span>
+              <span className="text-sm text-slate-500 dark:text-slate-400">{lang === "th" ? "/เดือน ตลอดชีพ" : "/mo locked-in"}</span>
               <span className="text-sm text-slate-400 line-through">฿259</span>
               <span className="text-xs font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full">ลด 30%</span>
             </div>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               {lang === "th"
                 ? "ล็อคราคานี้ตราบใดที่ใช้งานต่อเนื่อง + ฟรี การช่วยตั้งค่าตารางเวรในการใช้งานครั้งแรก"
                 : "Price locked as long as you stay subscribed + free first-time schedule setup"}
             </p>
-            <p className="text-xs text-slate-500 dark:text-slate-500 mt-0.5">
-              {lang === "th" ? "ราคาสำหรับ 15 คน — " : "Price for 15 staff — "}
-              <Link href="/pricing" className="underline underline-offset-2 text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 transition-colors">
-                {lang === "th" ? "ดูราคาทีมใหญ่กว่าที่หน้าราคา" : "see larger team pricing"}
+            <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+              <Link href="/pricing" className="inline-flex items-center gap-0.5 text-primary hover:text-primary/80 dark:text-primary dark:hover:text-primary/80 font-medium transition-colors">
+                {lang === "th" ? "ดูราคาทีมใหญ่กว่าที่หน้าราคา →" : "See larger team pricing →"}
               </Link>
             </p>
           </div>
@@ -164,7 +163,7 @@ function EarlyAdopterBanner({ lang }: { lang: string }) {
               <SiLine className="w-4 h-4 shrink-0" />
               {lang === "th" ? "จองสิทธิ์ผ่าน LINE" : "Reserve via LINE"}
             </button>
-            <span className="text-[11px] text-slate-500 dark:text-slate-500">@shift-optimizer</span>
+            <span className="text-[11px] text-slate-400 dark:text-slate-500">@shift-optimizer</span>
           </div>
         </div>
       </div>
