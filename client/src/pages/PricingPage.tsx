@@ -10,6 +10,7 @@ import { SiLine } from "react-icons/si";
 import { GoogleSignInButton } from "@/components/GoogleSignIn";
 import { Link, useSearch } from "wouter";
 import { useEffect, useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Navbar } from "@/components/Navbar";
 
@@ -155,6 +156,8 @@ export default function PricingPage() {
   const [slotIndex, setSlotIndex] = useState(0);
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const selectedTier = PRICING_TIERS[slotIndex];
+
+  const [lineQrOpen, setLineQrOpen] = useState(false);
 
   const [enterpriseForm, setEnterpriseForm] = useState({
     orgName: "", contactName: "", email: "", phone: "", staffCount: "", message: "",
@@ -394,10 +397,8 @@ export default function PricingPage() {
               ))}
             </ul>
 
-            <a
-              href="https://line.me/ti/p/~@shift-optimizer"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={() => setLineQrOpen(true)}
               data-testid="button-line-early-adopter"
               className="w-full flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-xl bg-[#06C755] hover:bg-[#05b34d] active:bg-[#04a045] text-white font-semibold text-sm transition-colors shadow-md shadow-emerald-200 dark:shadow-emerald-900/40"
             >
@@ -405,20 +406,39 @@ export default function PricingPage() {
               <span>
                 {lang === "th" ? "แอดไลน์เพื่อรับลิงก์จองสิทธิ์ Early Adopter" : "Add LINE to reserve Early Adopter access"}
               </span>
-            </a>
-            <div className="mt-3 flex flex-col items-center gap-1.5">
-              <img
-                src="/line-qr.png"
-                alt="LINE QR Code @shift-optimizer"
-                className="w-32 h-32 rounded-xl border border-slate-200 dark:border-slate-700 object-contain bg-white"
-              />
-              <span className="text-xs text-slate-400 dark:text-slate-500">@shift-optimizer</span>
-            </div>
-            <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">
+            </button>
+            <p className="mt-2.5 text-center text-xs text-slate-500 dark:text-slate-400">
               {lang === "th"
-                ? "สิทธิ์มีจำนวนจำกัด — ราคาพิเศษนี้ล็อกไว้ให้ตลอดการเป็นสมาชิก"
-                : "Limited spots — this special price is locked in for your entire subscription"}
+                ? "หมดเขต 30 มิ.ย. 2569 หรือเมื่อครบ 50 account แรก"
+                : "Offer ends June 30, 2026 or when the first 50 accounts are filled"}
             </p>
+
+            <Dialog open={lineQrOpen} onOpenChange={setLineQrOpen}>
+              <DialogContent className="max-w-xs text-center">
+                <DialogHeader>
+                  <DialogTitle className="text-center">
+                    {lang === "th" ? "สแกน QR เพื่อแอดไลน์" : "Scan QR to Add LINE"}
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="flex flex-col items-center gap-3 py-2">
+                  <img
+                    src="/line-qr.png"
+                    alt="LINE QR Code @shift-optimizer"
+                    className="w-52 h-52 object-contain rounded-xl border border-slate-200 dark:border-slate-700 bg-white"
+                  />
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-300">@shift-optimizer</span>
+                  <a
+                    href="https://line.me/ti/p/~@shift-optimizer"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#06C755] hover:bg-[#05b34d] text-white font-semibold text-sm transition-colors"
+                  >
+                    <SiLine className="w-4 h-4 shrink-0" />
+                    {lang === "th" ? "เปิดใน LINE" : "Open in LINE"}
+                  </a>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
 
           {/* Enterprise Plan */}
