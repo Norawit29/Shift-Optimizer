@@ -109,17 +109,19 @@ function EarlyAdopterBanner({ lang }: { lang: string }) {
       <div className="rounded-2xl border-2 border-emerald-400 dark:border-emerald-600 bg-emerald-100/70 dark:bg-emerald-950/50 overflow-hidden shadow-sm">
         {/* Top row: label + countdown */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-5 py-3.5">
-          <div className="flex items-center gap-2">
-            <span className="text-base">🎁</span>
-            <span className="font-semibold text-emerald-900 dark:text-emerald-200 text-sm sm:text-[15px]">
-              {lang === "th" ? "Early Adopter — หมดเขต 30 มิ.ย. 2569 หรือเมื่อครบ 50 account แรก" : "Early Adopter — Ends June 30, 2026 or first 50 accounts"}
+          <div className="flex items-start gap-2 flex-1">
+            <span className="text-base leading-snug mt-0.5 shrink-0">🎁</span>
+            <span className="font-semibold text-emerald-900 dark:text-emerald-200 text-sm sm:text-[15px] leading-snug">
+              {lang === "th"
+                ? <>Early Adopter — หมดเขต 30 มิ.ย. 2569<br />หรือเมื่อครบ 50 account แรก</>
+                : <>Early Adopter — Ends June 30, 2026<br />or first 50 accounts</>}
             </span>
           </div>
-          {/* Countdown boxes */}
+          {/* Countdown boxes — fixed width to prevent layout shift */}
           <div className="flex items-center gap-1 shrink-0">
             {units.map((unit, i) => (
               <div key={i} className="flex items-center gap-1">
-                <div className="flex flex-col items-center bg-white dark:bg-slate-800 rounded-lg px-2.5 py-1.5 min-w-[44px] border border-emerald-200 dark:border-emerald-700 shadow-sm">
+                <div className="flex flex-col items-center bg-white dark:bg-slate-800 rounded-lg py-1.5 w-[52px] border border-emerald-200 dark:border-emerald-700 shadow-sm">
                   <span className="text-2xl sm:text-3xl font-bold tabular-nums text-emerald-800 dark:text-emerald-300 leading-none">{unit.value}</span>
                   <span className="text-[11px] sm:text-xs text-emerald-600 dark:text-emerald-500 mt-0.5 font-medium">{unit.label}</span>
                 </div>
