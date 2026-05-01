@@ -315,6 +315,23 @@ export default function StaffSchedulingPage() {
             </div>
           </section>
 
+          {/* ── ABOUT ── */}
+          <section id="about" className="py-20 sm:py-28 px-4 sm:px-6 border-t border-slate-100 dark:border-slate-800/50">
+            <div className="max-w-3xl mx-auto">
+              <m.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={staggerContainer}>
+                <m.h2 variants={fadeUp} custom={0} className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white mb-6">
+                  ทำไม Shift Optimizer ถึงเข้าใจปัญหาจัดเวรจริงๆ
+                </m.h2>
+                <m.p variants={fadeUp} custom={1} className="text-slate-600 dark:text-slate-300 text-base sm:text-lg leading-relaxed mb-5">
+                  Shift Optimizer สร้างขึ้นจากประสบการณ์ตรงในการทำงานกับทีมที่ต้องจัดเวรหมุนเวียนทุกเดือน เราเห็นว่าปัญหาเดิมเกิดซ้ำในทุกธุรกิจ — ไม่ว่าจะเป็นร้านอาหาร โรงแรม หรือ Call Center — คือเวลาที่หายไปกับ Excel และความไม่แฟร์ที่ทีมรู้สึกได้
+                </m.p>
+                <m.p variants={fadeUp} custom={2} className="text-slate-600 dark:text-slate-300 text-base sm:text-lg leading-relaxed">
+                  เราจึงสร้างระบบที่คุณเป็นคนกำหนดกฎ แล้วให้ AI คำนวณแทน ไม่มี template ตายตัว ไม่บังคับว่าธุรกิจคุณต้องเป็นแบบไหน
+                </m.p>
+              </m.div>
+            </div>
+          </section>
+
           {/* ── FAQ ── */}
           <section id="faq" className="py-20 sm:py-28 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800/50">
             <div className="max-w-3xl mx-auto">
