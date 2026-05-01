@@ -1,0 +1,83 @@
+Please update the sitemap.xml (or sitemap-pages.xml) for the Shift Optimizer website to follow a clean SEO structure.
+
+Goal:
+- Keep sitemap minimal and accurate (only include existing pages)
+- Prioritize high-value pages (homepage, pricing, business page)
+- Remove non-SEO pages like app routes (/create)
+- Prepare structure for future expansion (but do NOT include pages that do not exist yet)
+
+---
+
+Current sitemap should be replaced with:
+
+1.0   /
+0.9   /pricing
+0.9   /โปรแกรมจัดเวรพนักงาน
+0.7   /articles
+0.7   /case-studies
+
+---
+
+Rules:
+
+1. Only include pages that currently exist on the site.
+2. Do NOT include:
+   - /create
+   - any internal app routes
+   - any pages not yet built (e.g. /ตารางเวรพนักงาน-excel)
+3. Use clean URL format (no trailing slash unless already enforced globally).
+4. Ensure all URLs are absolute (e.g. https://shift-optimizer.com/...)
+5. Add <lastmod> dynamically if supported.
+6. Use <changefreq>:
+   - homepage: daily
+   - pricing: weekly
+   - business page: weekly
+   - articles & case-studies: weekly
+7. Keep encoding UTF-8 (support Thai URLs correctly)
+
+---
+
+Example structure (XML):
+
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <url>
+    <loc>https://shift-optimizer.com/</loc>
+    <priority>1.0</priority>
+    <changefreq>daily</changefreq>
+  </url>
+
+  <url>
+    <loc>https://shift-optimizer.com/pricing</loc>
+    <priority>0.9</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+
+  <url>
+    <loc>https://shift-optimizer.com/โปรแกรมจัดเวรพนักงาน</loc>
+    <priority>0.9</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+
+  <url>
+    <loc>https://shift-optimizer.com/articles</loc>
+    <priority>0.7</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+
+  <url>
+    <loc>https://shift-optimizer.com/case-studies</loc>
+    <priority>0.7</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+
+</urlset>
+
+---
+
+After updating:
+- Validate XML format
+- Ensure sitemap is accessible at /sitemap.xml
+- Ensure it is submitted or resubmitted to Google Search Console
+
+Do NOT modify any page content. Only update sitemap.

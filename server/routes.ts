@@ -51,11 +51,11 @@ export async function registerRoutes(
   app.get("/sitemap-pages.xml", (_req, res) => {
     const now = new Date().toISOString().split("T")[0];
     const pages = [
-      { path: "/", priority: "1.0", changefreq: "weekly" },
-      { path: "/create", priority: "0.8", changefreq: "monthly" },
-      { path: "/pricing", priority: "0.9", changefreq: "monthly" },
-      { path: "/articles", priority: "0.8", changefreq: "weekly" },
-      { path: "/case-studies", priority: "0.8", changefreq: "weekly" },
+      { path: "/", priority: "1.0", changefreq: "daily" },
+      { path: "/pricing", priority: "0.9", changefreq: "weekly" },
+      { path: "/โปรแกรมจัดเวรพนักงาน", priority: "0.9", changefreq: "weekly" },
+      { path: "/articles", priority: "0.7", changefreq: "weekly" },
+      { path: "/case-studies", priority: "0.7", changefreq: "weekly" },
     ];
     const entries = pages.map((p) =>
       urlEntry(cleanUrl(BASE_URL, p.path), now, p.changefreq, p.priority)
