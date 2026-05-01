@@ -1,0 +1,143 @@
+Please revise the new page /โปรแกรมจัดเวรพนักงาน to reduce near-duplicate SEO risk from the existing nurse scheduling landing page.
+
+Goal:
+Keep the same visual design and component structure, but make the content clearly focused on “staff scheduling for service businesses” rather than hospital/nurse scheduling.
+
+Important:
+- Do not redesign the site.
+- Do not remove existing CTA buttons, pricing block, footer, or main conversion flow.
+- Keep the page Thai-first.
+- Keep the target keyword: “โปรแกรมจัดเวรพนักงาน”
+- Make the content semantically different from the nurse scheduling page.
+- Add business-specific context: ร้านอาหาร, คลินิก, โรงแรม, ร้านกาแฟ, ร้านค้าปลีก, call center, ทีมบริการ
+- Add terms such as: พนักงาน part-time, ช่วงพีค, วันหยุด, OT, ความพร้อมของพนักงาน, ยอดขาย, จำนวนลูกค้า, เปิดร้าน, ปิดร้าน
+
+Please make these changes:
+
+1. Update Hero copy
+
+Current:
+โปรแกรมจัดเวรพนักงานด้วย AI
+กระจายเวรยุติธรรม ลด OT ได้เลย
+ลดเวลาจัดเวร 90% แทน Excel ได้ทันที กระจายเวรอย่างยุติธรรม เหมาะสำหรับร้านอาหาร คลินิก โรงแรม และธุรกิจบริการ
+
+Replace with:
+H1: โปรแกรมจัดเวรพนักงานสำหรับธุรกิจบริการ
+Subheadline: จัดเวรให้พอในช่วงพีค ลด OT และกระจายงานให้แฟร์ด้วย AI
+Description: เหมาะสำหรับร้านอาหาร คลินิก โรงแรม ร้านกาแฟ ร้านค้าปลีก Call Center และทีมบริการที่ต้องจัดคนให้พอดีกับเวลางานจริง
+
+2. Update Pain section
+
+Title:
+ยังใช้ Excel จัดเวรพนักงานอยู่หรือไม่?
+
+Keep the title, but replace bullets with business-specific pain points:
+- คนไม่พอช่วงพีค เช่น เที่ยง เย็น วันหยุด หรือช่วงลูกค้าเยอะ
+- พนักงาน part-time มีเวลาว่างไม่ตรงกัน ต้องไล่เช็กทีละคน
+- เวรเปิดร้าน ปิดร้าน หรือวันหยุดกระจุกอยู่ที่คนเดิม
+- เปลี่ยนเวรกะทันหันแล้วกระทบทั้งตาราง
+- OT เพิ่มขึ้นเพราะวางจำนวนคนไม่พอดีกับงานจริง
+- ผู้จัดการเสียเวลาหลายชั่วโมงกับ Excel แทนการดูแลทีมและลูกค้า
+
+3. Add a new section after the pain section
+
+Section title:
+ตัวอย่างการจัดเวรพนักงานที่ Shift Optimizer ช่วยได้
+
+Add 3–4 cards:
+Card 1:
+Title: ร้านอาหารและร้านกาแฟ
+Text: กำหนดจำนวนพนักงานให้มากขึ้นในช่วงเที่ยง เย็น และวันหยุด พร้อมกระจายเวรเปิดร้านและปิดร้านให้สมดุล
+
+Card 2:
+Title: คลินิกและทีมบริการสุขภาพ
+Text: จัดคนให้เพียงพอตามช่วงเวลาคนไข้เยอะ รองรับวันลา และลดปัญหาคนไม่พอหน้าเคาน์เตอร์
+
+Card 3:
+Title: โรงแรมและทีมบริการ
+Text: วางเวรเช้า บ่าย ดึก ให้ครอบคลุมการให้บริการตลอดวัน พร้อมลด OT และเวรต่อเนื่อง
+
+Card 4:
+Title: Call Center และทีม Support
+Text: จัดกำลังคนตามช่วงเวลาที่มีปริมาณงานสูง และรองรับพนักงานหลายระดับประสบการณ์
+
+4. Update Solution section
+
+Current section is too similar to nurse page. Keep the layout but revise wording:
+Title:
+ระบบจัดเวรพนักงานที่คิดตามเงื่อนไขของธุรกิจจริง
+
+Cards:
+- จัดคนให้พอดีกับช่วงเวลางาน  
+  Text: กำหนดจำนวนพนักงานที่ต้องการในแต่ละกะ เช่น ช่วงเปิดร้าน ช่วงพีค และช่วงปิดร้าน
+- รองรับพนักงาน full-time และ part-time  
+  Text: เพิ่มวันว่าง วันลา และข้อจำกัดของแต่ละคน เพื่อให้ระบบจัดเวรโดยไม่ชนเงื่อนไข
+- ลด OT และการกระจายเวรที่ไม่แฟร์  
+  Text: AI ช่วยกระจายภาระงาน เวรวันหยุด และเวรปิดร้านให้สมดุลมากขึ้น
+- ส่งออก Excel เพื่อใช้งานต่อได้ทันที  
+  Text: ได้ตารางเวรที่พร้อมส่งต่อให้ทีม ใช้พิมพ์ แชร์ หรือปรับต่อใน Excel ได้
+
+5. Revise comparison table
+
+Keep the table design, but change some rows to business-specific comparison:
+Rows:
+- การจัดคนตามช่วงพีค
+- การรองรับพนักงาน part-time
+- การกระจายเวรเปิดร้าน / ปิดร้าน
+- การควบคุม OT
+- การแก้เวรเมื่อมีคนลา
+- การส่งออกตารางไปใช้งานต่อ
+- การขยายทีมหลายสาขา
+
+Excel column should emphasize manual checking and formula maintenance.
+AI Scheduling column should emphasize automatic calculation based on constraints.
+
+6. Revise 3-step section
+
+Title:
+เริ่มจัดเวรพนักงานได้ใน 3 ขั้นตอน
+
+Steps:
+1. กำหนดช่วงเวลาและจำนวนคนที่ต้องการ  
+   Text: ตั้งค่ากะ เช่น เปิดร้าน ช่วงพีค ปิดร้าน หรือเวรเช้า บ่าย ดึก พร้อมจำนวนพนักงานที่ต้องการในแต่ละช่วง
+2. เพิ่มพนักงานและความพร้อมในการทำงาน  
+   Text: ใส่รายชื่อพนักงาน full-time / part-time วันลา วันว่าง และข้อจำกัดเฉพาะของแต่ละคน
+3. ให้ AI สร้างตารางเวรและส่งออก Excel  
+   Text: ระบบคำนวณตารางที่สมดุล ลดเวรชน ลด OT และส่งออกไฟล์ Excel เพื่อใช้งานต่อได้ทันที
+
+7. Revise FAQ
+
+Replace current FAQ questions with:
+- โปรแกรมจัดเวรพนักงานนี้เหมาะกับธุรกิจแบบไหน?
+- รองรับพนักงาน part-time หรือไม่?
+- สามารถกำหนดจำนวนคนในช่วงพีคได้ไหม?
+- ส่งออกตารางเวรเป็น Excel ได้หรือไม่?
+- ใช้กับธุรกิจขนาดเล็กหรือร้านเดียวได้ไหม?
+- ถ้ามีพนักงานลา ระบบช่วยปรับตารางได้หรือไม่?
+
+8. Internal links
+
+Keep the “อ่านต่อเกี่ยวกับการจัดเวร” block, but make anchor text descriptive:
+- ตารางเวรพนักงาน Excel ฟรี
+- วิธีจัดตารางเวรพนักงานให้แฟร์
+- ตารางเวรร้านอาหาร
+- โปรแกรมจัดตารางเวรพยาบาลด้วย AI
+
+9. SEO metadata
+
+Update:
+SEO title:
+โปรแกรมจัดเวรพนักงานสำหรับธุรกิจบริการ | Shift Optimizer
+
+Meta description:
+โปรแกรมจัดเวรพนักงานด้วย AI สำหรับร้านอาหาร คลินิก โรงแรม ร้านกาแฟ ร้านค้าปลีก และทีมบริการ ช่วยจัดคนให้พอช่วงพีค ลด OT และส่งออก Excel ได้ทันที
+
+Canonical:
+Use the canonical URL for /โปรแกรมจัดเวรพนักงาน
+
+10. Final checks
+
+- Make sure content is clearly different from the nurse scheduling landing page.
+- Make sure the page still converts visitors to the free trial.
+- Make sure mobile layout still works.
+- Do not break the existing nurse scheduling page.

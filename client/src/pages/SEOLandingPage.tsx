@@ -82,9 +82,9 @@ const howItWorksSteps = [
 
 // ── internal links ─────────────────────────────────────────────
 const internalLinks = [
-  { href: "/โปรแกรมจัดเวรพนักงาน", label: "โปรแกรมจัดเวรพนักงาน" },
-  { href: "/ตารางเวรพนักงาน-excel", label: "ตารางเวรพนักงาน Excel" },
-  { href: "/วิธีจัดตารางเวรพนักงาน", label: "วิธีจัดตารางเวรพนักงาน" },
+  { href: "/โปรแกรมจัดเวรพนักงาน", label: "โปรแกรมจัดเวรพนักงานสำหรับธุรกิจบริการ" },
+  { href: "/ตารางเวรพนักงาน-excel", label: "ตารางเวรพนักงาน Excel ฟรี" },
+  { href: "/วิธีจัดตารางเวรพนักงาน", label: "วิธีจัดตารางเวรพนักงานให้แฟร์" },
   { href: "/ตารางเวรร้านอาหาร", label: "ตารางเวรร้านอาหาร" },
   { href: "/", label: "โปรแกรมจัดตารางเวรพยาบาลด้วย AI" },
 ];
@@ -93,6 +93,9 @@ const internalLinks = [
 export interface PainPoint { icon: React.ElementType; text: string }
 export interface OutcomeCard { icon: React.ElementType; title: string; desc: string; bg: string; iconColor: string }
 export interface FAQEntry { q: string; a: string }
+
+export interface ComparisonRow { topic: string; excel: string; ai: string }
+export interface HowItWorksStep { icon: React.ElementType; title: string; desc: string; num: string }
 
 export interface SEOPageConfig {
   seoTitle: string;
@@ -115,6 +118,11 @@ export interface SEOPageConfig {
   useCasesTitle?: string;
   useCases?: string[];
   showComparison?: boolean;
+  customComparisonRows?: ComparisonRow[];
+  customComparisonTitle?: string;
+  customHowItWorksTitle?: string;
+  customHowItWorksDesc?: string;
+  customHowItWorksSteps?: HowItWorksStep[];
   extraAfterPain?: ReactNode;
   extraAfterSolution?: ReactNode;
 }
@@ -129,8 +137,13 @@ export default function SEOLandingPage({ config }: { config: SEOPageConfig }) {
     solutionTitle, solutionSubtitle, outcomes,
     faqs, useCasesTitle, useCases,
     showComparison = true,
+    customComparisonRows, customComparisonTitle,
+    customHowItWorksTitle, customHowItWorksDesc, customHowItWorksSteps,
     extraAfterPain, extraAfterSolution,
   } = config;
+
+  const activeComparisonRows = customComparisonRows ?? comparisonRows;
+  const activeHowItWorksSteps = customHowItWorksSteps ?? howItWorksSteps;
 
   // Set SEO head
   useEffect(() => {
@@ -324,7 +337,7 @@ export default function SEOLandingPage({ config }: { config: SEOPageConfig }) {
                 <m.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer}>
                   <m.div variants={fadeUp} custom={0} className="text-center mb-10 sm:mb-12">
                     <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white">
-                      Excel / Google Sheets vs AI Scheduling
+                      {customComparisonTitle ?? "Excel / Google Sheets vs AI Scheduling"}
                     </h2>
                     <p className="mt-3 text-slate-600 dark:text-slate-300 text-base sm:text-lg max-w-xl mx-auto">
                       เปรียบเทียบวิธีการจัดเวรแบบเดิมกับระบบ Shift Optimizer
@@ -344,7 +357,7 @@ export default function SEOLandingPage({ config }: { config: SEOPageConfig }) {
                         </tr>
                       </thead>
                       <tbody>
-                        {comparisonRows.map((row, i) => (
+                        {activeComparisonRows.map((row, i) => (
                           <tr key={i} className={i % 2 === 0 ? "bg-white dark:bg-slate-900" : "bg-slate-50/60 dark:bg-slate-800/30"}>
                             <td className="px-4 sm:px-6 py-4 font-semibold text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 align-top text-sm">{row.topic}</td>
                             <td className="px-4 sm:px-6 py-4 text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800 align-top">
@@ -369,14 +382,14 @@ export default function SEOLandingPage({ config }: { config: SEOPageConfig }) {
               <m.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer}>
                 <m.div variants={fadeUp} custom={0} className="text-center mb-14 sm:mb-16">
                   <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white">
-                    เริ่มใช้งานได้ใน 3 ขั้นตอน
+                    {customHowItWorksTitle ?? "เริ่มใช้งานได้ใน 3 ขั้นตอน"}
                   </h2>
                   <p className="mt-3 text-slate-600 dark:text-slate-300 text-base sm:text-lg max-w-xl mx-auto">
-                    ไม่ต้องติดตั้งโปรแกรม ไม่ต้องเรียนรู้นาน เริ่มจัดเวรได้ทันที
+                    {customHowItWorksDesc ?? "ไม่ต้องติดตั้งโปรแกรม ไม่ต้องเรียนรู้นาน เริ่มจัดเวรได้ทันที"}
                   </p>
                 </m.div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-                  {howItWorksSteps.map((step, i) => (
+                  {activeHowItWorksSteps.map((step, i) => (
                     <m.div key={i} variants={fadeUp} custom={i + 1} className="relative">
                       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-7 sm:p-8 h-full transition-shadow duration-300 hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50">
                         <div className="flex items-start gap-4 mb-4">
