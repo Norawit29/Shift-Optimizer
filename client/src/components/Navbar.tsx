@@ -135,7 +135,7 @@ export function Navbar({ isHomePage, logoSubtitle }: NavbarProps) {
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
             {!loading && (user ? <UserMenu /> : <GoogleSignInButton />)}
-            <Link href="/create" className="hidden sm:block shrink-0">
+            <Link href="/create" className="hidden sm:block shrink-0" onClick={() => sessionStorage.setItem("wizardBackTo", window.location.pathname)}>
               <Button size="lg" className="shadow-lg shadow-primary/25 text-base px-5 whitespace-nowrap" data-testid="button-nav-cta">
                 {t.getStartedFree}
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -185,7 +185,7 @@ export function Navbar({ isHomePage, logoSubtitle }: NavbarProps) {
                   <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors rounded-lg" data-testid="nav-link-pricing-mobile">
                     {t.navPricing}
                   </Link>
-                  <Link href="/create" onClick={() => setMobileMenuOpen(false)} className="mt-2">
+                  <Link href="/create" onClick={() => { setMobileMenuOpen(false); sessionStorage.setItem("wizardBackTo", window.location.pathname); }} className="mt-2">
                     <Button size="sm" className="w-full shadow-sm" data-testid="button-nav-cta-mobile">
                       {t.getStartedFree}
                       <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
