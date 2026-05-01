@@ -195,17 +195,8 @@ export default function StaffSchedulingPage() {
             </div>
             <div className="relative max-w-4xl mx-auto text-center">
               <m.div initial="hidden" animate="visible" variants={staggerContainer}>
-                <m.div
-                  variants={fadeUp}
-                  custom={0}
-                  className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium mb-6"
-                  style={{ background: "#FFF8E7", color: "#F5A623" }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="#F5A623"><polygon points="7,1 8.8,5.3 13.5,5.7 10,8.7 11.1,13.3 7,10.8 2.9,13.3 4,8.7 0.5,5.7 5.2,5.3" /></svg>
-                  สำหรับธุรกิจบริการทุกประเภทที่มีกะและเวร
-                </m.div>
                 <m.h1
-                  variants={fadeUp} custom={1}
+                  variants={fadeUp} custom={0}
                   className="text-4xl sm:text-5xl md:text-[3.25rem] lg:text-6xl font-display font-bold text-slate-900 leading-[1.2] tracking-tight"
                   data-testid="text-hero-title"
                 >
@@ -215,13 +206,13 @@ export default function StaffSchedulingPage() {
                   </span>
                 </m.h1>
                 <m.p
-                  variants={fadeUp} custom={2}
+                  variants={fadeUp} custom={1}
                   className="mt-6 text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed"
                   data-testid="text-hero-subtitle"
                 >
                   ไม่ว่าทีมคุณจะเป็นพนักงานร้านอาหาร สตาฟโรงแรม หรือเจ้าหน้าที่ Call Center — ปัญหาจัดเวรเหมือนกันทุกที่ Shift Optimizer แก้ได้ทุก vertical ด้วย AI ตัวเดียว
                 </m.p>
-                <m.div variants={fadeUp} custom={3} className="mt-10 flex flex-col sm:flex-row gap-3 justify-center items-center">
+                <m.div variants={fadeUp} custom={2} className="mt-10 flex flex-col sm:flex-row gap-3 justify-center items-center">
                   <Link href="/create" className="w-full sm:w-auto">
                     <Button size="lg" className="w-full sm:w-auto shadow-lg shadow-primary/25 text-base px-7 py-6 font-semibold" data-testid="button-hero-primary">
                       ทดลองใช้ฟรี <ArrowRight className="ml-2 h-4 w-4" />
