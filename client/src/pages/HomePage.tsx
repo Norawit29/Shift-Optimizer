@@ -139,7 +139,7 @@ function EarlyAdopterBanner({ lang }: { lang: string }) {
           <div>
             <div className="flex items-baseline gap-2 flex-wrap">
               <span className="text-3xl font-bold text-slate-900 dark:text-white">฿181</span>
-              <span className="text-sm text-slate-500 dark:text-slate-400">{lang === "th" ? "/เดือน ตลอดชีพ" : "/mo locked-in"}</span>
+              <span className="text-sm text-slate-500 dark:text-slate-400">{lang === "th" ? "/เดือน ยกเลิกได้ทุกเมื่อ" : "/mo locked-in"}</span>
               <span className="text-sm text-slate-400 line-through">฿259</span>
               <span className="text-xs font-bold bg-emerald-600 text-white px-2 py-0.5 rounded-full">ลด 30%</span>
             </div>
