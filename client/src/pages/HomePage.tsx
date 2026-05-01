@@ -528,6 +528,11 @@ export default function HomePage() {
                   </m.div>
                 ))}
               </div>
+              <m.div variants={fadeUp} custom={5} className="mt-10 text-center">
+                <Link href="/โปรแกรมจัดเวรพนักงาน" className="inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors" data-testid="link-staff-scheduling">
+                  ใช้กับธุรกิจบริการอื่นๆ ได้อีกมาก → ดูทั้งหมด
+                </Link>
+              </m.div>
             </m.div>
           </div>
         </section>

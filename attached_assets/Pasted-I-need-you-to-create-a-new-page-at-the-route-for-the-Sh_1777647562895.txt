@@ -1,0 +1,129 @@
+I need you to create a new page at the route `/โปรแกรมจัดเวรพนักงาน` 
+for the Shift Optimizer website. 
+
+This page targets service businesses (restaurants, hotels, call centers, 
+retail) — NOT hospitals. It should look and feel consistent with the 
+existing homepage design (same navbar, footer, colors, fonts, components).
+
+DO NOT copy content from the homepage. All copy is provided below.
+
+---
+
+PAGE ROUTE: /โปรแกรมจัดเวรพนักงาน
+PAGE TITLE (SEO): โปรแกรมจัดเวรพนักงาน สำหรับทุกธุรกิจที่มีกะและเวร | Shift Optimizer
+META DESCRIPTION: โปรแกรมจัดเวรพนักงานด้วย AI เหมาะสำหรับร้านอาหาร โรงแรม Call Center และธุรกิจบริการทุกประเภท จัดเวรอัตโนมัติ ลด OT กระจายเวรยุติธรรม ส่งออก Excel ได้ทันที
+
+---
+
+SECTION 1: HERO
+H1: โปรแกรมจัดเวรพนักงาน สำหรับทุกธุรกิจที่มีกะและเวร
+Subheadline: ไม่ว่าทีมคุณจะเป็นพนักงานร้านอาหาร สตาฟโรงแรม หรือเจ้าหน้าที่ Call Center — ปัญหาจัดเวรเหมือนกันทุกที่ Shift Optimizer แก้ได้ทุก vertical ด้วย AI ตัวเดียว
+CTA primary: ทดลองใช้ฟรี → [same signup URL as homepage]
+CTA secondary: ดูราคาและแผน → [same pricing URL as homepage]
+
+---
+
+SECTION 2: VERTICAL CARDS
+H2: ธุรกิจของคุณอยู่ในกลุ่มไหน?
+Lead text: แต่ละธุรกิจมีชื่อกะ จำนวนคน และเงื่อนไขที่ต่างกัน Shift Optimizer ปรับได้ทั้งหมด ไม่ต้องง้อโปรแกรมเฉพาะทาง
+
+Display 4 cards in a 2x2 grid (or responsive single column on mobile).
+Each card has: emoji icon, title, 2-sentence problem, 1-sentence solution, 
+and a "ทดลองใช้ฟรี" button linking to the same signup URL as homepage.
+NO external links on these cards.
+
+Card 1:
+Icon: 🍽️
+Title: ร้านอาหาร ร้านกาแฟ และธุรกิจ F&B
+Problem: ช่วงพีคเที่ยงและเย็นคือหัวใจของธุรกิจ แต่การจัดคนให้พอทุกช่วงโดยไม่ให้ใครแบกเวรหนักเกินไปเป็นเรื่องยาก โดยเฉพาะเมื่อมีพนักงาน part-time ที่เวลาว่างไม่ตรงกัน
+Solution: Shift Optimizer ช่วยกำหนดจำนวนคนขั้นต่ำในแต่ละช่วง กระจายเวรเปิด-ปิดร้านให้ทั่วถึง และจัดตารางโดยไม่ชนวันว่างของใคร
+
+Card 2:
+Icon: 🏨
+Title: โรงแรม รีสอร์ท และทีม Hospitality
+Problem: ธุรกิจโรงแรมต้องให้บริการตลอด 24 ชั่วโมง การจัดเวร front desk, housekeeping และทีมอาหารเช้าให้สอดคล้องกันโดยไม่มี OT สะสมเป็นงานที่ซับซ้อนกว่าที่ Excel จะรับไหว
+Solution: Shift Optimizer จัดเวรครอบคลุมทุกกะ ลด OT และแจ้งเตือนเมื่อมีช่วงที่คนไม่พอก่อนที่จะเป็นปัญหา
+
+Card 3:
+Icon: 🎧
+Title: Call Center และทีม Customer Support
+Problem: ปริมาณงานขึ้นลงตามช่วงเวลา การจัดคนให้พอในช่วง volume สูงโดยไม่ให้ทีมรู้สึกว่าเวรไม่แฟร์เป็นสิ่งที่ผู้จัดต้องแบกรับทุกเดือน
+Solution: Shift Optimizer กระจายภาระงานอย่างสมดุล รองรับพนักงานหลาย skill level และปรับตารางได้ทันทีเมื่อมีคนลากะทันหัน
+
+Card 4:
+Icon: 🏪
+Title: ร้านค้าปลีก และทีมบริการอื่นๆ
+Problem: ไม่ว่าธุรกิจของคุณจะเรียกกะว่าอะไร และมีเงื่อนไขแบบไหน ระบบปรับชื่อกะ จำนวนคน และกฎได้เองทั้งหมด ไม่มี template ตายตัว
+Solution: [no solution text for this card — problem statement covers it]
+
+---
+
+SECTION 3: FEATURES
+H2: ระบบเดียว ปรับได้ทุกธุรกิจ
+Lead text: ไม่ว่ากะของคุณจะชื่อ "เช้า-บ่าย-ดึก" หรือ "Open-Mid-Close" หรือ "A-B-C" — ระบบรองรับได้ทั้งหมด คุณเป็นคนกำหนดกฎ AI เป็นคนคำนวณ
+
+Display as 4 feature blocks (icon + title + description):
+
+Feature 1:
+Title: ตั้งชื่อกะได้เอง ไม่มี template ตายตัว
+Description: ระบบไม่บังคับว่ากะต้องชื่ออะไร คุณกำหนดเองได้ทั้งหมดให้ตรงกับการทำงานจริง
+
+Feature 2:
+Title: จัดคนต่างจำนวนตามวัน
+Description: วันธรรมดาต้องการ 3 คน วันหยุดต้องการ 5 คน ตั้งได้แยกกันโดยไม่ต้องแก้ตารางเองทุกสัปดาห์
+
+Feature 3:
+Title: รองรับทีมผสม full-time และ part-time
+Description: บันทึกวันว่างและข้อจำกัดของแต่ละคนแยกกัน AI จัดเวรโดยไม่ชนเงื่อนไขของใครเลย
+
+Feature 4:
+Title: ส่งออก Excel พร้อมแจกทีมทันที
+Description: ได้ไฟล์พร้อมใช้งาน แยกรายคนและรายทีม ใน 1 คลิก ไม่ต้องฟอร์แมตเอง
+
+---
+
+SECTION 4: FAQ
+H2: คำถามที่พบบ่อย
+
+Use the same accordion/expandable FAQ component as the homepage.
+
+Q1: ใช้กับธุรกิจที่ไม่ใช่โรงพยาบาลได้จริงไหม?
+A1: ได้ครับ ระบบไม่ได้ผูกกับคำศัพท์ทางการแพทย์ คุณตั้งชื่อกะ กำหนดจำนวนคน และใส่เงื่อนไขได้เองทั้งหมด ธุรกิจบริการทุกประเภทที่มีกะหมุนเวียนใช้ได้เลย
+
+Q2: ถ้ากะงานไม่ได้แบ่งเป็นเช้า-บ่าย-ดึก ปรับชื่อเองได้ไหม?
+A2: ได้ครับ จะตั้งเป็น Open/Mid/Close, A/B/C หรือชื่ออื่นใดก็ได้ ระบบยึดตามที่คุณกำหนด ไม่ใช่ template ตายตัว
+
+Q3: มีพนักงาน part-time และ full-time ปนกัน ระบบรองรับได้ไหม?
+A3: รองรับครับ บันทึกวันว่างและข้อจำกัดของแต่ละคนแยกกันได้ AI จะจัดเวรโดยไม่ชนเงื่อนไขของใครเลย
+
+Q4: แตกต่างจากโปรแกรมจัดเวรพยาบาลอย่างไร?
+A4: โปรแกรมสำหรับโรงพยาบาลเน้นเงื่อนไขเฉพาะทาง เช่น on-call ระดับบุคลากร 5 ระดับ และกฎสภาการพยาบาล หน้านี้เหมาะสำหรับธุรกิจบริการทั่วไปที่ต้องการความยืดหยุ่นในการตั้งค่าเอง
+
+---
+
+SECTION 5: CLOSING CTA
+H2: เริ่มจัดเวรอย่างมืออาชีพวันนี้
+Subtext: ทดลองใช้ฟรี ไม่ต้องใส่บัตรเครดิต ตั้งค่าได้ภายใน 15 นาที
+CTA primary: ทดลองใช้ฟรี → [same signup URL as homepage]
+CTA secondary text: สำหรับโรงพยาบาลและคลินิก → ดูที่นี่
+CTA secondary link: / (homepage)
+
+---
+
+INTERNAL LINKING REQUIREMENTS:
+1. Add a link in the homepage at the "ตัวอย่างการจัดเวรพนักงาน" section 
+   — after the 4 vertical examples, add one line:
+   "ใช้กับธุรกิจบริการอื่นๆ ได้อีกมาก → ดูทั้งหมด"
+   linking to /โปรแกรมจัดเวรพนักงาน
+
+2. The new page already links back to homepage in the closing CTA section.
+
+---
+
+IMPORTANT NOTES:
+- Do NOT add a comparison table (already exists on homepage)
+- Do NOT add "3 ขั้นตอน" section (already exists on homepage)  
+- Do NOT copy pain point bullet list from homepage
+- Reuse existing navbar and footer exactly as-is
+- Ensure the page is mobile responsive
+- Thai language throughout
