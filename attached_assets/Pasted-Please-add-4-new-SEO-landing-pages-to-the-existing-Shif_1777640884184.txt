@@ -1,0 +1,186 @@
+Please add 4 new SEO landing pages to the existing Shift Optimizer website by reusing the current landing page design, components, visual style, CTA buttons, pricing block, testimonials/results block, FAQ style, and footer.
+
+Goal:
+Create Thai SEO pages that target new keyword clusters while converting visitors to try the app.
+
+New pages and URLs:
+1. /โปรแกรมจัดเวรพนักงาน
+2. /ตารางเวรพนักงาน-excel
+3. /วิธีจัดตารางเวรพนักงาน
+4. /ตารางเวรร้านอาหาร
+
+Important:
+- Do not redesign the whole site.
+- Reuse the existing landing page layout as much as possible.
+- Keep the same brand style, colors, spacing, buttons, cards, and responsive behavior.
+- Each page should have unique Thai copy, SEO title, meta description, H1, H2s, and FAQ.
+- Add internal links between these 4 pages and the existing nurse scheduling landing page.
+- Add all 4 pages to the sitemap.
+- Add navigation/internal links where appropriate, but do not clutter the main navbar.
+- CTA buttons should point to the existing free trial / app signup flow.
+- Keep the Early Adopter pricing section if it already exists on the current landing page.
+- Use Thai slugs exactly as listed above if the routing system supports Thai URLs. If not, use:
+  /staff-scheduling
+  /staff-schedule-excel
+  /how-to-create-staff-schedule
+  /restaurant-shift-schedule
+
+Page 1: /โปรแกรมจัดเวรพนักงาน
+SEO title:
+โปรแกรมจัดเวรพนักงานด้วย AI | Shift Optimizer
+
+Meta description:
+โปรแกรมจัดเวรพนักงานด้วย AI ช่วยลดเวลาจัดตารางเวร ลด OT กระจายเวรอย่างยุติธรรม เหมาะสำหรับร้านอาหาร คลินิก โรงแรม และทีมบริการ
+
+Hero:
+H1: โปรแกรมจัดเวรพนักงานด้วย AI
+Subtitle: ลดเวลาจัดเวร 90% แทน Excel ได้ทันที กระจายเวรอย่างยุติธรรม เหมาะสำหรับร้านอาหาร คลินิก โรงแรม และธุรกิจบริการ
+Primary CTA: ทดลองใช้ฟรี
+Secondary CTA: ดูวิธีใช้งาน
+
+Pain section:
+Title: ยังใช้ Excel จัดเวรพนักงานอยู่หรือไม่?
+Bullets:
+- ใช้เวลาหลายชั่วโมงทุกเดือนในการจัดเวร
+- พนักงานไม่พอในช่วงเวลาที่งานเยอะ
+- เวรไม่แฟร์ เกิดข้อร้องเรียนในทีม
+- เปลี่ยนเวรกะทันหันแล้วกระทบทั้งตาราง
+- OT เพิ่มขึ้นโดยไม่รู้ตัว
+- หัวหน้าทีมเสียเวลากับงานเอกสารแทนงานสำคัญ
+
+Solution section:
+Title: Shift Optimizer ช่วยจัดเวรพนักงานให้อัตโนมัติในไม่กี่นาที
+Cards:
+- ลดเวลาจัดเวรจากหลายชั่วโมงเหลือไม่กี่นาที
+- กระจายเวรยุติธรรม ลดข้อร้องเรียน
+- รองรับวันลา วันหยุด และเงื่อนไขของแต่ละคน
+- ส่งออก Excel พร้อมใช้งานทันที
+
+Use cases:
+เหมาะสำหรับร้านอาหาร โรงแรม คลินิก ร้านกาแฟ ร้านค้าปลีก Call center และทีมบริการ
+
+FAQ:
+- โปรแกรมจัดเวรพนักงานนี้ใช้ฟรีไหม?
+- รองรับพนักงานได้กี่คน?
+- ส่งออกเป็น Excel ได้ไหม?
+- ใช้แทน Google Sheets ได้หรือไม่?
+- เหมาะกับธุรกิจขนาดเล็กไหม?
+
+Page 2: /ตารางเวรพนักงาน-excel
+SEO title:
+ตารางเวรพนักงาน Excel ฟรี พร้อมตัวอย่าง | Shift Optimizer
+
+Meta description:
+ดาวน์โหลดและดูตัวอย่างตารางเวรพนักงาน Excel พร้อมเรียนรู้ข้อจำกัดของ Excel และวิธีใช้ AI ช่วยจัดเวรอัตโนมัติให้เร็วและยุติธรรมกว่าเดิม
+
+Hero:
+H1: ตารางเวรพนักงาน Excel ฟรี
+Subtitle: ตัวอย่างตารางเวรสำหรับทีมพนักงาน พร้อมทางเลือก AI สำหรับจัดเวรอัตโนมัติ ลดเวลา ลดเวรชน และลดข้อผิดพลาด
+Primary CTA: ลองจัดเวรด้วย AI ฟรี
+Secondary CTA: ดูตัวอย่างตารางเวร
+
+Sections:
+- ตัวอย่างตารางเวรพนักงาน Excel ใช้กับทีมแบบไหนได้บ้าง
+- วิธีทำตารางเวรพนักงานใน Excel
+- ข้อจำกัดของการใช้ Excel จัดเวร
+- ถ้าไม่อยากแก้สูตรเอง ให้ AI ช่วยจัดเวรแทน
+- เปรียบเทียบ Excel vs AI Scheduling using the existing comparison table
+
+FAQ:
+- ตารางเวรพนักงาน Excel เหมาะกับทีมกี่คน?
+- Excel มีข้อจำกัดอะไรเมื่อทีมใหญ่ขึ้น?
+- Shift Optimizer ส่งออก Excel ได้ไหม?
+- ต้องติดตั้งโปรแกรมไหม?
+- ใช้บนมือถือได้หรือไม่?
+
+Page 3: /วิธีจัดตารางเวรพนักงาน
+SEO title:
+วิธีจัดตารางเวรพนักงานให้แฟร์ | Step-by-step
+
+Meta description:
+วิธีจัดตารางเวรพนักงานแบบเป็นระบบ ตั้งแต่กำหนดกะ วันลา จำนวนคนต่อเวร ไปจนถึงการตรวจสอบความยุติธรรม พร้อมตัวช่วย AI ลดเวลาจัดเวร
+
+Hero:
+H1: วิธีจัดตารางเวรพนักงานให้แฟร์
+Subtitle: คู่มือจัดเวรพนักงานแบบ Step-by-step สำหรับหัวหน้าทีม ผู้จัดการร้าน และฝ่ายบุคคล พร้อมตัวช่วย AI ที่ลดเวลาจัดเวรได้มากกว่า 90%
+Primary CTA: ลองให้ AI จัดเวรฟรี
+Secondary CTA: อ่านขั้นตอน
+
+Main content:
+Use a guide/article style but still keep landing page CTA.
+H2 sections:
+1. กำหนดจำนวนกะและจำนวนคนที่ต้องการในแต่ละช่วงเวลา
+2. รวบรวมวันลา วันหยุด และข้อจำกัดของพนักงาน
+3. กระจายเวรให้ยุติธรรม ไม่ให้บางคนได้เวรหนักเกินไป
+4. ตรวจสอบเวรชน เวรต่อเนื่อง และ OT
+5. ส่งออกตารางเวรและสื่อสารกับทีม
+6. วิธีใช้ Shift Optimizer ช่วยลดขั้นตอนทั้งหมดนี้
+
+Add inline CTA after sections 3 and 6:
+“ไม่อยากจัดเองทีละคน? ลองให้ AI ช่วยจัดเวรฟรี”
+
+FAQ:
+- จัดตารางเวรพนักงานอย่างไรให้แฟร์?
+- ควรกำหนดกะยังไง?
+- จะลด OT จากการจัดเวรได้อย่างไร?
+- ใช้ AI จัดเวรแทนคนได้จริงไหม?
+- ต้องใช้เวลาตั้งค่านานไหม?
+
+Page 4: /ตารางเวรร้านอาหาร
+SEO title:
+ตารางเวรร้านอาหาร | จัดเวรพนักงานร้านอาหารด้วย AI
+
+Meta description:
+ตัวช่วยจัดตารางเวรร้านอาหารสำหรับเจ้าของร้านและผู้จัดการ ลดปัญหาคนไม่พอช่วงพีค เวรไม่แฟร์ และ OT ด้วยระบบจัดเวรอัตโนมัติ
+
+Hero:
+H1: ตารางเวรร้านอาหาร
+Subtitle: จัดเวรพนักงานร้านอาหารให้พอทุกช่วงเวลา ลดปัญหาคนขาดช่วงพีค เวรชน และ OT ด้วย AI
+Primary CTA: ทดลองใช้ฟรี
+Secondary CTA: ดูวิธีใช้งาน
+
+Pain section:
+Title: ปัญหาจัดเวรร้านอาหารที่เจอบ่อย
+Bullets:
+- คนไม่พอช่วงเที่ยง เย็น หรือวันหยุด
+- พนักงานลาแล้วต้องแก้ตารางใหม่ทั้งชุด
+- บางคนได้เวรหนักหรือเวรปิดร้านบ่อยเกินไป
+- OT เพิ่มจากการจัดคนไม่พอดี
+- ใช้ Excel แล้วแก้หลายรอบ
+- ผู้จัดการเสียเวลากับตารางเวรแทนการดูแลร้าน
+
+Solution cards:
+- กำหนดจำนวนคนที่ต้องการในแต่ละกะ
+- รองรับวันลาและข้อจำกัดของพนักงาน
+- กระจายเวรเปิดร้าน ปิดร้าน และวันหยุดให้สมดุล
+- ส่งออก Excel เพื่อส่งต่อให้ทีมได้ทันที
+
+Use case examples:
+- ร้านอาหารทั่วไป
+- ร้านกาแฟ
+- ร้านอาหารหลายสาขา
+- Cloud kitchen
+- Food court / kiosk
+
+FAQ:
+- ใช้กับร้านอาหารขนาดเล็กได้ไหม?
+- รองรับพนักงานพาร์ทไทม์ไหม?
+- จัดเวรช่วงพีคได้หรือไม่?
+- ส่งออกตารางไปใช้ใน Excel ได้ไหม?
+- ต้องให้พนักงานสมัครบัญชีไหม?
+
+Global implementation requirements:
+- Use canonical URLs for each page.
+- Add structured FAQ schema if the website already uses schema.
+- Add internal link block near the bottom of each page:
+  “อ่านต่อเกี่ยวกับการจัดเวร”
+  links:
+  - โปรแกรมจัดเวรพนักงาน
+  - ตารางเวรพนักงาน Excel
+  - วิธีจัดตารางเวรพนักงาน
+  - ตารางเวรร้านอาหาร
+  - โปรแกรมจัดตารางเวรพยาบาลด้วย AI
+- Ensure all pages are responsive on mobile.
+- Ensure Thai text renders correctly.
+- Keep CTA tracking attributes if existing analytics / GTM events are used.
+- Do not remove or break existing pages.

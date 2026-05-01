@@ -20,6 +20,10 @@ const LazyHistoryPage = lazy(() => import("@/pages/HistoryPage"));
 const LazyScheduleDetailPage = lazy(() => import("@/pages/ScheduleDetailPage"));
 const LazyPricingPage = lazy(() => import("@/pages/PricingPage"));
 const LazyPrivacyPolicyPage = lazy(() => import("@/pages/PrivacyPolicyPage"));
+const LazyStaffSchedulingPage = lazy(() => import("@/pages/StaffSchedulingPage"));
+const LazyStaffExcelPage = lazy(() => import("@/pages/StaffExcelPage"));
+const LazyHowToSchedulePage = lazy(() => import("@/pages/HowToSchedulePage"));
+const LazyRestaurantShiftPage = lazy(() => import("@/pages/RestaurantShiftPage"));
 
 const BASE_URL = "https://shift-optimizer.com";
 
@@ -79,6 +83,14 @@ function Router() {
       <Route path="/schedule/:id">{() => <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><LazyScheduleDetailPage /></Suspense>}</Route>
       <Route path="/pricing">{() => <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><LazyPricingPage /></Suspense>}</Route>
       <Route path="/privacy-policy">{() => <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><LazyPrivacyPolicyPage /></Suspense>}</Route>
+      <Route path="/%E0%B9%82%E0%B8%9B%E0%B8%A3%E0%B9%81%E0%B8%81%E0%B8%A3%E0%B8%A1%E0%B8%88%E0%B8%B1%E0%B8%94%E0%B9%80%E0%B8%A7%E0%B8%A3%E0%B8%9E%E0%B8%99%E0%B8%B1%E0%B8%81%E0%B8%87%E0%B8%B2%E0%B8%99">{() => <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><LazyStaffSchedulingPage /></Suspense>}</Route>
+      <Route path="/โปรแกรมจัดเวรพนักงาน">{() => <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><LazyStaffSchedulingPage /></Suspense>}</Route>
+      <Route path="/%E0%B8%95%E0%B8%B2%E0%B8%A3%E0%B8%B2%E0%B8%87%E0%B9%80%E0%B8%A7%E0%B8%A3%E0%B8%9E%E0%B8%99%E0%B8%B1%E0%B8%81%E0%B8%87%E0%B8%B2%E0%B8%99-excel">{() => <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><LazyStaffExcelPage /></Suspense>}</Route>
+      <Route path="/ตารางเวรพนักงาน-excel">{() => <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><LazyStaffExcelPage /></Suspense>}</Route>
+      <Route path="/%E0%B8%A7%E0%B8%B4%E0%B8%98%E0%B8%B5%E0%B8%88%E0%B8%B1%E0%B8%94%E0%B8%95%E0%B8%B2%E0%B8%A3%E0%B8%B2%E0%B8%87%E0%B9%80%E0%B8%A7%E0%B8%A3%E0%B8%9E%E0%B8%99%E0%B8%B1%E0%B8%81%E0%B8%87%E0%B8%B2%E0%B8%99">{() => <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><LazyHowToSchedulePage /></Suspense>}</Route>
+      <Route path="/วิธีจัดตารางเวรพนักงาน">{() => <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><LazyHowToSchedulePage /></Suspense>}</Route>
+      <Route path="/%E0%B8%95%E0%B8%B2%E0%B8%A3%E0%B8%B2%E0%B8%87%E0%B9%80%E0%B8%A7%E0%B8%A3%E0%B8%A3%E0%B9%89%E0%B8%B2%E0%B8%99%E0%B8%AD%E0%B8%B2%E0%B8%AB%E0%B8%B2%E0%B8%A3">{() => <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><LazyRestaurantShiftPage /></Suspense>}</Route>
+      <Route path="/ตารางเวรร้านอาหาร">{() => <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" /></div>}><LazyRestaurantShiftPage /></Suspense>}</Route>
       <Route component={NotFound} />
     </Switch>
   );

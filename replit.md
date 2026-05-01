@@ -89,3 +89,13 @@ The project utilizes a monorepo structure comprising three main parts:
 ### Fonts
 
 - Google Fonts: DM Sans, Outfit, Fira Code.
+
+## SEO Landing Pages
+
+4 Thai SEO landing pages added (using shared `SEOLandingPage.tsx` layout component):
+- `/โปรแกรมจัดเวรพนักงาน` → `StaffSchedulingPage.tsx`
+- `/ตารางเวรพนักงาน-excel` → `StaffExcelPage.tsx`
+- `/วิธีจัดตารางเวรพนักงาน` → `HowToSchedulePage.tsx`
+- `/ตารางเวรร้านอาหาร` → `RestaurantShiftPage.tsx`
+
+Each page includes: unique H1/SEO title/meta, pain section, solution cards, comparison table, How It Works, FAQ (with JSON-LD schema), internal links block, and final CTA. Both decoded Thai paths and URL-encoded paths are registered as routes.
