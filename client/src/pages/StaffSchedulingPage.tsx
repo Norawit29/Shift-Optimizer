@@ -211,7 +211,7 @@ export default function StaffSchedulingPage() {
                 </m.h1>
                 <m.p
                   variants={fadeUp} custom={1}
-                  className="mt-5 text-xl sm:text-2xl font-semibold text-slate-700 max-w-2xl mx-auto leading-snug"
+                  className="mt-5 text-lg sm:text-2xl font-semibold text-slate-700 max-w-3xl mx-auto leading-snug sm:whitespace-nowrap"
                   data-testid="text-hero-subheadline"
                 >
                   เลิกเสียเวลาจัดเวรหลายชั่วโมง — ให้ AI จัดตารางเวรพนักงานให้อัตโนมัติ
