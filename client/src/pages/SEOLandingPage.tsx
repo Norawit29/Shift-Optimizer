@@ -12,7 +12,9 @@ import {
   FileSpreadsheet,
   Puzzle,
   Clock,
+  Mail,
 } from "lucide-react";
+import { SiFacebook, SiLine } from "react-icons/si";
 import { LazyMotion, domAnimation, m, AnimatePresence } from "framer-motion";
 import { useState, useEffect, ReactNode } from "react";
 
@@ -80,14 +82,6 @@ const howItWorksSteps = [
   { icon: Download, title: "สร้างและส่งออกตาราง", desc: "กด Generate แล้วได้ตารางที่ผ่านการตรวจสอบทุกกฎ ส่งออก Excel แจกทีมได้ทันที", num: "03" },
 ];
 
-// ── internal links ─────────────────────────────────────────────
-const internalLinks = [
-  { href: "/โปรแกรมจัดเวรพนักงาน", label: "โปรแกรมจัดเวรพนักงานสำหรับธุรกิจบริการ" },
-  { href: "/ตารางเวรพนักงาน-excel", label: "ตารางเวรพนักงาน Excel ฟรี" },
-  { href: "/วิธีจัดตารางเวรพนักงาน", label: "วิธีจัดตารางเวรพนักงานให้แฟร์" },
-  { href: "/ตารางเวรร้านอาหาร", label: "ตารางเวรร้านอาหาร" },
-  { href: "/", label: "โปรแกรมจัดตารางเวรพยาบาลด้วย AI" },
-];
 
 // ── types ──────────────────────────────────────────────────────
 export interface PainPoint { icon: React.ElementType; text: string }
@@ -147,6 +141,7 @@ export default function SEOLandingPage({ config }: { config: SEOPageConfig }) {
   } = config;
 
   const isBusiness = accentTheme === 'business';
+  const [showLineQR, setShowLineQR] = useState(false);
 
   const activeComparisonRows = customComparisonRows ?? comparisonRows;
   const activeHowItWorksSteps = customHowItWorksSteps ?? howItWorksSteps;
@@ -436,56 +431,94 @@ export default function SEOLandingPage({ config }: { config: SEOPageConfig }) {
             </div>
           </section>
 
-          {/* ── INTERNAL LINKS ── */}
-          <section className="py-14 sm:py-16 px-4 sm:px-6 border-t border-slate-100 dark:border-slate-800/50">
+          {/* ── CONTACT ── */}
+          <section id="contact" className="border-t border-slate-100 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 py-20 px-4 sm:px-6">
             <div className="max-w-4xl mx-auto">
-              <h2 className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-5 text-center">
-                อ่านต่อเกี่ยวกับการจัดเวร
-              </h2>
-              <div className="flex flex-wrap justify-center gap-3">
-                {internalLinks
-                  .filter((l) => l.href !== canonicalPath)
-                  .map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      className="px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700 text-sm text-slate-600 dark:text-slate-300 hover:border-primary/40 hover:text-primary dark:hover:text-primary transition-colors"
-                      data-testid={`link-internal-${link.href.replace(/[^a-z0-9]/gi, "-")}`}
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
-              </div>
-            </div>
-          </section>
-
-          {/* ── FINAL CTA ── */}
-          <section id="contact" className="py-20 sm:py-28 px-4 sm:px-6 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 dark:from-primary/10 dark:to-accent/10 border-t border-slate-100 dark:border-slate-800/50">
-            <div className="max-w-3xl mx-auto text-center">
-              <m.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer}>
-                <m.h2 variants={fadeUp} custom={0} className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white">
-                  เริ่มจัดตารางเวรอย่างมืออาชีพวันนี้
-                </m.h2>
-                <m.p variants={fadeUp} custom={1} className="mt-4 text-slate-600 dark:text-slate-300 text-base sm:text-lg">
-                  ลดเวลา ลดความวุ่นวาย เพิ่มความยุติธรรมให้ทีมของคุณ
-                </m.p>
-                <m.div variants={fadeUp} custom={2} className="mt-8 flex flex-col sm:flex-row gap-3 justify-center items-center">
-                  <Link href={primaryHref}>
-                    <Button size="lg" className="shadow-lg shadow-primary/25 text-base px-7 py-6 font-semibold" data-testid="button-seo-cta-bottom">
-                      {primaryCTA}
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </Link>
-                  <Link href="/pricing">
-                    <Button size="lg" variant="outline" className="text-base px-7 py-6 font-semibold" data-testid="button-seo-pricing">
-                      ดูราคา
-                    </Button>
-                  </Link>
+              <m.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={staggerContainer}>
+                <m.div variants={fadeUp} custom={0} className="text-center mb-12">
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white mb-4">
+                    ติดต่อเรา
+                  </h2>
+                  <p className="text-slate-500 dark:text-slate-400 text-base sm:text-lg max-w-xl mx-auto">
+                    มีคำถาม ต้องการเดโม หรือสนใจใช้งานในองค์กร ทีมงานพร้อมช่วยเหลือ
+                  </p>
+                </m.div>
+                <m.div variants={fadeUp} custom={1} className="grid sm:grid-cols-3 gap-5">
+                  <a
+                    href="mailto:contact@shift-optimizer.com"
+                    className="flex flex-col items-center gap-4 p-7 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-primary/30 transition-all group"
+                    data-testid="link-contact-email"
+                  >
+                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                      <Mail className="w-7 h-7 text-primary" />
+                    </div>
+                    <div className="text-center">
+                      <p className="font-bold text-slate-900 dark:text-white mb-1">Email</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">contact@shift-optimizer.com</p>
+                    </div>
+                  </a>
+                  <a
+                    href="https://www.facebook.com/profile.php?id=61564671372755"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center gap-4 p-7 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-blue-400/40 transition-all group"
+                    data-testid="link-contact-facebook"
+                  >
+                    <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 transition-colors">
+                      <SiFacebook className="w-7 h-7 text-blue-600" />
+                    </div>
+                    <div className="text-center">
+                      <p className="font-bold text-slate-900 dark:text-white mb-1">Facebook</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">Shift Optimizer</p>
+                    </div>
+                  </a>
+                  <button
+                    onClick={() => setShowLineQR(true)}
+                    className="flex flex-col items-center gap-4 p-7 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-green-400/40 transition-all group"
+                    data-testid="button-contact-line"
+                  >
+                    <div className="w-14 h-14 rounded-2xl bg-green-50 dark:bg-green-900/20 flex items-center justify-center group-hover:bg-green-100 dark:group-hover:bg-green-900/40 transition-colors">
+                      <SiLine className="w-7 h-7 text-green-500" />
+                    </div>
+                    <div className="text-center">
+                      <p className="font-bold text-slate-900 dark:text-white mb-1">LINE Official</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">@shift-optimizer</p>
+                    </div>
+                  </button>
                 </m.div>
               </m.div>
             </div>
           </section>
         </main>
+
+        {/* LINE QR popup */}
+        {showLineQR && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowLineQR(false)}
+          >
+            <div
+              className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-2xl max-w-xs w-full mx-4 flex flex-col items-center gap-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <SiLine className="w-6 h-6 text-green-500" />
+                  <span className="font-bold text-slate-900 dark:text-white text-lg">LINE Official</span>
+                </div>
+                <p className="text-sm text-slate-500 dark:text-slate-400">@shift-optimizer</p>
+              </div>
+              <img src="/line-qr.png" alt="LINE QR Code @shift-optimizer" className="w-52 h-52 rounded-lg" />
+              <p className="text-xs text-slate-400 text-center">สแกน QR Code เพื่อเพิ่มเพื่อนใน LINE</p>
+              <button
+                onClick={() => setShowLineQR(false)}
+                className="text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 underline"
+              >
+                ปิด
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* ── FOOTER ── */}
         <footer className="border-t border-slate-100 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 py-10 px-4 sm:px-6">
