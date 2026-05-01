@@ -592,7 +592,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const searchParams = new URLSearchParams(searchStr);
   const loadIdParam = searchParams.get("load");
   const autoLoadId = loadIdParam ? parseInt(loadIdParam, 10) : 0;
-  const backTo = searchParams.get("from") ?? "/";
+  const backTo = sessionStorage.getItem("wizardBackTo") || "/";
   const { data: autoLoadSchedule } = useSchedule(autoLoadId);
   const autoLoadedRef = useRef(false);
 
@@ -1645,6 +1645,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                 if (step > 1) {
                   setStep(s => s - 1);
                 } else {
+                  sessionStorage.removeItem("wizardBackTo");
                   setLocation(backTo);
                 }
               }}
