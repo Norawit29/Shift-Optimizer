@@ -176,7 +176,7 @@ export default function StaffSchedulingPage() {
       canonical.rel = "canonical";
       document.head.appendChild(canonical);
     }
-    canonical.href = `${window.location.origin}/โปรแกรมจัดเวรพนักงาน`;
+    canonical.href = "https://shift-optimizer.com/";
   }, []);
 
   return (
