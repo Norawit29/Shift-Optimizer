@@ -185,7 +185,7 @@ export default function SEOLandingPage({ config }: { config: SEOPageConfig }) {
   return (
     <LazyMotion features={domAnimation}>
       <div className="min-h-screen bg-white dark:bg-slate-950 overflow-x-hidden">
-        <Navbar logoSubtitle={logoSubtitle} />
+        <Navbar isHomePage logoSubtitle={logoSubtitle} />
 
         <main>
           {/* ── HERO ── */}
@@ -287,7 +287,7 @@ export default function SEOLandingPage({ config }: { config: SEOPageConfig }) {
           {extraAfterPain}
 
           {/* ── SOLUTION CARDS ── */}
-          <section className="py-20 sm:py-28 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-y border-slate-100 dark:border-slate-800/50">
+          <section id="features" className="py-20 sm:py-28 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-y border-slate-100 dark:border-slate-800/50">
             <div className="max-w-6xl mx-auto">
               <m.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer}>
                 <m.div variants={fadeUp} custom={0} className="text-center mb-14 sm:mb-16">
@@ -339,7 +339,7 @@ export default function SEOLandingPage({ config }: { config: SEOPageConfig }) {
 
           {/* ── COMPARISON TABLE ── */}
           {showComparison && (
-            <section className="py-20 sm:py-28 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-y border-slate-100 dark:border-slate-800/50">
+            <section id="about" className="py-20 sm:py-28 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-y border-slate-100 dark:border-slate-800/50">
               <div className="max-w-5xl mx-auto">
                 <m.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer}>
                   <m.div variants={fadeUp} custom={0} className="text-center mb-10 sm:mb-12">
@@ -384,7 +384,7 @@ export default function SEOLandingPage({ config }: { config: SEOPageConfig }) {
           )}
 
           {/* ── HOW IT WORKS ── */}
-          <section className="py-20 sm:py-28 px-4 sm:px-6">
+          <section id="how-it-works" className="py-20 sm:py-28 px-4 sm:px-6">
             <div className="max-w-6xl mx-auto">
               <m.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer}>
                 <m.div variants={fadeUp} custom={0} className="text-center mb-14 sm:mb-16">
@@ -419,7 +419,7 @@ export default function SEOLandingPage({ config }: { config: SEOPageConfig }) {
           </section>
 
           {/* ── FAQ ── */}
-          <section className="py-20 sm:py-28 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800/50">
+          <section id="faq" className="py-20 sm:py-28 px-4 sm:px-6 bg-slate-50/80 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800/50">
             <div className="max-w-3xl mx-auto">
               <m.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer}>
                 <m.div variants={fadeUp} custom={0} className="text-center mb-10 sm:mb-12">
@@ -460,7 +460,7 @@ export default function SEOLandingPage({ config }: { config: SEOPageConfig }) {
           </section>
 
           {/* ── FINAL CTA ── */}
-          <section className="py-20 sm:py-28 px-4 sm:px-6 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 dark:from-primary/10 dark:to-accent/10 border-t border-slate-100 dark:border-slate-800/50">
+          <section id="contact" className="py-20 sm:py-28 px-4 sm:px-6 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 dark:from-primary/10 dark:to-accent/10 border-t border-slate-100 dark:border-slate-800/50">
             <div className="max-w-3xl mx-auto text-center">
               <m.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer}>
                 <m.h2 variants={fadeUp} custom={0} className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white">
