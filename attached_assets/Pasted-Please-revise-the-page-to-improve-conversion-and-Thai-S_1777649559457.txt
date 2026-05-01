@@ -1,0 +1,138 @@
+Please revise the page /โปรแกรมจัดเวรพนักงาน to improve conversion and Thai SEO.
+
+Focus only on these 4 issues:
+1) Make the hero more compelling
+2) Add a clear pain section before the use-case section
+3) Improve CTA wording
+4) Add more Thai SEO keyword coverage naturally
+
+Do not redesign the page.
+Keep the current layout, styling, colors, header, footer, and pricing/contact flow.
+Keep the page Thai-first.
+Do not break existing routes.
+
+---
+
+1. Update Hero copy
+
+Current hero:
+H1: โปรแกรมจัดเวรพนักงาน
+Subheadline: สำหรับทุกธุรกิจที่มีกะและเวร
+Description: ไม่ว่าทีมคุณจะเป็นพนักงานร้านอาหาร สตาฟโรงแรม หรือเจ้าหน้าที่ Call Center — ปัญหาจัดเวรเหมือนกันทุกที่ Shift Optimizer แก้ได้ทุก vertical ด้วย AI ตัวเดียว
+
+Replace with:
+
+H1:
+โปรแกรมจัดเวรพนักงานสำหรับธุรกิจบริการ
+
+Subheadline:
+เลิกเสียเวลาจัดเวรหลายชั่วโมง — ให้ AI จัดตารางเวรพนักงานให้อัตโนมัติ
+
+Description:
+เหมาะสำหรับร้านอาหาร โรงแรม คลินิก ร้านกาแฟ ร้านค้าปลีก Call Center และทีมบริการที่ต้องจัดกะ จัดเวร และกระจายงานให้แฟร์ทุกเดือน
+
+Primary CTA:
+เริ่มจัดเวรอัตโนมัติฟรี
+
+Secondary CTA:
+ดูราคาและแผน
+
+---
+
+2. Add a pain section before the use-case section
+
+Add this section immediately before:
+“ธุรกิจของคุณอยู่ในกลุ่มไหน?”
+
+New section title:
+ยังต้องจัดเวรพนักงานเองทุกเดือนอยู่หรือไม่?
+
+Subtitle:
+เมื่อทีมมีหลายกะ หลายเงื่อนไข และพนักงานแต่ละคนมีเวลาว่างไม่เหมือนกัน การจัดเวรด้วย Excel จะเริ่มใช้เวลามากขึ้นเรื่อย ๆ
+
+Pain bullets:
+- ใช้เวลาหลายชั่วโมงทุกเดือนในการจัดตารางเวรพนักงาน
+- ต้องไล่เช็กวันว่าง วันลา และข้อจำกัดของพนักงานทีละคน
+- จัดเวรไม่แฟร์ บางคนได้เวรหนักหรือเวรวันหยุดซ้ำ
+- เปลี่ยนเวรกะทันหันแล้วต้องแก้ตารางใหม่หลายรอบ
+- ทีมโตขึ้น ไฟล์ Excel เริ่มซับซ้อนและตรวจสอบยาก
+- ผู้จัดการเสียเวลากับงานจัดเวร แทนที่จะไปดูแลทีมและลูกค้า
+
+Closing line:
+Shift Optimizer ช่วยเปลี่ยนงานจัดตารางเวรพนักงานที่ซับซ้อน ให้เป็นระบบอัตโนมัติที่ตั้งค่าได้ตามกฎของธุรกิจคุณ
+
+---
+
+3. Improve CTA wording across this page
+
+Replace generic CTA text:
+“ทดลองใช้ฟรี”
+
+With:
+“เริ่มจัดเวรอัตโนมัติฟรี”
+
+For smaller CTA buttons inside use-case sections, use:
+“ลองจัดเวรฟรี”
+
+For final CTA section, use:
+
+Title:
+เริ่มจัดตารางเวรพนักงานอย่างมืออาชีพวันนี้
+
+Subtitle:
+ทดลองใช้ฟรี ไม่ต้องใส่บัตรเครดิต ตั้งค่าได้ภายใน 15 นาที
+
+Primary CTA:
+เริ่มจัดเวรอัตโนมัติฟรี
+
+Secondary link:
+สำหรับโรงพยาบาลและคลินิก → ดูระบบจัดตารางเวรพยาบาล
+
+---
+
+4. Add Thai SEO keyword coverage naturally
+
+Please add these keywords naturally in headings, paragraphs, or FAQ answers without keyword stuffing:
+- โปรแกรมจัดตารางเวรพนักงาน
+- ระบบจัดตารางเวรพนักงาน
+- จัดตารางเวรพนักงาน
+- ตารางเวรพนักงาน
+- โปรแกรมจัดเวรพนักงานฟรี
+- จัดเวรพนักงานด้วย AI
+- ตารางเวรพนักงาน Excel
+
+Specific places to add them:
+
+A) In the hero description or nearby paragraph:
+Use “โปรแกรมจัดตารางเวรพนักงาน” once.
+
+B) In the pain section:
+Use “จัดตารางเวรพนักงาน” and “ตารางเวรพนักงาน” naturally.
+
+C) In the “ระบบเดียว ปรับได้ทุกธุรกิจ” section:
+Add one sentence:
+“ระบบจัดตารางเวรพนักงานนี้ไม่ได้ยึดติดกับรูปแบบธุรกิจใดธุรกิจหนึ่ง คุณจึงปรับชื่อกะ จำนวนคน และเงื่อนไขให้ตรงกับการทำงานจริงได้”
+
+D) In FAQ:
+Add one FAQ item:
+Question:
+โปรแกรมจัดเวรพนักงานฟรีต่างจาก Excel อย่างไร?
+
+Answer:
+Excel เหมาะกับทีมเล็กที่เงื่อนไขไม่ซับซ้อน แต่เมื่อเริ่มมีหลายกะ พนักงาน part-time วันลา และข้อจำกัดหลายแบบ โปรแกรมจัดเวรพนักงานฟรีอย่าง Shift Optimizer จะช่วยคำนวณตารางเวรพนักงานให้อัตโนมัติ ลดเวลาจัดเอง และยังส่งออกเป็นตารางเวรพนักงาน Excel ได้
+
+E) Update SEO metadata:
+SEO title:
+โปรแกรมจัดเวรพนักงานด้วย AI สำหรับธุรกิจบริการ | Shift Optimizer
+
+Meta description:
+โปรแกรมจัดตารางเวรพนักงานด้วย AI สำหรับร้านอาหาร โรงแรม คลินิก ร้านกาแฟ ร้านค้าปลีก และ Call Center ช่วยจัดตารางเวรพนักงาน ลดเวลาจัดเอง และส่งออก Excel ได้ทันที
+
+---
+
+Final checks:
+- Keep the page visually consistent.
+- Make sure text does not sound spammy.
+- Make sure the content is still readable and natural in Thai.
+- Make sure all CTAs still link to the existing signup/free trial flow.
+- Do not modify the main nurse scheduling landing page.

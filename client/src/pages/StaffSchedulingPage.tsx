@@ -160,6 +160,10 @@ const faqs = [
     q: "โปรแกรมรองรับพนักงานได้สูงสุดกี่คน?",
     a: "รองรับได้สูงสุด 50 คนต่อทีมครับ เหมาะสำหรับธุรกิจบริการตั้งแต่ร้านขนาดเล็กไปจนถึงทีมขนาดกลางที่มีหลายกะหมุนเวียน",
   },
+  {
+    q: "โปรแกรมจัดเวรพนักงานฟรีต่างจาก Excel อย่างไร?",
+    a: "Excel เหมาะกับทีมเล็กที่เงื่อนไขไม่ซับซ้อน แต่เมื่อเริ่มมีหลายกะ พนักงาน part-time วันลา และข้อจำกัดหลายแบบ โปรแกรมจัดเวรพนักงานฟรีอย่าง Shift Optimizer จะช่วยคำนวณตารางเวรพนักงานให้อัตโนมัติ ลดข้อผิดพลาด และส่งออกเป็นไฟล์ Excel พร้อมแจกทีมได้ทันที ไม่ต้องนั่งฟอร์แมตเอง",
+  },
 ];
 
 // ── page ───────────────────────────────────────────────────────
@@ -167,9 +171,9 @@ export default function StaffSchedulingPage() {
   const [showLineQR, setShowLineQR] = useState(false);
 
   useEffect(() => {
-    document.title = "โปรแกรมจัดเวรพนักงาน สำหรับทุกธุรกิจที่มีกะและเวร | Shift Optimizer";
+    document.title = "โปรแกรมจัดเวรพนักงานด้วย AI สำหรับธุรกิจบริการ | Shift Optimizer";
     const desc = document.querySelector('meta[name="description"]');
-    if (desc) desc.setAttribute("content", "โปรแกรมจัดเวรพนักงานด้วย AI เหมาะสำหรับร้านอาหาร โรงแรม Call Center และธุรกิจบริการทุกประเภท จัดเวรอัตโนมัติ ลด OT กระจายเวรยุติธรรม ส่งออก Excel ได้ทันที");
+    if (desc) desc.setAttribute("content", "โปรแกรมจัดตารางเวรพนักงานด้วย AI สำหรับร้านอาหาร โรงแรม คลินิก ร้านกาแฟ ร้านค้าปลีก และ Call Center ช่วยจัดตารางเวรพนักงาน ลดเวลาจัดเอง และส่งออก Excel ได้ทันที");
     let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
     if (!canonical) {
       canonical = document.createElement("link");
@@ -202,20 +206,27 @@ export default function StaffSchedulingPage() {
                 >
                   <span className="block">โปรแกรมจัดเวรพนักงาน</span>
                   <span className="text-transparent bg-clip-text" style={{ backgroundImage: "linear-gradient(90deg, #F5A623 0%, #F97316 100%)" }}>
-                    สำหรับทุกธุรกิจที่มีกะและเวร
+                    สำหรับธุรกิจบริการ
                   </span>
                 </m.h1>
                 <m.p
                   variants={fadeUp} custom={1}
-                  className="mt-6 text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed"
-                  data-testid="text-hero-subtitle"
+                  className="mt-5 text-xl sm:text-2xl font-semibold text-slate-700 max-w-2xl mx-auto leading-snug"
+                  data-testid="text-hero-subheadline"
                 >
-                  ไม่ว่าทีมคุณจะเป็นพนักงานร้านอาหาร สตาฟโรงแรม หรือเจ้าหน้าที่ Call Center — ปัญหาจัดเวรเหมือนกันทุกที่ Shift Optimizer แก้ได้ทุก vertical ด้วย AI ตัวเดียว
+                  เลิกเสียเวลาจัดเวรหลายชั่วโมง — ให้ AI จัดตารางเวรพนักงานให้อัตโนมัติ
                 </m.p>
-                <m.div variants={fadeUp} custom={2} className="mt-10 flex flex-col sm:flex-row gap-3 justify-center items-center">
+                <m.p
+                  variants={fadeUp} custom={2}
+                  className="mt-4 text-base sm:text-lg text-slate-500 max-w-2xl mx-auto leading-relaxed"
+                  data-testid="text-hero-desc"
+                >
+                  เหมาะสำหรับร้านอาหาร โรงแรม คลินิก ร้านกาแฟ ร้านค้าปลีก Call Center และทีมบริการที่ต้องจัดกะ จัดเวร และกระจายงานให้แฟร์ทุกเดือน — โปรแกรมจัดตารางเวรพนักงานที่ตั้งค่าได้ตามกฎของธุรกิจคุณ
+                </m.p>
+                <m.div variants={fadeUp} custom={3} className="mt-10 flex flex-col sm:flex-row gap-3 justify-center items-center">
                   <Link href="/create" className="w-full sm:w-auto">
                     <Button size="lg" className="w-full sm:w-auto shadow-lg shadow-primary/25 text-base px-7 py-6 font-semibold" data-testid="button-hero-primary">
-                      ทดลองใช้ฟรี <ArrowRight className="ml-2 h-4 w-4" />
+                      เริ่มจัดเวรอัตโนมัติฟรี <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </Link>
                   <Link href="/pricing" className="w-full sm:w-auto">
@@ -224,6 +235,40 @@ export default function StaffSchedulingPage() {
                     </Button>
                   </Link>
                 </m.div>
+              </m.div>
+            </div>
+          </section>
+
+          {/* ── PAIN SECTION ── */}
+          <section className="py-20 sm:py-24 px-4 sm:px-6 border-t border-slate-100 dark:border-slate-800/50">
+            <div className="max-w-3xl mx-auto">
+              <m.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={staggerContainer}>
+                <m.h2 variants={fadeUp} custom={0} className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white mb-4">
+                  ยังต้องจัดเวรพนักงานเองทุกเดือนอยู่หรือไม่?
+                </m.h2>
+                <m.p variants={fadeUp} custom={1} className="text-slate-500 dark:text-slate-400 text-base sm:text-lg leading-relaxed mb-8">
+                  เมื่อทีมมีหลายกะ หลายเงื่อนไข และพนักงานแต่ละคนมีเวลาว่างไม่เหมือนกัน การจัดตารางเวรพนักงานด้วย Excel จะเริ่มใช้เวลามากขึ้นเรื่อย ๆ
+                </m.p>
+                <m.ul variants={fadeUp} custom={2} className="space-y-3 mb-8">
+                  {[
+                    "ใช้เวลาหลายชั่วโมงทุกเดือนในการจัดตารางเวรพนักงาน",
+                    "ต้องไล่เช็กวันว่าง วันลา และข้อจำกัดของพนักงานทีละคน",
+                    "จัดเวรไม่แฟร์ บางคนได้เวรหนักหรือเวรวันหยุดซ้ำ",
+                    "เปลี่ยนเวรกะทันหันแล้วต้องแก้ตารางเวรพนักงานใหม่หลายรอบ",
+                    "ทีมโตขึ้น ไฟล์ Excel เริ่มซับซ้อนและตรวจสอบยาก",
+                    "ผู้จัดการเสียเวลากับงานจัดเวร แทนที่จะไปดูแลทีมและลูกค้า",
+                  ].map((pain, i) => (
+                    <li key={i} className="flex items-start gap-3 text-slate-700 dark:text-slate-300 text-base">
+                      <span className="mt-1 shrink-0 w-5 h-5 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
+                        <span className="text-red-400 font-bold text-xs">✕</span>
+                      </span>
+                      {pain}
+                    </li>
+                  ))}
+                </m.ul>
+                <m.p variants={fadeUp} custom={3} className="text-slate-700 dark:text-slate-200 text-base sm:text-lg font-medium leading-relaxed border-l-4 pl-4" style={{ borderColor: "#F5A623" }}>
+                  Shift Optimizer ช่วยเปลี่ยนงานจัดตารางเวรพนักงานที่ซับซ้อน ให้เป็นระบบอัตโนมัติที่ตั้งค่าได้ตามกฎของธุรกิจคุณ
+                </m.p>
               </m.div>
             </div>
           </section>
@@ -273,7 +318,7 @@ export default function StaffSchedulingPage() {
                                 style={{ background: "#0EA5E9", borderRadius: "8px" }}
                                 data-testid={`button-vertical-cta-${i}`}
                               >
-                                ทดลองใช้ฟรี <ArrowRight className="w-3.5 h-3.5" />
+                                ลองจัดเวรฟรี <ArrowRight className="w-3.5 h-3.5" />
                               </button>
                             </Link>
                           </div>
@@ -296,6 +341,9 @@ export default function StaffSchedulingPage() {
                   </h2>
                   <p className="mt-3 text-slate-600 dark:text-slate-300 text-base sm:text-lg max-w-2xl mx-auto">
                     ไม่ว่ากะของคุณจะชื่อ "เช้า-บ่าย-ดึก" หรือ "Open-Mid-Close" หรือ "A-B-C" — ระบบรองรับได้ทั้งหมด คุณเป็นคนกำหนดกฎ AI เป็นคนคำนวณ
+                  </p>
+                  <p className="mt-2 text-slate-500 dark:text-slate-400 text-sm sm:text-base max-w-2xl mx-auto">
+                    ระบบจัดตารางเวรพนักงานนี้ไม่ได้ยึดติดกับรูปแบบธุรกิจใดธุรกิจหนึ่ง คุณจึงปรับชื่อกะ จำนวนคน และเงื่อนไขให้ตรงกับการทำงานจริงได้
                   </p>
                 </m.div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -414,7 +462,7 @@ export default function StaffSchedulingPage() {
             <div className="max-w-3xl mx-auto text-center">
               <m.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={staggerContainer}>
                 <m.h2 variants={fadeUp} custom={0} className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white">
-                  เริ่มจัดเวรอย่างมืออาชีพวันนี้
+                  เริ่มจัดตารางเวรพนักงานอย่างมืออาชีพวันนี้
                 </m.h2>
                 <m.p variants={fadeUp} custom={1} className="mt-4 text-slate-600 dark:text-slate-300 text-base sm:text-lg">
                   ทดลองใช้ฟรี ไม่ต้องใส่บัตรเครดิต ตั้งค่าได้ภายใน 15 นาที
@@ -422,7 +470,7 @@ export default function StaffSchedulingPage() {
                 <m.div variants={fadeUp} custom={2} className="mt-8 flex flex-col sm:flex-row gap-3 justify-center items-center">
                   <Link href="/create">
                     <Button size="lg" className="shadow-lg shadow-primary/25 text-base px-7 py-6 font-semibold" data-testid="button-cta-bottom">
-                      ทดลองใช้ฟรี <ArrowRight className="ml-2 h-4 w-4" />
+                      เริ่มจัดเวรอัตโนมัติฟรี <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </Link>
                 </m.div>
@@ -433,7 +481,7 @@ export default function StaffSchedulingPage() {
                     className="text-primary hover:underline font-medium"
                     onClick={() => window.scrollTo({ top: 0, behavior: "instant" })}
                   >
-                    ดูที่นี่
+                    ดูระบบจัดตารางเวรพยาบาล
                   </Link>
                 </m.p>
               </m.div>
