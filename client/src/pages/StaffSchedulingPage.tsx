@@ -185,7 +185,7 @@ export default function StaffSchedulingPage() {
           {/* ── HERO ── */}
           <section
             className="relative min-h-[80svh] flex flex-col justify-center pt-24 pb-16 px-4 sm:px-6"
-            style={{ background: "linear-gradient(135deg, #FFFFFF 0%, #FFF8E7 50%, #FDE8B0 100%)" }}
+            style={{ background: "#FFFFFF" }}
           >
             <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
               <div className="absolute inset-0" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, rgba(148,163,184,0.06) 1px, transparent 0)", backgroundSize: "40px 40px" }} />
@@ -196,7 +196,7 @@ export default function StaffSchedulingPage() {
                   variants={fadeUp}
                   custom={0}
                   className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium mb-6"
-                  style={{ background: "rgba(245,166,35,0.12)", color: "#F5A623" }}
+                  style={{ background: "#FFF8E7", color: "#F5A623" }}
                 >
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="#F5A623"><polygon points="7,1 8.8,5.3 13.5,5.7 10,8.7 11.1,13.3 7,10.8 2.9,13.3 4,8.7 0.5,5.7 5.2,5.3" /></svg>
                   สำหรับธุรกิจบริการทุกประเภทที่มีกะและเวร
@@ -207,7 +207,7 @@ export default function StaffSchedulingPage() {
                   data-testid="text-hero-title"
                 >
                   <span className="block">โปรแกรมจัดเวรพนักงาน</span>
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">
+                  <span style={{ color: "#F5A623" }}>
                     สำหรับทุกธุรกิจที่มีกะและเวร
                   </span>
                 </m.h1>
