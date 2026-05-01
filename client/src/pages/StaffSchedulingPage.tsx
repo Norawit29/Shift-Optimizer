@@ -6,7 +6,6 @@ import { useState, useEffect } from "react";
 import {
   ArrowRight, ChevronDown, Settings, Users, FileSpreadsheet, CalendarDays,
 } from "lucide-react";
-import { SiLine } from "react-icons/si";
 
 // ── animation variants ─────────────────────────────────────────
 const fadeUp = {
@@ -20,6 +19,38 @@ const staggerContainer = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.07 } },
 };
+
+// ── inline SVG icons (stroke, 32×32) ──────────────────────────
+const IconFork = () => (
+  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#0EA5E9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8 4v7a4 4 0 0 0 4 4v13" />
+    <path d="M12 4v5" />
+    <path d="M8 4v5" />
+    <path d="M22 4c0 0 2 3 2 8s-2 7-2 7v9" />
+  </svg>
+);
+const IconHotel = () => (
+  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#0EA5E9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="4" y="10" width="24" height="18" rx="1" />
+    <path d="M10 28V16h12v12" />
+    <path d="M13 20h2M17 20h2M13 24h2M17 24h2" />
+    <path d="M10 10V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v4" />
+    <path d="M16 4v6" />
+  </svg>
+);
+const IconHeadphone = () => (
+  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#0EA5E9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 20v-4a12 12 0 0 1 24 0v4" />
+    <rect x="4" y="20" width="4" height="7" rx="2" />
+    <rect x="24" y="20" width="4" height="7" rx="2" />
+  </svg>
+);
+const IconBag = () => (
+  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#0EA5E9" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 9h20l-2 17H8L6 9Z" />
+    <path d="M11 9V7a5 5 0 0 1 10 0v2" />
+  </svg>
+);
 
 // ── FAQ accordion ──────────────────────────────────────────────
 function FAQItem({ q, a, i }: { q: string; a: string; i: number }) {
@@ -55,25 +86,25 @@ function FAQItem({ q, a, i }: { q: string; a: string; i: number }) {
 // ── data ───────────────────────────────────────────────────────
 const verticalCards = [
   {
-    emoji: "🍽️",
+    Icon: IconFork,
     title: "ร้านอาหาร ร้านกาแฟ และธุรกิจ F&B",
     problem: "ช่วงพีคเที่ยงและเย็นคือหัวใจของธุรกิจ แต่การจัดคนให้พอทุกช่วงโดยไม่ให้ใครแบกเวรหนักเกินไปเป็นเรื่องยาก โดยเฉพาะเมื่อมีพนักงาน part-time ที่เวลาว่างไม่ตรงกัน",
     solution: "Shift Optimizer ช่วยกำหนดจำนวนคนขั้นต่ำในแต่ละช่วง กระจายเวรเปิด-ปิดร้านให้ทั่วถึง และจัดตารางโดยไม่ชนวันว่างของใคร",
   },
   {
-    emoji: "🏨",
+    Icon: IconHotel,
     title: "โรงแรม รีสอร์ท และทีม Hospitality",
     problem: "ธุรกิจโรงแรมต้องให้บริการตลอด 24 ชั่วโมง การจัดเวร front desk, housekeeping และทีมอาหารเช้าให้สอดคล้องกันโดยไม่มี OT สะสมเป็นงานที่ซับซ้อนกว่าที่ Excel จะรับไหว",
     solution: "Shift Optimizer จัดเวรครอบคลุมทุกกะ ลด OT และแจ้งเตือนเมื่อมีช่วงที่คนไม่พอก่อนที่จะเป็นปัญหา",
   },
   {
-    emoji: "🎧",
+    Icon: IconHeadphone,
     title: "Call Center และทีม Customer Support",
     problem: "ปริมาณงานขึ้นลงตามช่วงเวลา การจัดคนให้พอในช่วง volume สูงโดยไม่ให้ทีมรู้สึกว่าเวรไม่แฟร์เป็นสิ่งที่ผู้จัดต้องแบกรับทุกเดือน",
     solution: "Shift Optimizer กระจายภาระงานอย่างสมดุล รองรับพนักงานหลาย skill level และปรับตารางได้ทันทีเมื่อมีคนลากะทันหัน",
   },
   {
-    emoji: "🏪",
+    Icon: IconBag,
     title: "ร้านค้าปลีก และทีมบริการอื่นๆ",
     problem: "ไม่ว่าธุรกิจของคุณจะเรียกกะว่าอะไร และมีเงื่อนไขแบบไหน ระบบปรับชื่อกะ จำนวนคน และกฎได้เองทั้งหมด ไม่มี template ตายตัว",
     solution: null,
@@ -132,8 +163,6 @@ const faqs = [
 
 // ── page ───────────────────────────────────────────────────────
 export default function StaffSchedulingPage() {
-  const [showLineQR, setShowLineQR] = useState(false);
-
   useEffect(() => {
     document.title = "โปรแกรมจัดเวรพนักงาน สำหรับทุกธุรกิจที่มีกะและเวร | Shift Optimizer";
     const desc = document.querySelector('meta[name="description"]');
@@ -154,21 +183,27 @@ export default function StaffSchedulingPage() {
 
         <main>
           {/* ── HERO ── */}
-          <section className="relative min-h-[80svh] flex flex-col justify-center pt-24 pb-16 px-4 sm:px-6">
+          <section
+            className="relative min-h-[80svh] flex flex-col justify-center pt-24 pb-16 px-4 sm:px-6"
+            style={{ background: "linear-gradient(135deg, #FFFFFF 0%, #FFF8E7 50%, #FDE8B0 100%)" }}
+          >
             <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
-              <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-gradient-radial from-primary/8 via-transparent to-transparent rounded-full" />
-              <div className="absolute top-1/4 right-0 w-[400px] h-[400px] bg-blue-100/40 dark:bg-blue-900/10 rounded-full blur-3xl" />
-              <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-violet-100/30 dark:bg-violet-900/8 rounded-full blur-3xl" />
-              <div className="absolute inset-0" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, rgba(148,163,184,0.08) 1px, transparent 0)", backgroundSize: "40px 40px" }} />
+              <div className="absolute inset-0" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, rgba(148,163,184,0.06) 1px, transparent 0)", backgroundSize: "40px 40px" }} />
             </div>
             <div className="relative max-w-4xl mx-auto text-center">
               <m.div initial="hidden" animate="visible" variants={staggerContainer}>
-                <m.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 bg-primary/8 dark:bg-primary/10 text-primary rounded-full px-4 py-1.5 text-sm font-medium mb-6">
-                  ✦ สำหรับธุรกิจบริการทุกประเภทที่มีกะและเวร
+                <m.div
+                  variants={fadeUp}
+                  custom={0}
+                  className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium mb-6"
+                  style={{ background: "rgba(245,166,35,0.12)", color: "#F5A623" }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="#F5A623"><polygon points="7,1 8.8,5.3 13.5,5.7 10,8.7 11.1,13.3 7,10.8 2.9,13.3 4,8.7 0.5,5.7 5.2,5.3" /></svg>
+                  สำหรับธุรกิจบริการทุกประเภทที่มีกะและเวร
                 </m.div>
                 <m.h1
                   variants={fadeUp} custom={1}
-                  className="text-4xl sm:text-5xl md:text-[3.25rem] lg:text-6xl font-display font-bold text-slate-900 dark:text-white leading-[1.2] tracking-tight"
+                  className="text-4xl sm:text-5xl md:text-[3.25rem] lg:text-6xl font-display font-bold text-slate-900 leading-[1.2] tracking-tight"
                   data-testid="text-hero-title"
                 >
                   <span className="block">โปรแกรมจัดเวรพนักงาน</span>
@@ -178,7 +213,7 @@ export default function StaffSchedulingPage() {
                 </m.h1>
                 <m.p
                   variants={fadeUp} custom={2}
-                  className="mt-6 text-lg sm:text-xl text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed"
+                  className="mt-6 text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed"
                   data-testid="text-hero-subtitle"
                 >
                   ไม่ว่าทีมคุณจะเป็นพนักงานร้านอาหาร สตาฟโรงแรม หรือเจ้าหน้าที่ Call Center — ปัญหาจัดเวรเหมือนกันทุกที่ Shift Optimizer แก้ได้ทุก vertical ด้วย AI ตัวเดียว
@@ -214,19 +249,40 @@ export default function StaffSchedulingPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   {verticalCards.map((card, i) => (
                     <m.div key={i} variants={fadeUp} custom={i + 1}>
-                      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-7 sm:p-8 h-full flex flex-col hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-slate-900/50 hover:border-primary/30 transition-all duration-300">
-                        <div className="text-4xl mb-4">{card.emoji}</div>
-                        <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-3 leading-snug">{card.title}</h3>
-                        <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed mb-3">{card.problem}</p>
-                        {card.solution && (
-                          <p className="text-primary font-medium text-sm leading-relaxed mb-5">{card.solution}</p>
-                        )}
-                        <div className="mt-auto pt-2">
-                          <Link href="/create">
-                            <Button size="sm" className="w-full font-semibold" data-testid={`button-vertical-cta-${i}`}>
-                              ทดลองใช้ฟรี <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-                            </Button>
-                          </Link>
+                      <div
+                        className="bg-white dark:bg-slate-900 rounded-xl overflow-hidden h-full flex flex-col"
+                        style={{ transition: "transform 0.2s ease, box-shadow 0.2s ease" }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(-4px)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 12px 32px rgba(0,0,0,0.10)"; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "none"; }}
+                      >
+                        {/* top accent bar */}
+                        <div style={{ height: "4px", background: "#F5A623" }} />
+                        <div className="p-7 sm:p-8 flex flex-col flex-1">
+                          <div className="mb-4">
+                            <card.Icon />
+                          </div>
+                          <h3 className="mb-3 leading-snug" style={{ fontWeight: 700, fontSize: "18px", color: "#1A1A2E" }}>
+                            {card.title}
+                          </h3>
+                          <p className="mb-3 leading-relaxed" style={{ color: "#4B5563", fontSize: "15px", lineHeight: 1.7 }}>
+                            {card.problem}
+                          </p>
+                          {card.solution && (
+                            <p className="font-medium mb-5 leading-relaxed text-sm" style={{ color: "#0EA5E9" }}>
+                              {card.solution}
+                            </p>
+                          )}
+                          <div className="mt-auto pt-2">
+                            <Link href="/create" className="block w-full">
+                              <button
+                                className="w-full py-2.5 text-sm font-semibold text-white flex items-center justify-center gap-1.5"
+                                style={{ background: "#0EA5E9", borderRadius: "8px" }}
+                                data-testid={`button-vertical-cta-${i}`}
+                              >
+                                ทดลองใช้ฟรี <ArrowRight className="w-3.5 h-3.5" />
+                              </button>
+                            </Link>
+                          </div>
                         </div>
                       </div>
                     </m.div>
@@ -310,24 +366,6 @@ export default function StaffSchedulingPage() {
             </div>
           </section>
         </main>
-
-        {/* ── LINE QR popup ── */}
-        {showLineQR && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowLineQR(false)}>
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-2xl max-w-xs w-full mx-4 flex flex-col items-center gap-4" onClick={(e) => e.stopPropagation()}>
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-2 mb-1">
-                  <SiLine className="w-6 h-6 text-green-500" />
-                  <span className="font-bold text-slate-900 dark:text-white text-lg">LINE Official</span>
-                </div>
-                <p className="text-sm text-slate-500 dark:text-slate-400">@shift-optimizer</p>
-              </div>
-              <img src="/line-qr.png" alt="LINE QR Code @shift-optimizer" className="w-52 h-52 rounded-lg" />
-              <p className="text-xs text-slate-400 text-center">สแกน QR Code เพื่อเพิ่มเพื่อนใน LINE</p>
-              <button onClick={() => setShowLineQR(false)} className="text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 underline">ปิด</button>
-            </div>
-          </div>
-        )}
 
         {/* ── FOOTER ── */}
         <footer className="border-t border-slate-100 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 py-10 px-4 sm:px-6">
