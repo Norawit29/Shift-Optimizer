@@ -589,8 +589,10 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
   const [, setLocation] = useLocation();
   const searchStr = useSearch();
   const { t, dayNames, lang } = useLanguage();
-  const loadIdParam = new URLSearchParams(searchStr).get("load");
+  const searchParams = new URLSearchParams(searchStr);
+  const loadIdParam = searchParams.get("load");
   const autoLoadId = loadIdParam ? parseInt(loadIdParam, 10) : 0;
+  const backTo = searchParams.get("from") ?? "/";
   const { data: autoLoadSchedule } = useSchedule(autoLoadId);
   const autoLoadedRef = useRef(false);
 
@@ -1643,7 +1645,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
                 if (step > 1) {
                   setStep(s => s - 1);
                 } else {
-                  setLocation("/");
+                  setLocation(backTo);
                 }
               }}
             >

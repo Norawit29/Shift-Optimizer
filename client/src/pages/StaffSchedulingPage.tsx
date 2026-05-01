@@ -224,7 +224,7 @@ export default function StaffSchedulingPage() {
                   เหมาะสำหรับร้านอาหาร โรงแรม คลินิก ร้านกาแฟ ร้านค้าปลีก Call Center และทีมบริการที่ต้องจัดกะ จัดเวร และกระจายงานให้แฟร์ทุกเดือน — โปรแกรมจัดตารางเวรพนักงานที่ตั้งค่าได้ตามกฎของธุรกิจคุณ
                 </m.p>
                 <m.div variants={fadeUp} custom={3} className="mt-10 flex flex-col sm:flex-row gap-3 justify-center items-center">
-                  <Link href="/create" className="w-full sm:w-auto">
+                  <Link href="/create?from=%2F%E0%B9%82%E0%B8%9B%E0%B8%A3%E0%B9%81%E0%B8%81%E0%B8%A3%E0%B8%A1%E0%B8%88%E0%B8%B1%E0%B8%94%E0%B9%80%E0%B8%A7%E0%B8%A3%E0%B8%9E%E0%B8%99%E0%B8%B1%E0%B8%81%E0%B8%87%E0%B8%B2%E0%B8%99" className="w-full sm:w-auto">
                     <Button size="lg" className="w-full sm:w-auto shadow-lg shadow-primary/25 text-base px-7 py-6 font-semibold" data-testid="button-hero-primary">
                       เริ่มจัดเวรอัตโนมัติฟรี <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
@@ -312,7 +312,7 @@ export default function StaffSchedulingPage() {
                             </p>
                           )}
                           <div className="mt-auto pt-2">
-                            <Link href="/create" className="block w-full">
+                            <Link href="/create?from=%2F%E0%B9%82%E0%B8%9B%E0%B8%A3%E0%B9%81%E0%B8%81%E0%B8%A3%E0%B8%A1%E0%B8%88%E0%B8%B1%E0%B8%94%E0%B9%80%E0%B8%A7%E0%B8%A3%E0%B8%9E%E0%B8%99%E0%B8%B1%E0%B8%81%E0%B8%87%E0%B8%B2%E0%B8%99" className="block w-full">
                               <button
                                 className="w-full py-2.5 text-sm font-semibold text-white flex items-center justify-center gap-1.5"
                                 style={{ background: "#0EA5E9", borderRadius: "8px" }}
@@ -468,7 +468,7 @@ export default function StaffSchedulingPage() {
                   ทดลองใช้ฟรี ไม่ต้องใส่บัตรเครดิต ตั้งค่าได้ภายใน 15 นาที
                 </m.p>
                 <m.div variants={fadeUp} custom={2} className="mt-8 flex flex-col sm:flex-row gap-3 justify-center items-center">
-                  <Link href="/create">
+                  <Link href="/create?from=%2F%E0%B9%82%E0%B8%9B%E0%B8%A3%E0%B9%81%E0%B8%81%E0%B8%A3%E0%B8%A1%E0%B8%88%E0%B8%B1%E0%B8%94%E0%B9%80%E0%B8%A7%E0%B8%A3%E0%B8%9E%E0%B8%99%E0%B8%B1%E0%B8%81%E0%B8%87%E0%B8%B2%E0%B8%99">
                     <Button size="lg" className="shadow-lg shadow-primary/25 text-base px-7 py-6 font-semibold" data-testid="button-cta-bottom">
                       เริ่มจัดเวรอัตโนมัติฟรี <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
