@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { LazyMotion, domAnimation, m, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import {
-  ArrowRight, ChevronDown, Settings, Users, FileSpreadsheet, CalendarDays,
+  ArrowRight, ChevronDown, Settings, Users, FileSpreadsheet, CalendarDays, Mail,
 } from "lucide-react";
+import { SiFacebook, SiLine } from "react-icons/si";
 
 // ── animation variants ─────────────────────────────────────────
 const fadeUp = {
@@ -163,6 +164,8 @@ const faqs = [
 
 // ── page ───────────────────────────────────────────────────────
 export default function StaffSchedulingPage() {
+  const [showLineQR, setShowLineQR] = useState(false);
+
   useEffect(() => {
     document.title = "โปรแกรมจัดเวรพนักงาน สำหรับทุกธุรกิจที่มีกะและเวร | Shift Optimizer";
     const desc = document.querySelector('meta[name="description"]');
@@ -207,7 +210,7 @@ export default function StaffSchedulingPage() {
                   data-testid="text-hero-title"
                 >
                   <span className="block">โปรแกรมจัดเวรพนักงาน</span>
-                  <span style={{ color: "#F5A623" }}>
+                  <span className="text-transparent bg-clip-text" style={{ backgroundImage: "linear-gradient(90deg, #F5A623 0%, #F97316 100%)" }}>
                     สำหรับทุกธุรกิจที่มีกะและเวร
                   </span>
                 </m.h1>
@@ -339,8 +342,67 @@ export default function StaffSchedulingPage() {
             </div>
           </section>
 
+          {/* ── CONTACT ── */}
+          <section id="contact" className="border-t border-slate-100 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 py-20 px-4 sm:px-6">
+            <div className="max-w-4xl mx-auto">
+              <m.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={staggerContainer}>
+                <m.div variants={fadeUp} custom={0} className="text-center mb-12">
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white mb-4">
+                    ติดต่อเรา
+                  </h2>
+                  <p className="text-slate-500 dark:text-slate-400 text-base sm:text-lg max-w-xl mx-auto">
+                    มีคำถาม ต้องการเดโม หรือสนใจใช้งานในองค์กร ทีมงานพร้อมช่วยเหลือ
+                  </p>
+                </m.div>
+                <m.div variants={fadeUp} custom={1} className="grid sm:grid-cols-3 gap-5">
+                  <a
+                    href="mailto:contact@shift-optimizer.com"
+                    className="flex flex-col items-center gap-4 p-7 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-primary/30 transition-all group"
+                    data-testid="link-contact-email"
+                  >
+                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                      <Mail className="w-7 h-7 text-primary" />
+                    </div>
+                    <div className="text-center">
+                      <p className="font-bold text-slate-900 dark:text-white mb-1">Email</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">contact@shift-optimizer.com</p>
+                    </div>
+                  </a>
+                  <a
+                    href="https://www.facebook.com/profile.php?id=61564671372755"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center gap-4 p-7 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-blue-400/40 transition-all group"
+                    data-testid="link-contact-facebook"
+                  >
+                    <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 transition-colors">
+                      <SiFacebook className="w-7 h-7 text-blue-600" />
+                    </div>
+                    <div className="text-center">
+                      <p className="font-bold text-slate-900 dark:text-white mb-1">Facebook</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">Shift Optimizer</p>
+                    </div>
+                  </a>
+                  <button
+                    onClick={() => setShowLineQR(true)}
+                    className="flex flex-col items-center gap-4 p-7 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-green-400/40 transition-all group"
+                    data-testid="button-contact-line"
+                  >
+                    <div className="w-14 h-14 rounded-2xl bg-green-50 dark:bg-green-900/20 flex items-center justify-center group-hover:bg-green-100 dark:group-hover:bg-green-900/40 transition-colors">
+                      <SiLine className="w-7 h-7 text-green-500" />
+                    </div>
+                    <div className="text-center">
+                      <p className="font-bold text-slate-900 dark:text-white mb-1">LINE Official</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">@shift-optimizer</p>
+                    </div>
+                  </button>
+                </m.div>
+              </m.div>
+            </div>
+          </section>
+
           {/* ── CLOSING CTA ── */}
-          <section id="contact" className="py-20 sm:py-28 px-4 sm:px-6 border-t border-slate-100 dark:border-slate-800/50">
+          <section className="py-20 sm:py-28 px-4 sm:px-6 border-t border-slate-100 dark:border-slate-800/50">
             <div className="max-w-3xl mx-auto text-center">
               <m.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-80px" }} variants={staggerContainer}>
                 <m.h2 variants={fadeUp} custom={0} className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-slate-900 dark:text-white">
@@ -358,7 +420,11 @@ export default function StaffSchedulingPage() {
                 </m.div>
                 <m.p variants={fadeUp} custom={3} className="mt-6 text-sm text-slate-500 dark:text-slate-400">
                   สำหรับโรงพยาบาลและคลินิก →{" "}
-                  <Link href="/" className="text-primary hover:underline font-medium">
+                  <Link
+                    href="/"
+                    className="text-primary hover:underline font-medium"
+                    onClick={() => window.scrollTo({ top: 0, behavior: "instant" })}
+                  >
                     ดูที่นี่
                   </Link>
                 </m.p>
@@ -366,6 +432,35 @@ export default function StaffSchedulingPage() {
             </div>
           </section>
         </main>
+
+        {/* ── LINE QR popup ── */}
+        {showLineQR && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowLineQR(false)}
+          >
+            <div
+              className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-2xl max-w-xs w-full mx-4 flex flex-col items-center gap-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <SiLine className="w-6 h-6 text-green-500" />
+                  <span className="font-bold text-slate-900 dark:text-white text-lg">LINE Official</span>
+                </div>
+                <p className="text-sm text-slate-500 dark:text-slate-400">@shift-optimizer</p>
+              </div>
+              <img src="/line-qr.png" alt="LINE QR Code @shift-optimizer" className="w-52 h-52 rounded-lg" />
+              <p className="text-xs text-slate-400 text-center">สแกน QR Code เพื่อเพิ่มเพื่อนใน LINE</p>
+              <button
+                onClick={() => setShowLineQR(false)}
+                className="text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 underline"
+              >
+                ปิด
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* ── FOOTER ── */}
         <footer className="border-t border-slate-100 dark:border-slate-800/50 bg-slate-50 dark:bg-slate-900/50 py-10 px-4 sm:px-6">
