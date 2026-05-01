@@ -101,8 +101,11 @@ export interface SEOPageConfig {
   seoTitle: string;
   metaDescription: string;
   canonicalPath: string;
+  logoSubtitle?: string;
+  accentTheme?: 'default' | 'business';
   badge?: string;
   h1Line1: string;
+  h1Line2?: string;
   h1Gradient?: string;
   subtitle: string;
   primaryCTA: string;
@@ -131,7 +134,8 @@ export interface SEOPageConfig {
 export default function SEOLandingPage({ config }: { config: SEOPageConfig }) {
   const {
     seoTitle, metaDescription, canonicalPath,
-    badge, h1Line1, h1Gradient, subtitle,
+    logoSubtitle, accentTheme = 'default',
+    badge, h1Line1, h1Line2, h1Gradient, subtitle,
     primaryCTA, primaryHref, secondaryCTA,
     painTitle, painSubtitle, painPoints,
     solutionTitle, solutionSubtitle, outcomes,
@@ -141,6 +145,8 @@ export default function SEOLandingPage({ config }: { config: SEOPageConfig }) {
     customHowItWorksTitle, customHowItWorksDesc, customHowItWorksSteps,
     extraAfterPain, extraAfterSolution,
   } = config;
+
+  const isBusiness = accentTheme === 'business';
 
   const activeComparisonRows = customComparisonRows ?? comparisonRows;
   const activeHowItWorksSteps = customHowItWorksSteps ?? howItWorksSteps;
@@ -179,22 +185,22 @@ export default function SEOLandingPage({ config }: { config: SEOPageConfig }) {
   return (
     <LazyMotion features={domAnimation}>
       <div className="min-h-screen bg-white dark:bg-slate-950 overflow-x-hidden">
-        <Navbar isHomePage />
+        <Navbar isHomePage logoSubtitle={logoSubtitle} />
 
         <main>
           {/* ── HERO ── */}
           <section className="relative min-h-[80svh] flex flex-col justify-center pt-24 pb-16 px-4 sm:px-6">
             <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
-              <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-gradient-radial from-primary/8 via-transparent to-transparent rounded-full" />
-              <div className="absolute top-1/4 right-0 w-[400px] h-[400px] bg-blue-100/40 dark:bg-blue-900/10 rounded-full blur-3xl" />
-              <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-teal-100/40 dark:bg-teal-900/10 rounded-full blur-3xl" />
+              <div className={`absolute top-20 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full ${isBusiness ? "bg-gradient-radial from-orange-400/10 via-transparent to-transparent" : "bg-gradient-radial from-primary/8 via-transparent to-transparent"}`} />
+              <div className={`absolute top-1/4 right-0 w-[400px] h-[400px] rounded-full blur-3xl ${isBusiness ? "bg-amber-100/50 dark:bg-amber-900/10" : "bg-blue-100/40 dark:bg-blue-900/10"}`} />
+              <div className={`absolute bottom-0 left-0 w-[500px] h-[500px] rounded-full blur-3xl ${isBusiness ? "bg-orange-100/40 dark:bg-orange-900/10" : "bg-teal-100/40 dark:bg-teal-900/10"}`} />
               <div className="absolute inset-0" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, rgba(148,163,184,0.08) 1px, transparent 0)", backgroundSize: "40px 40px" }} />
             </div>
 
             <div className="relative max-w-4xl mx-auto text-center">
               <m.div initial="hidden" animate="visible" variants={staggerContainer}>
                 {badge && (
-                  <m.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 bg-primary/8 dark:bg-primary/10 text-primary rounded-full px-4 py-1.5 text-sm font-medium mb-6">
+                  <m.div variants={fadeUp} custom={0} className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium mb-6 ${isBusiness ? "bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400" : "bg-primary/8 dark:bg-primary/10 text-primary"}`}>
                     <CheckCircle2 className="w-4 h-4" />
                     {badge}
                   </m.div>
@@ -207,8 +213,9 @@ export default function SEOLandingPage({ config }: { config: SEOPageConfig }) {
                   data-testid="text-seo-hero-title"
                 >
                   <span className="block">{h1Line1}</span>
+                  {h1Line2 && <span className="block">{h1Line2}</span>}
                   {h1Gradient && (
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">
+                    <span className={`text-transparent bg-clip-text ${isBusiness ? "bg-gradient-to-r from-orange-500 via-amber-400 to-yellow-500" : "bg-gradient-to-r from-primary to-accent"}`}>
                       {h1Gradient}
                     </span>
                   )}
@@ -225,7 +232,7 @@ export default function SEOLandingPage({ config }: { config: SEOPageConfig }) {
 
                 <m.div variants={fadeUp} custom={3} className="mt-10 flex flex-col sm:flex-row gap-3 justify-center items-center">
                   <Link href={primaryHref} className="w-full sm:w-auto">
-                    <Button size="lg" className="w-full sm:w-auto shadow-lg shadow-primary/25 text-base px-7 py-6 font-semibold" data-testid="button-seo-primary-cta">
+                    <Button size="lg" className={`w-full sm:w-auto text-base px-7 py-6 font-semibold ${isBusiness ? "shadow-lg shadow-orange-300/40" : "shadow-lg shadow-primary/25"}`} data-testid="button-seo-primary-cta">
                       {primaryCTA}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>

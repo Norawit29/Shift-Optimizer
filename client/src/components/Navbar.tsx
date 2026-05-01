@@ -9,9 +9,10 @@ import { Button } from "@/components/ui/button";
 
 interface NavbarProps {
   isHomePage?: boolean;
+  logoSubtitle?: string;
 }
 
-export function Navbar({ isHomePage }: NavbarProps) {
+export function Navbar({ isHomePage, logoSubtitle }: NavbarProps) {
   const { t } = useLanguage();
   const { user, loading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -72,7 +73,7 @@ export function Navbar({ isHomePage }: NavbarProps) {
                 </div>
                 <div className="hidden sm:flex flex-col leading-tight shrink-0" data-testid="text-app-name">
                   <span className="font-display font-bold text-base text-slate-900 dark:text-white whitespace-nowrap">{t.appName}</span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">{t.appTagline}</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">{logoSubtitle ?? t.appTagline}</span>
                 </div>
               </a>
             ) : (
@@ -82,7 +83,7 @@ export function Navbar({ isHomePage }: NavbarProps) {
                 </div>
                 <div className="hidden sm:flex flex-col leading-tight shrink-0" data-testid="text-app-name">
                   <span className="font-display font-bold text-base text-slate-900 dark:text-white whitespace-nowrap">{t.appName}</span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">{t.appTagline}</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">{logoSubtitle ?? t.appTagline}</span>
                 </div>
               </Link>
             )}
