@@ -8,6 +8,7 @@ import { Trash2, Calendar, ArrowLeft, Loader2, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { useLanguage } from "@/context/LanguageContext";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { YouTubeDemoWidget } from "@/components/YouTubeDemoWidget";
 
 export default function HistoryPage() {
   const { data: schedules, isLoading } = useSchedules();
@@ -112,6 +113,7 @@ export default function HistoryPage() {
           </DialogContent>
         </Dialog>
       </div>
+      <YouTubeDemoWidget />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { YouTubeDemoWidget } from "@/components/YouTubeDemoWidget";
 import { useCreateSchedule, useUpdateSchedule, useSchedules, useSchedule } from "@/hooks/use-schedules";
 import { type StaffMember, type SchedulerConfig, type OptimizerResult, type DaySchedule, type Schedule } from "@shared/schema";
 import { useAuth } from "@/context/AuthContext";
@@ -3540,6 +3541,7 @@ export default function WizardPage(props: { exportOnly?: boolean } & Record<stri
           </div>
         </DialogContent>
       </Dialog>
+      <YouTubeDemoWidget />
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ArrowLeft, Save, Calendar as CalendarIcon, Check, Activity, Loader2 } from "lucide-react";
+import { YouTubeDemoWidget } from "@/components/YouTubeDemoWidget";
 import { type DaySchedule, type SchedulerConfig, type StaffMember, type OptimizerResult } from "@shared/schema";
 
 export default function ScheduleDetailPage() {
@@ -176,6 +177,7 @@ export default function ScheduleDetailPage() {
           </TabsContent>
         </Tabs>
       </div>
+      <YouTubeDemoWidget />
     </div>
   );
 }
