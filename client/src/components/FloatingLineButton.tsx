@@ -21,7 +21,7 @@ export function FloatingLineButton() {
               className="flex items-center gap-3"
             >
               <span className="bg-slate-900 dark:bg-slate-800 text-white text-sm font-medium px-3 py-1.5 rounded-full shadow-lg whitespace-nowrap">
-                ติดต่อผ่าน LINE
+                คุยกับเราทาง LINE
               </span>
               <button
                 onClick={() => { setShowQR(true); setOpen(false); }}
